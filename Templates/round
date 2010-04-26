@@ -1,0 +1,10 @@
+/* Return the lowest value >= VAL that is on a ROUND_SIZE boundary.
+   Doesn't deal with cases near zero or wrapping; maybe I should work
+   on those?  */ 
+#define ROUND_UP(val, round_size) \
+  (((((val)-1) / (round_size)) + 1) * (round_size))
+
+/* Return the highest value <= VAL that is on a ROUND_SIZE boundary.  */ 
+#define ROUND_DOWN(val, round_size) \
+  (((val)/(round_size))*(round_size))
+

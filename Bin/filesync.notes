@@ -1,0 +1,22 @@
+## -*-mode: Outline; fill-prefix: "   ";-*-
+
+* Workflow
+
+I want to do four things with the filesync program:
++ Synchronize two project directories when I've been working in one
+  and want to update the other.  It's an important feature for this
+  that if they *can't* be synchronized, I don't want to do anything. 
++ Copy one project directory to another location to setup for the
+  first option.
++ For two directories that are mostly similar but slightly different,
+  get a concise summary of what I have to do to bring them into sync. 
++ Setup synchronization between two directories that are equivalent up
+  to files that don't exist between the two.
+
+I think for this I want four pathways:
++ Check to see if I can synchronize
++ Synchronize
++ Check to see if I can setup synchronization
++ Setup synchronization
+
+

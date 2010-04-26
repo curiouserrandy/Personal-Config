@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# Parsing arguments for a bash shell function of shell script.
+# {RETURN} == "exit" for shell script, "return" for shell function.
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname shows the list of MH folders with unseen messages in them. 
+Arguments:
+	-f "<flist>"		List of folders to search.
+				If this flag is not provided, the
+				folder list is taken from the
+				environment variable MH_UNSEEN_FLIST.
+				If that environment variable is not
+				set, the default is "+default".
+	-r 			Recursively search all folders that
+				are children of the specified
+				folders.
+				This is the default.
+	-R			Don't recursively search folders listed.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-rR] [-f <flist>]";
+
+# Parse all arguments.
+recurse=-recurse
+flist=${MH_UNSEEN_FLIST:-+default}
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -r) 
+	recurse=-recurse;
+	;;
+    -R) 
+	recurse=;
+	;;
+    -f) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	flist="$2";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	{RETURN} 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	{RETURN} 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+flists ${flist} ${recurse} | \
+	egrep -v 'has *0 in sequence' | sed 's/in sequence unseen.*$//'

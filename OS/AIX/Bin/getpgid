@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/bin/ps -o %r -p $1 | tail +2 

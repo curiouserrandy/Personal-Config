@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w
+
+# **Incomplete**
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$progname=$0;
+$helpstring = <<"HelpString";
+$progname is a program to take strings which have within them list
+of alternatives (i.e. strings which describe sets of strings) and expand 
+those lists out.  Examples:
+{a,b}c		==> 	ac bc
+{a,l{b,d}}c	==> 	ac lbc ldc
+Arguments:
+	-s <sep>	Separation character for alternatives.
+			By default it will be a space.
+	-n		Specifies a newline separation character.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="{SHORT USAGE STRING}";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$seperator=' ';
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^s$/) && do {
+	$seperator = "$ARGV[0]";
+	die "$progname: Seperator more than one character" if length($seperator) != 1;
+	next ARGS;
+    };
+
+    (/^n$/) && do {
+	$seperator = "\n";
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+# Do this object oriented (possibly I should do it in
+# C++/Java/Python?).  Two objects:
+#	OR object
+#	Concat object
+# Expand an OR object and you get back an array of concat objects.
+# Expand a concat object and you also get back an array of concat
+# objects, from expanding the OR objects under them and doing the
+# cross product (may use temporary objects).
+
+
+
+

@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# TODO
+# 	Allow setting of arbitrary variables on command line (for hertz)
+# 	Make sure it works if you set it in the expressions too.
+
+$progname=`basename $0`;
+chomp $progname;
+$helpstring = <<"HelpString";
+$progname is a program to do semi-arbitrary transformation on an input file.
+It takes as argument a config file, each line of which is a regexp, output
+pair.  If the regexp matches, the output line is executed to create a string
+to output.  Arguments:
+	-f <config file>
+	-n | -p			Specify whether or not to output
+				non-matching lines.  Default is -n (don''t).
+ 	<files>			Input files; default is stdin.
+The config file can be arbitrary perl code, but must result in an array
+\'\@actions\' that lists regular expressions and values to output.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname -f <config file> [-n | -p]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$output_nonmatching="no";
+$config_file="";
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^f$/) && do {
+	$config_file=shift;
+	next ARGS;
+    };
+    (/^n$/) && do {
+	$output_nonmatching="no";
+	next ARGS;
+    };
+    (/^p$/) && do {
+	$output_nonmatching="yes";
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+my @actions;
+
+# Read in the config file
+eval `cat $config_file`;
+
+LINES: while (<>) {
+    foreach $p (@actions) {
+	if (/$p->[0]/) {
+	    print eval($p->[1]);
+	    next LINES;
+	}
+    }
+    print if ($output_nonmatching eq "yes");
+}
+
+	    

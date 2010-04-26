@@ -1,0 +1,97 @@
+## -*-mode: Outline; fill-prefix: "   ";-*-
+
+* To scan
+
+X-- Make sure to go back and go over nane.netapp.com/all.el; much stuff
+   there.
+
+* To do
+
+X-- Pull out from nane.netapp.com/all.el into separate files:
+	* Sandbox stuff (make generic)
+	* Glimpse stuff (make generic; into grep-expanded.el)
+	* Put into todo to make randy-open-console-connection into
+   	  something that reads /u3/console/console_README.
+
+-- Figure out what you want to do about the load path.  For now, I'm
+   not modifying it.  Directories added to it in startup.el:
+	* ~rsmith/lib
+   I think I want to rethink this--the require/provide stuff makes it
+   real simple to use load-path.  Maybe I'll prefix all the files in
+   Config/Emacs with rs- and use require/provide.  Ok.  
+
+X-- Not sure what to do about the default initialization file, and
+   site-init.el.  site-init.el is loaded before my .emacs; default.el
+   is loaded after and the load can be inhibitted by setting
+   inhibit-default-init to t.  It's hard to do a general plan for
+   these.  I should probably leave in what I have now (load default
+   first and disable).  Or I could do this in system specific
+   locations, which might make more sense.  Hmmm.  Under what
+   circumstances will I ever want default.el loaded after my stuff?
+   I'm going to plan on loading it first and inhibiting it.  Done in
+   pre-system.el
+
+-- Figure out general require/provide plans.  Going to have Emacs
+   directories on load path as appropriate, and name my files so they
+   don't conflict with global files.  Only minus about this is that I
+   then really should setup the entire load path before I load any
+   files and then use require in the all.el files.  Ok.  Do it.
+
+X-- Make sandbox and grep stuff generic
+
+X-- Figure out how to deal with python mode; what emacs' don't have it?
+   There's both a python.el that is distributed with emacs (copyright
+   2003,4; not clear what the first emacs it was distributed with was)
+   that is different from and incompatible with python-mode.el.  Happy
+   to switch over to generic emacs, but I need to make sure that it
+   exists on all machines on which I'm likely to use python :-}.
+   Check it on desktop/server computer, and make sure that you don't
+   require it until you need it.  Moving local copy of python-mode.el
+   into "Old".  I think I'll just leave this problem be and deal with
+   it as I run into it.
+
+-- Reexamine setting up comint so that it doesn't do editting in the
+   sub buffer (terminal type).
+
+X-- Figure out how to test that in keys.el and structure keys.el.  In
+   general, go over keys.el.
+
+-- Need to include pulling in mh tools.  Also grep-expanded.el (should
+   be at top level).
+
+-- Pull in split mode.
+
+* Testing
+
+-- Do the arrow keys work on various keyboards?  
+
+-- Make sure ispell works
+
+-- Make sure sending email from the various computers on which you
+   work works.  Tricky.
+
+
+
+* Notes
+
+-- Also not pulling in the Vt100 Esc-[ keymap stuff; I don't think I
+   need that, so I want to leave it out until I do.  Will the arrow
+   keys work without it?
+-- Leaving off the ispell auto-loda stuff as well.  May want to go
+   back and put that in.
+-- I didn't copy randy-countalist-increment over; not used and I'd
+   like to rewrite it if I need it again. 
+
+-- Skipping "dired-compress-print"; that's almost certainly way out of
+   date by now.  Similarly for the dired bindings, which are rmail and
+   comporess print specic.
+
+-- Also skipping randy-check-file-visiting-compressed
+
+-- Skipping gnus settings & sendmail setting (may need to revisit
+   that).
+
+-- Skipping everything rmail related.
+
+-- Skipped (eliminated) randy-goto-todo and randy-goto-schedule.
+

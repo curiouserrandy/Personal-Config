@@ -1,0 +1,902 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# Possible improvements
+# 	X* Handle file names that have spaces in them (need to escape when
+# 	  passing to shell).  Have tried; test.  Put numbers locations etc
+#	  into homesync.command; confirm has right format and test.
+#	* Add a filter for files not handled
+#	X* Make clear direction of transfer (have arrows pointing
+#	  opposite ways). 
+# 	* Handle auto-propagate of deleting.  Twitch.
+# 	* Symlinks
+# 	* Changes only of permissions
+# 	* Tracing of activity
+#	* Multiple -X flags
+
+## Todo:
+#	* Create standard sync check matrix.  For right now, don't create
+#	  any lists, just output errors as you find them.  Try to re-use
+#	  error routines.
+#	* Include new routines in list at beginning of file.
+
+## Todo:
+#	* Figure out state of in-progress improvement, below, and update
+#	  comment. 
+#	* Make sure you're doing all checks before any mods; if an
+#	  error is going to occur, change no state.
+#	* Add -q (query), which doesn't copy anything but tells you what it
+#	  would do if it were going to do anything.
+#	* Add -p (prep) flag, which ignores the .filesync_info files (if they
+#	  exist), does a diff between the two directories, reports in
+#	  some pretty format which files are different (highest priority),
+#	  and which files exist in one directory and not the other.  If no
+#	  files are different and the -q flag isn't specified, copies all
+#	  files that exist in each directory to the other, and setup
+#	  .filesync_info for these two directories.
+
+# Currently working on improvement: Don't do copy if destination empty
+# and source not modified since filesync time; this generally means
+# that you've deleted stuff.  Plan:
+#	X * Create subroutine to return relationship of file
+# 	  modification time to filesync time (will involved creating
+# 	  enums).  (file_mod_class())
+#	X * Use that subroutine in handle_file (actually filefile subroutine).
+#	* Test
+# 	* Modify the following routines to change name of routine
+# 	  (more outside based) adn to use above routine to assess if
+# 	  copy should happen:
+#		* copy12
+#		* copy21
+#		* mkdir1
+#		* mkdir2
+#	* Ideal would be to have an override for the initial sync,
+# 	  since that's when you're setting things up.  This argues,
+# 	  again, in favor of a .filesync per directory/file.  Hmmm.  
+
+use File::Find;
+
+# === Constants
+my $SYNC_FILE_NAME = ".filesync_info";
+my $FILESYNC_INFO_LINE = qr/^(.*?)\s+(\d+)\s+(\d+)\s*$/;
+my $True = 1;
+my $False = 0;
+
+# Enum return from &file_mod_class
+my ($E_beforesync, $E_duringsync, $E_aftersync) = (0, 1, 2);
+
+# === Global variables
+my $Trace = $False;		# Set to true to enable basic routine tracing.
+my $activity_trace = $False;	# Set to true to show copying & etc.
+my $exclude_filter = "[~#]\$";	# Set to re to match files/dirs to exclude
+
+my $dir1_root;			# Roots for the two trees
+my $dir2_root;
+
+my $last_sync_start = 0;	# When the last sync happened.
+my $last_sync_end = 0;
+
+my $this_sync_start = time();	# When this sync began
+my $this_sync_end;		# When this sync ends (set at end of process).
+
+my $CP;				# Program to use for copy
+my $MV;				# Program to use for move.
+
+my $sync_error_occured = 0;	# An error occurred in syncing the trees.
+
+$progname=`basename $0`;
+chomp $progname;
+$helpstring = <<"HelpString";
+$progname is a program for doing automatic synchronization between two 
+directories trees.  Any new files in either tree are copied to the other, and 
+and files updated since the last time the copy was made are also copied 
+across.  If the same file has been updated in both trees since the
+last time a copy was made, that is an error.  Arguments:
+	-f <file_list>		A file containin the list of
+    				files/directories to synchronize.
+    				This file contains a list of paths
+    				relative to the dir1 & dir2
+    				locations.  If a directory is
+    				mentioned, the entire subtree is
+    				synchronized.
+    				As a special case, the filename "-"
+				will be taken to mean stdin.
+    				Blank lines and comments (\# to EOL)
+				in the file will be ignored.
+				Optional; If left out, the entire
+    				subtree is synchornized.
+	-t			Trace all fs modification activities
+	-X <filter>		RE to match against file names; if it matches,
+				that file will not be sync\'d.  If it\'s a
+				directory, neither will any subfiles.
+				Note that the comparison is done on the
+    				filename relative to the roots; neither
+    				root directory is prefixed.
+				The default exclude filter is \"[~\#]\$\";
+				set it to \"\" to avoid any exclusion.    
+	-n 			Test to see if synchronization will occur
+    				successfully but don\'t actually do anything.
+	-s			Setup for synchronization, checking to see
+    				if the two directories have any conflicts
+    				that would prevent setting up synchronization
+				(such as the same file in each with different
+				contents) and then syncing them and creating
+    				the .filesync_info files.
+	<dir1> <dir2>
+Whatever operation (-s or standard) is requested, the trees will be examined
+for any conflicts before synchronization is started.  If tree modification 
+is occuring during synchronization, that may invalidate the initial check.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-f <file_list>] [-t] [-X <filter>] [-n] [-s] <dir1> <dir2>";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+my ($nochange, $setup) = ($False, $False);
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^f$/) && do {
+	$file_list = shift;
+	next ARGS;
+    };
+    (/^X$/) && do {
+	$exclude_filter = shift;
+	next ARGS;
+    };
+    (/^n$/) && do {		# NYI
+	$nochange = $True;
+	next ARGS;
+    };
+    (/^s$/) && do {		# NYI
+	$setup = $True;
+	next ARGS;
+    };
+    (/^t$/) && do {
+	$activity_trace = 1;
+	next ARGS;
+    };
+    (/^t$/) && do {
+	$activity_trace = 1;
+	next ARGS;
+    };
+    (/^T$/) && do {
+	$Trace = 1;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) != 2);
+$dir1_root = shift;
+$dir2_root = shift;
+
+# ==> The main flow of control picks up at the end of the file (to allow 
+# constants to be defined near the routines they refer to).  
+
+# === Forward subroutine declarations
+
+# Main subroutines called
+sub dual_traverse_tree;		# Based on a filter, traverse a pair of 
+				# directory trees
+sub handle_file;		# Given two files, decide an action.
+
+# Initiatlization/completion routines.
+sub read_filesync_info;		# Read both dirs filesync files & set globals
+sub read_filesync_file;		# Read a filesync file
+sub write_filesync_file;	# Write a filesync file
+sub read_filelist_file;		# Read filter list file and return info
+sub decide_programs;		# Determine what will be used for copy and move.
+
+# Helper functions
+sub search_path;		# Find an executable on a path
+sub find_related_tmp_file;	# Find a temp file in the same dir as the
+				# given file.
+sub copy_permissions;		# Copy permissions from first arg to second arg.
+sub canon_path;			# Canonicalize pathname.
+sub filter_check;		# Check if a specific file matches in
+				# the filter list.
+sub copy_file;			# Copy file A to file B w/o comment
+sub copy_file_chk;		# Test for problems in copying file A to file B
+sub file_mod_class;		# Return the modification class of the
+				# file in relationship to the filesync
+				# time
+
+# Matrix dispatch functions (used by handle_file & children)
+
+# === Primary control function
+# Takes a single argument that is the relative path;
+# adds it to the global roots to get actual paths to work on.
+# The routine needs to be able to handle the relative path ".".
+# This routine is called recursively;
+# before calling it, handle_file will already have
+# been called on the relative path.
+sub dual_traverse_tree {
+    my ($relpath, $ignore_dot_filesync, $execution_matrix, @filter_list) = @_;
+    
+    print "DTT: $relpath\n"
+	if ($Trace);
+
+    $relpath = "" if ($relpath eq ".");
+
+    my ($root1, $root2) = ($dir1_root, $dir2_root);
+    ($root1, $root2) = ($root1 . "/" . $relpath, $root2 . "/" . $relpath)
+	if ($relpath);
+
+    # Get a sorted, merged list of all files in both directories.
+    opendir ROOT1, $root1 || die "Coudln't open $root1 in dual_traverse_tree\n";
+    my (@root1_list) = readdir ROOT1;
+    closedir ROOT1 || die "Coudln't close $root1 in dual_traverse_tree\n";
+    opendir ROOT2, $root2 || die "Coudln't open $root2 in dual_traverse_tree\n";
+    my (@root2_list) = readdir ROOT2;
+    closedir ROOT2 || die "Coudln't close $root2 in dual_traverse_tree\n";
+
+    @root1_list = sort(@root1_list);
+    @root2_list = sort(@root2_list);
+    my (@filelist);
+    while (@root1_list && @root2_list) {
+	my ($cmpret) = $root1_list[0] cmp $root2_list[0];
+	if ($cmpret == -1) {
+	    push(@filelist, shift(@root1_list));
+	} elsif ($cmpret == 0) {
+	    push(@filelist, shift(@root1_list));
+	    shift(@root2_list);
+	} elsif ($cmpret == 1) {
+	    push(@filelist, shift(@root2_list));
+	}
+    }
+
+    # Only one of these will do anything; we must have finished with one list. 
+    push(@filelist, @root1_list);
+    push(@filelist, @root2_list);
+
+    if ($ignore_dot_filesync) {
+	@filelist = grep { $_ ne $SYNC_FILE_NAME } @filelist;
+    }
+    @filelist = grep { $_ ne "." && $_ ne ".." } @filelist;
+
+    foreach my $file (@filelist) {
+	my ($filepath) = $file;
+	$filepath = "$relpath/$file" if $relpath;
+	
+	next if !filter_check($filepath, @filter_list);
+
+	if (!handle_file($execution_matrix, $filepath)) {
+	    dual_traverse_tree($filepath, $False, $execution_matrix, @filter_list);
+	}
+    }
+}
+	
+# === Initialization and termination routines
+
+# Decide on the copy and move programs to use.
+
+# Notes for Mac OS X:
+#	* The perl File::Copy module doesn't copy resource forks or permissions.
+#	* I can't find a way to search the path (sigh)
+#	* CpMac isn't on the default path; it's in /Developer/Tools.
+# 	* The "-p" flag to CpMac does preserve mod time.  Though I
+# 	  supposed I could use it and then touch the file.  Doesn't
+#	  work if file is read only.
+
+sub decide_programs {
+    my $pathenv = $ENV{"PATH"};
+    my @path_dirs = split(':', $pathenv);
+    
+    my ($cpname, $mvname) = `uname` eq "Darwin" ? ("CpMac", "MvMac") : ("cp", "mv");
+    if (`uname` eq "Darwin") {
+	push(@path_dirs, "/Developer/Tools");
+    }
+
+    die "Couldn't find $cpname on path (" . join(", ", @path_dirs) . ")\n"
+	unless ($CP = search_path($cpname, @path_dirs));
+    die "Couldn't find $mvname on path (" . join(", ", @path_dirs) . ")\n"
+	unless ($MV = search_path($mvname, @path_dirs));
+}
+
+# Filesync info file format: Each line refers to a separate peer with
+# which updating has occurred.  Each line has three fields: 
+#	update_peer	last_update_start	last_update_end
+# The last_update_* timestamps are integers which are the number of
+# seconds since the epoch.  If a debugger wants to translate these
+# numbers to english, they may use "date -r <num>" (at least on
+# Macintosh). 
+# If the file doesn't exist or the line in the file referring to the
+# appropriate peer doesn't exist, the "last update" is set to the
+# beginning of time.  In practice, this means that all files will have
+# been modified after the last update, which means that if there are
+# any file<->file conflicts, there will be errors.
+# Both files must match in their description of when the last update
+# is (each file will be looked up by the others absolute path).
+
+sub read_filesync_file {
+    my ($fs_file, $key) = @_;
+
+    open (FSFILE, "<$fs_file") || return (0, 0);
+    my ($line_upd_start, $line_upd_end) = (0, 0);
+    while (<FSFILE>) {
+	die "Bad format line from $fs_file: $_\n"
+	    unless /$FILESYNC_INFO_LINE/;
+	next unless $1 eq $key;
+	($line_upd_start, $line_upd_end) = ($2, $3);
+	# I don't last in case for some reason there are dups in the
+	# file; I think I want the last one.
+    }
+    close(FSFILE);
+
+    print "RFF: Read file $fs_file scanning for key $key returned $line_upd_start $line_upd_end\n"
+	if ($Trace);
+    return ($line_upd_start, $line_upd_end);
+}
+
+sub write_filesync_file {
+    my ($fs_file, $key, $upd_start, $upd_end) = @_;
+    my $ftemp = find_related_tmp_file($fs_file);
+
+    print "WFF: File $fs_file key $key upd_start $upd_start upd_end $upd_end\n"
+	if ($Trace);
+
+    # Open temp file and print out newly generated entry.
+    open(OUTFILE, ">$ftemp") || die "Couldn't open $ftemp for writing: $!\n";
+    print OUTFILE "$key $upd_start $upd_end\n";
+
+    # If old file exists, open it and copy stuff across, skipping
+    # line corresponding to newly generated entry
+    if (-e $fs_file) {
+	open(INFILE, "<$fs_file") || die "Couldn't open $fs_file for reading: $!\n";
+
+	while (<INFILE>) {
+	    die "Bad format line from $fs_file: $_\n"
+		unless /$FILESYNC_INFO_LINE/;
+	    next if $1 eq $key;
+	    print OUTFILE $_;
+	}
+	close INFILE || die "Couldn't close $fs_file: $!\n";
+    }
+
+    # Close output files
+    close OUTFILE || die "Couldn't close $ftemp\n";
+
+    # Move the output file over.
+    if (system("mv $ftemp $fs_file") != 0) {
+	die "Couldn't move $ftemp to $fs_file: $? $!\n";
+    }
+}
+
+sub read_filesync_info {
+    my ($root1, $root2) = @_;
+
+    # Canonicalized slashes
+    $root1 = canon_path($root1);
+    $root2 = canon_path($root2);
+
+    my ($f1upd_start, $f1upd_end)
+	= read_filesync_file("$root1/$SYNC_FILE_NAME", $root2);
+    my ($f2upd_start, $f2upd_end)
+	= read_filesync_file("$root2/$SYNC_FILE_NAME", $root1);
+
+    print "RFI: ($f1upd_start, $f1upd_end) ($f2upd_start, $f2upd_end)\n"
+	if ($Trace);
+
+    die "Last update times from the two roots ($root1/$SYNC_FILE_NAME, $root2/$SYNC_FILE_NAME) don't match: ($f1upd_start, $f1upd_end) ($f2upd_start, $f2upd_end)\n"
+	if ($f1upd_start != $f2upd_start || $f1upd_end != $f2upd_end);
+    ($last_sync_start, $last_sync_end) = ($f1upd_start, $f1upd_end);
+}
+
+sub read_filelist_file {
+    my ($filelist_file_name) = @_;
+
+    my (@filter_list);
+    if ($filelist_file_name) {
+	open(FLIST, "<$filelist_file_name") ||
+	    die "Couldn't open $filelist_file_name for reading.\n";
+	@filter_list = <FLIST>;
+	close FLIST || die "Couldn't close $filelist_file_name.\n";
+	map { chomp; } @filter_list;
+	map { s/#.*$//; } @filter_list;
+	@filter_list = grep { /\S/ } @filter_list;
+    }
+    return @filter_list;
+}
+
+# === handle_file and matrix subroutines.
+
+# Routines in the following matrices take two args, abs_path 1 & 2
+# and do the approriate thing for the combination of inputs
+# The handle_file routine takes a relative path as input,
+# determines the status of the two paths, and dispatches through this table.
+# Both handle_path and all routines in this table return true if
+# the tree traversal should be pruned at this node, false otherwise. 
+# Note that all file handling routines should return true; only directories
+# should allow descent.    
+my ($E_file, $E_dir, $E_null) = (0, 1, 2);
+my (@test) = (0, 1, 2);
+
+# Routine definitions.  All these routines take two arguments (from, to)
+# and return true if recursive descent should stop here and false if it 
+# shouldn't.
+sub filefile;		# Copy between files depending on mod time and sync time
+sub filefile_chk;	# Confirm that there's a valid copy between files
+sub filediff_chk;	# Confirm files identical
+sub filedirerror;	# Signal a file/directory incompatibility
+sub dirfileerror;	# Signal a directory/file incompatibility
+sub nulldir;		# Return false (keep descending)
+sub copy21_chk;		# Confirm can copy to->from
+sub copy21;		# Copy to->from
+sub copy12_chk;		# Confirm can copy from->to
+sub copy12;		# Copy from->to
+sub tree12_chk;		# Confirm can mkdir to and read/search from tree
+sub mkdir1;		# mkdir from (tree copy done by controlling routine)
+sub tree21_chk;		# Confirm can mkdir from and read/search to tree
+sub mkdir2;		# mkdir to (tree copy done by controlling routine)
+sub nullnullerror;	# "Can't happen"; signal nonexistent file for both 
+
+# Used below in filefile and friends
+sub nullfile;		# Return true (stop descending)
+sub bothupderror;	# Signal error; both files updated during last sync
+sub bothmoderror;	# Signal error; both files updated during last sync
+
+
+# Standard filesyncing
+my @sync_routiness = (
+    # FILE		DIRECTORY		NOTHING	    path2 / path1
+    [ \&filefile, 	\&filedirerror, 	\&copy12 ],	# FILE
+    [ \&dirfileerror, 	\&nulldir, 		\&mkdir2 ],	# DIRECTORY
+    [ \&copy21, 	\&mkdir1, 		\&nullnullerror ]# NOTHING
+);
+
+# Check if we can do standard file syncing, but don't copy anything
+my @sync_check_routines = (
+    # FILE		DIRECTORY		NOTHING	    path2 / path1
+    [ \&filefile_chk, 	\&filedirerror, 	\&copy12_chk ],	# FILE
+    [ \&dirfileerror,	\&nulldir, 		\&tree12_chk ],	# DIRECTORY
+    [ \&copy21_chk, 	\&tree21_chk, 		\&nullnullerror ]# NOTHING
+);
+ 
+# Check if we can do standard file syncing, but don't copy anything
+my @setup_check_routines = (
+    # FILE		DIRECTORY		NOTHING	    path2 / path1
+    [ \&filediff_chk, 	\&filedirerror, 	\&copy12_chk ],	# FILE
+    [ \&dirfileerror,	\&nulldir, 		\&tree12_chk ],	# DIRECTORY
+    [ \&copy21_chk, 	\&tree21_chk, 		\&nullnullerror ]# NOTHING
+);
+ 
+# Setup standard file syncing
+my @setup_routines = (
+    # FILE		DIRECTORY		NOTHING	    path2 / path1
+    [ \&filediff_chk, 	\&filedirerror, 	\&copy12 ],	# FILE
+    [ \&dirfileerror,	\&nulldir, 		\&mkdir2 ],	# DIRECTORY
+    [ \&copy21, 	\&mkdir1, 		\&nullnullerror ]# NOTHING
+);
+ 
+sub handle_file {
+    my ($execution_matrix, $relpath) = @_;
+
+    die "handle_file: $relpath is not a relative path\n"
+	if $relpath =~ m;^/;;
+
+    return $True if ($exclude_filter && $relpath =~ /$exclude_filter/);
+
+    my ($suffix) = "";
+    $suffix = "/$relpath" if ($relpath ne ".");
+
+    my ($absp1, $absp2) = ($dir1_root . $suffix, $dir2_root . $suffix);
+
+    my ($p1status) = (-e $absp1 ? (-d $absp1 ? $E_dir : $E_file ) : $E_null);
+    my ($p2status) = (-e $absp2 ? (-d $absp2 ? $E_dir : $E_file ) : $E_null);
+
+    print "HF: $dir1_root $dir2_root $relpath $p1status $p2status\n"
+	if ($Trace);
+
+    return &{${$execution_matrix->[$p1status]}[$p2status]}($absp1, $absp2);
+}
+
+# The  matrix subroutines
+
+sub filedirerror {
+    my ($p1, $p2) = @_;
+
+    print STDERR "File $p1 and directory $p2 conflict; no sync possible\n";
+    $sync_error_occured = 1;
+    return $True;
+}
+
+sub dirfileerror {
+    my ($p1, $p2) = @_;
+
+    print STDERR "Directory $p1 and file $p2 conflict; no sync possible\n";
+    $sync_error_occured = 1;
+    return $True;
+}
+
+sub nulldir {
+    return $False;
+}
+
+sub nullfile {
+    return $True;
+}
+
+sub copy12 {
+    my ($p1, $p2) = @_;
+
+    print "$p1 ==> $p2\n" if ($activity_trace);
+
+    return copy_file($p1, $p2);
+}
+
+sub copy12_chk {
+    my ($p1, $p2) = @_;
+
+    # Assumption: directory slot empty.  Question: Can I read from the
+    # from file and can I write to the to directory?
+    if (! -r $p1) {
+	print STDERR "Cannot read file to copy ($p1)\n";
+	$sync_error_occured = 1;
+    }
+    my ($dest_dir) = $p2;
+    $dest_dir =~ s;/[^/]*$;;;
+    if (! -w $dest_dir) {
+	print STDERR "Cannot write to directory to copy into ($dest_dir)\n";
+	$sync_error_occured = 1;
+    }
+    
+    return $True;
+}
+
+sub copy21 {
+    my ($p1, $p2) = @_;
+
+    print "$p1 <== $p2\n" if ($activity_trace);
+
+    return copy_file($p2, $p1);
+}
+
+sub copy21_chk {
+    my ($p1, $p2) = @_;
+    return copy12_chk($p2, $p1);
+}
+
+sub mkdir1 {
+    my ($p1, $p2) = @_;
+
+    print "mkdir $p1\n";
+    mkdir($p1) || do {
+	print STDERR "Mkdir of $p1 failed\n";
+	$sync_error_occured = 1;
+	return $True;
+    };
+
+    copy_permissions($p2, $p1);		# Not going to stop everything if
+    					# this fails.
+    return $False;
+}
+
+# "wanted" argument to File::Find::find
+sub treesubfile_ok {
+    if (!-r $_) {
+	$sync_error_occured = 1;
+	print STDERR "Cannot read $File::Find::name\n";
+    }
+    if (-d $_ && !-x $_) {
+	$sync_error_occured = 1;
+	print STDERR "Cannot search directory $File::Find::name\n";
+    }
+}
+
+sub tree12_chk {
+    my ($p1, $p2) = @_;
+
+    # Source directory much be searchable and readable
+    # Dest location directory must be writable.
+    if (! -r $p1) {
+	print STDERR "Cannot read source directory ($p1)\n";
+	$sync_error_occured = 1;
+    }
+    if (! -x $p1) {
+	print STDERR "Cannot search source directory ($p1)\n"
+	$sync_error_occured = 1;
+    }
+    my ($dest_dir) = $p2;
+    $dest_dir =~ s;/[^/]+/?;;;
+    
+    if (! -w $dest_dir) {
+	print STDERR "Cannot write dest dir ($dest_dir)\n"
+	$sync_error_occured = 1;
+    }
+
+    find(\&treesubfile_ok, $p1);
+
+    return $False;		
+}
+
+sub mkdir2 {
+    my ($p1, $p2) = @_;
+    return mkdir1($p2, $p1);
+}
+
+sub tree21_chk {
+    my ($p1, $p2) = @_;
+    return tree12_chk($p2, $p1);
+}
+
+sub nullnullerror {
+    my ($p1, $p2) = @_;
+    print STDERR "Both files ($p1 $p2) passed to handle_file don't exist; can't happen!\n";
+    $sync_error_occured = 1;
+    return $True;
+}
+
+sub filediff_chk {
+    my ($p1, $p2) = @_;
+
+    open (P1, "<$p1") || do {
+	print STDERR "Coudln't open $p1 for reading: $!\n";
+	$sync_error_occured = 1;
+	return $True;
+    };
+
+    open (P2, "<$p2") || do {
+	print STDERR "Coudln't open $p2 for reading: $!\n";
+	$sync_error_occured = 1;
+	close(P1);
+	return $True;
+    };
+    
+    while (1) {
+	my ($line1, $line2) = (<P1>, <P2>);
+	break if (!defined($line1) && !defined($line2));
+	if (defined($line1) != defined($line2)
+	    || $line1 ne $line2) {
+	    print STDERR "Files $p1 and $p2 differ\n";
+	    $sync_error_occured = 1;
+	    break;
+	}
+    }
+    close(P1); close(P2);
+}
+
+# The routine filefile is similar to handle_file, in that it
+# dispatches through the following matrix, depending on the
+# modification times of the two files passed to it.  The relevant
+# question is whether the source/dest file was modified before the
+# last synchronization, during it (implying that it was copied from
+# the other directory) or after it.  
+my @file_mod_routines = (
+    # BEFORE		DURING		AFTER	    file2 / file1
+    [ \&nullfile,	\&nullfile,	\&copy21],	# BEFORE
+    [ \&nullfile,	\&bothupderror,	\&copy21],	# DURING
+    [ \&copy12,		\&copy12,	\&bothmoderror],	# AFTER
+);
+
+my @file_mod_routines_chk = (
+    # BEFORE		DURING		AFTER	    file2 / file1
+    [ \&nullfile,	\&nullfile,	\&copy21_chk],	# BEFORE
+    [ \&nullfile,	\&bothupderror,	\&copy21_chk],	# DURING
+    [ \&copy12_chk,	\&copy12_chk,	\&bothmoderror],	# AFTER
+);
+
+sub filefile {
+    my ($p1, $p2) = @_;
+    my ($p1status, $p2status) = (file_mod_class($p1), file_mod_class($p2));
+
+    print "FF: $p1status $p2status\n"
+	if ($Trace);
+
+    return &{${$file_mod_routines[$p1status]}[$p2status]}($p1, $p2);
+}
+
+sub filefile_chk {
+    my ($p1, $p2) = @_;
+    my ($p1status, $p2status) = (file_mod_class($p1), file_mod_class($p2));
+
+    print "FF: $p1status $p2status\n"
+	if ($Trace);
+
+    return &{${$file_mod_routines_chk[$p1status]}[$p2status]}($p1, $p2);
+}
+
+sub bothupderror {
+    my ($p1, $p2) = @_;
+    print STDERR "Both files $p1 and $p2 were changed in the last update; \ncan't determine which is the source file.\n";
+    $sync_error_occured = 1;
+    return $True;
+}
+
+sub bothmoderror {
+    my ($p1, $p2) = @_;
+    print STDERR "Both of the files $p1 and $p2 have been modified since the last update.  Cannot choose a source file.\n";
+    $sync_error_occured = 1;
+    return $True;
+}
+
+# === Helper functions 
+
+sub file_mod_class {
+    my ($filename) = @_;
+    
+    my ($filemodtime) = (stat($filename))[9];
+    my ($filestatus) = ($filemodtime < $last_sync_start ? $E_beforesync :
+			($filemodtime > $last_sync_end ? $E_aftersync
+			 : $E_duringsync));
+    return $filestatus;
+}
+
+sub search_path {
+    my ($filename, @pathlist) = @_;
+    foreach $dir (@pathlist) {
+	return "$dir/$filename" if -x "$dir/$filename";
+    }
+    return "";
+}
+
+sub find_related_tmp_file {
+    my ($source_file) = @_;
+    my ($file_temp_idx) = 0;
+    my ($tmp_file);
+    while (-e ($tmp_file = "$source_file" . "_fstemp_$file_temp_idx")) {
+	$file_temp_idx++;
+    }
+    return $tmp_file;
+}
+
+sub copy_permissions {
+    my ($source_file, $dest_file) = @_;
+
+    my ($source_mode) = (stat($source_file))[2] & 07777;
+    if (!chmod($source_mode, $dest_file)) {
+	printf STDERR "Failed to change mode of file $dest_file to %o\n", $source_mode;
+	$sync_error_occured = 1;
+	return $False;
+    }
+    return $True;
+}
+
+sub canon_path {
+    my ($path) = @_;
+
+    $path =~ s;/+;/;;
+    $path =~ s;/$;;;
+
+    return $path;
+}
+
+sub filter_check {
+    my ($file, @filter_list) = @_;
+
+    return $True if !@filter_list;
+
+    foreach $filter (@filter_list) {
+	# Do a series of checks to see if this filter applies
+	# If it does apply, go on to handle this file.
+
+	print "FC: $file $filter\n"
+	    if ($Trace);
+	# Do they match?
+	return $True if $filter eq $file;
+
+	# Is the filter is a superior directory of the file?
+	$filter .= "/" if (substr($filter, -1) ne "/");
+	my ($minlen) = (length($filter) < length($file)
+			? length($filter) : length($file));
+	return $True if (length($filter) < length($file)
+		 && $filter eq substr($file, 0, length($filter)));
+
+	# XXX: $root1/2??
+	# Is the file is a directory, and a superior directory of the
+	# filter?
+	return $True if ((-d "$dir1_root/$file" || -d "$dir2_root/$file")
+		 && length($file) < length($filter)
+		 && "$file/" eq substr($filter, 0, length($file) +1));
+    }
+    return $False;
+}
+
+sub escape_filename {
+    my ($path) = @_;
+    $path =~ s/([' 	\$])/\\$1/g;
+    return $path;
+}
+
+sub copy_file {
+    my ($p1, $p2) = @_;
+
+    # Outline:
+    #	* Find a file related to the destination file that doesn't exist.
+    #	* Use the external copy program found above to copy the file.
+    #	* Find the permissions of the original file, and set the
+    #	  permissions of the new file to match.
+    #	* Use the move program above to move the file over.
+    # Check for errors throughout, carefully.
+
+    my ($ftemp) = find_related_tmp_file($p2);
+    my ($p1_escsp, $ftemp_escsp, $p2_escsp)
+	= (&escape_filename($p1), &escape_filename($ftemp), &escape_filename($p2));
+    my ($cpout) = `$CP $p1_escsp $ftemp_escsp 2>&1`;
+    if ($?) {
+	print STDERR "Error copying $p1 to $ftemp: $cpout\n";
+	$sync_error_occured = 1;
+	return $True;
+    }
+
+    if (!copy_permissions($p1, $ftemp)) {
+	# Error indication set and message printed in subroutine.
+	return $True;
+    }
+
+    my ($mvout) = `$MV $ftemp_escsp $p2_escsp 2>&1`;
+    if ($?) {
+	print STDERR "Error moving $ftemp to $p2: $mvout\n";
+	$sync_error_occured = 1;
+	return $True;
+    }
+
+    return $True;
+}
+
+# Implementation of specific flags.  Assumes $dir[12]_root setup as globals
+
+sub setup_scan {
+}
+
+sub sync_scan {
+}
+
+
+
+# Main program.  Flow of control:
+#	* Read in file list
+#	* Read in .filesync_info from each side; compare.  Set variables.
+#	* Decide on the copy program to use
+#	* Do a combined search of both trees, making sure to always
+#	  visit parents before children, calling handle_file on each
+#	  pair at least one element of exists.
+#	* Write out the filesync info afterwards.
+
+$dir1_root = canon_path($dir1_root);
+$dir2_root = canon_path($dir2_root);
+my (@filter_list) = read_filelist_file($file_list);
+decide_programs();
+print "Filter list: ", join(", ", @filter_list), "\n"
+    if ($Trace);
+
+## XXX: Next section not quite right.  If I change the directories I also 
+## need to, at a minimum, write out the file sync info files.  Can I combine
+## that?  (Make reading either dependent on sync or non-erroring, and make
+## writing succeed regardless if we're overwriting or not?  The latter should
+## happen anyway.
+if ($setup) {
+    setup_scan(\@setup_check_routines);
+    setup_scan(\@setup_routines) if (!$nochange);
+} else {
+    # Sync's the only other option
+    sync_scan(\@sync_check_routines);
+    sync_scan(\@sync_routines) if (!$nochange);
+}
+
+# XXX
+
+read_filesync_info($dir1_root, $dir2_root);
+if (!handle_file(\@sync_routiness, ".")) {
+    dual_traverse_tree("", $True, \@sync_routiness, @filter_list);
+}
+
+$this_sync_end = time();
+write_filesync_file($dir1_root . "/" . $SYNC_FILE_NAME, $dir2_root,
+		    $this_sync_start, $this_sync_end);
+write_filesync_file($dir2_root . "/" . $SYNC_FILE_NAME, $dir1_root,
+		    $this_sync_start, $this_sync_end);
+
+exit $sync_error_occured

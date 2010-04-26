@@ -1,0 +1,11 @@
+#!/usr/bin/perl -w
+
+die "Wrong number of arguments to $0: ", scalar(@ARGV)
+    if (@ARGV != 1);
+
+die "Argument $ARGV[0] not an internet address\n"
+   if ($ARGV[0] !~ /^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/);
+
+$revip = "$4.$3.$2.$1.in-addr.arpa";
+exec "nslookup -query=PTR $revip";
+

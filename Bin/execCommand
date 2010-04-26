@@ -1,0 +1,70 @@
+#!/bin/sh
+
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$0 runs the command given as its first non-flag argument.
+It may also take a -g argument, in which case it echoes out the 
+process group of the shell.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$0 [-g] [-e] <command>";
+
+# Echoing the process group requires that somewhere
+# on the path the executable "getpgid" exists, takes a process id as a
+# single argument, and returns the process group id.
+
+echopgid=no;
+echocommand=no;
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -g) echopgid=yes;
+	;;
+    -e) echocommand=yes;
+        ;;
+    -h|-\?)
+        echo "$helpString" 1>&2;
+        exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ "$echopgid" = "yes" ]; then
+    echo "Process group id: " `getpgid $$`;
+fi
+
+if [ "$echocommand" = "yes" ]; then
+    echo "Command: $*";
+fi
+
+prog=$1; shift;
+
+sh -c "$prog $*";
+res=$?
+
+if [ "$echocommand" = "yes" ]; then
+    if [ $res -eq 0 ]; then
+        echo "Command: \"$prog\" \"$*\" finished sucessfully.";
+    else
+        echo "*** Command: \"$prog\" \"$*\" failed with status $res.";
+    fi
+fi
+
+
+
+

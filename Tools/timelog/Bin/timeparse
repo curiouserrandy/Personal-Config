@@ -1,0 +1,254 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# Todo:
+
+#	* Specify parameters.  For now, just make this a date range.
+#	* Specify within those:
+#		* List everything
+#		* Summarize by:
+#			* Task
+#			* Day
+#			* Week
+#	* Specify categories to include in summarizing.  Default: !'*'.   
+
+use Time::Local;
+
+$logfile=$ENV{'HOME'} . "/.timelog";
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname parses the output of the timelog program, summarizing 
+it in various ways.  
+Arguments:
+	-l <logfile>		Logfile to parse; defaults to
+				$logfile
+	-fr <start date> <end date>	Date ranges (inclusive) 
+    	-fw <date>		Summarize for week including this date.
+    	-st			Summarize by task
+    	-sd			Summarize by day
+    	-sw			Summarize by week
+	-td			Show todays hours
+    	-tw			Show either this week's hours (during week)
+				or this weekend's hours (on weekend)
+	-pi			Print individual entries.    
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-l <logfile>] [-fr <sd> <ed>] [-fw <date>] [-st|-sd|-sw|-pi]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$print_individ = 0;
+@start_date = parse_datespec("1/1/2000");
+@end_date = parse_datespec("12/30/2030");
+$summary_type = "day";
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^l$/) && do {
+	die "No argument to -l flag" unless scalar(@ARGV) > 0;
+	$logfile = shift;
+	next ARGS;
+    };
+
+    (/^s([dwt])$/) && do {
+	$summary_type =
+	    ($1 eq 'd' ? "day" :
+	     $1 eq 'w' ? "week" :
+	     $1 eq 't' ? "task" : "all");
+	next ARGS;
+    };
+
+    (/^t([dw])$/) && do {
+	my $lstime = time();
+	my @today = ts_to_datespec(time());
+	if ($1 eq 'd') {
+	    @start_date = @today;
+	    @end_date = @today;
+	} elsif ($1 eq 'w') {
+	    if ($today[3] == 0) {
+		# Sunday; get yesterday and today
+		@start_date = date_add(@today, -1);
+		@end_date = @today;
+	    } elsif ($today[3] == 6) {
+		# Saturday; get today and tommorow
+		@start_date = @today;
+		@end_date = date_add(@today, 1);
+	    } else {
+		# Weekday; start Monday and end Friday
+		@start_date = date_add(@today, -($today[3] - 1));
+		@end_date = date_add(@today, 5 - $today[3]);
+	    }
+	}
+	next ARGS;
+    };
+
+    (/^fr$/) && do {
+	die "Not enough argument to -fr flag\n" unless scalar(@ARGV) > 1;
+	$start_date = shift;
+	$end_date = shift;
+	@start_date = parse_datespec($start_date);
+	@end_date= parse_datespec($end_date);
+	next ARGS;
+    };
+
+    (/^fw$/) && do {
+	die "No argument to -fw flag\n" unless scalar(@ARGV) > 0;
+	my $tmpdate = shift;
+	my @tdarr = parse_datespec($tmpdate);
+	@start_date = date_add(@tdarr, -$tdarr[3]); # Sunday
+	@end_date = date_add(@tdarr, 6-$tdarr[3]); # Saturday
+	next ARGS;
+    };
+
+    (/^pi$/) && do {
+	$print_individ = 1;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+# The following routines operate on datespecs, which are
+# arrays of the form:
+# (year, month (1 == Jan) , mday (1 == 1), wday (0 == Sun))
+
+
+sub datespec_to_ts {
+    return timelocal(0, 0, 12, $_[2], $_[1] - 1, $_[0]);
+}
+
+sub ts_to_datespec {
+    my @lta = localtime($_[0]);
+    return ($lta[5] + 1900, $lta[4] + 1, $lta[3], $lta[6]);
+}    
+
+# Takes a variety of text date specifications and turn them into a datespec.
+# Input is of the form mm/dd(/year)
+sub parse_datespec {
+    my ($datespec) = @_;
+
+    my (@datearr) = split("/", $datespec);
+    die "Bad datespec: $datespec\n"
+	if ((scalar(@datearr) < 2) || (scalar(@datearr) > 3));
+
+    if (scalar(@datearr) == 2) {
+	# No year; add the current days year.
+	my $lstime = time();
+	my (undef, undef, undef, undef, undef, $year, undef,  undef, undef)
+	    = localtime ($lstime);
+	$year += 1900;
+	push(@datearr, $year);
+    }
+
+    $datearr[2] += 2000 if ($datearr[2] < 100);
+
+    # What's the day of the week for this date?
+    my $faketime
+	= timelocal(0, 0, 12, $datearr[1], $datearr[0] - 1 , $datearr[2]);
+    my ($weekday) = (localtime($faketime))[6];
+    
+    return ($datearr[2], $datearr[0], $datearr[1], $weekday);
+}
+
+sub datespec_to_string {
+    my (@datespec) = @_;
+    return sprintf("%04d/%02d/%02d", @datespec[0..2]);
+}
+
+# First argument is array as returned by parse_datespec above.
+# Second arg is a number of days (possibly negative) to add to that
+# value.
+# Return value is array as returned by parse_datespce above.
+sub date_add {
+    my @startdate = @_;
+    my $days_add = pop(@startdate);
+
+    my $ts = datespec_to_ts(@startdate);
+    $ts += ($days_add * 24 * 60 * 60);
+    return ts_to_datespec($ts);
+}
+
+# Inclusive test.
+sub date_within {
+    my $start_ts = datespec_to_ts(@_[0..3]);
+    my $end_ts = datespec_to_ts(@_[4..7]);
+    my $test_ts = datespec_to_ts(@_[8..11]);
+
+    return ($test_ts >= $start_ts && $test_ts <= $end_ts);
+}
+    
+die "Couldn't open $logfile\n" unless open(TIMELOG, "<$logfile");
+
+$last_date = "";
+while (<TIMELOG>) {
+    next if (/^\s*\#/);
+    next if (/^\s*$/);
+
+    die "Bad format timelog line: $_\n"
+	unless (m;^
+		([0-9][0-9]/[0-9][0-9]/[0-9][0-9][0-9][0-9]) # Date
+		\s
+		([0-9][0-9]:[0-9][0-9])	# Time
+		\s
+		(.)		# Category
+		\s
+		\[([0-9][0-9]):([0-9][0-9])\]	# Interval
+		\s
+		(.)		# Type of time taken
+		\s
+		(.*)
+		$;x);
+
+    my ($date, $time, $cat, $hours, $mins, undef, $text)
+	= ($1, $2, $3, $4, $5, $6, $7);
+    my @tdate = parse_datespec($date);
+    my @tweek = date_add(@tdate, -$tdate[3]);
+    next if !date_within(@start_date, @end_date, @tdate);
+    next if ($cat eq "*");
+    
+    if ($print_individ) {
+	print "\n" if ($last_date ne $date);
+	print $_;
+	$last_date = $date;
+    }
+
+    $summary_text
+	= ($summary_type eq "day" ? datespec_to_string(@tdate) :
+	   $summary_type eq "week" ? datespec_to_string(@tweek) :
+	   $summary_type eq "task" ? $text : "ALL");
+
+    $summary_array{$summary_text} += ($hours * 60 + $mins);
+}
+
+$total_minutes = 0;
+print "\nSummary by $summary_type\n";
+for $key (sort keys %summary_array) {
+    my $minutes = $summary_array{$key};
+
+    $total_minutes += $minutes;
+
+    my $hours = int($minutes/60);
+    $minutes -= $hours * 60;
+
+    printf STDOUT "\t%-14s %02d:%02d\n", $key . ":", $hours, $minutes;
+}
+
+printf STDOUT "\t%-14s -----\n", "";
+$total_hours = int($total_minutes/60);
+$total_minutes -= $total_hours * 60;
+printf STDOUT "\t%-14s %02d:%02d\n", "Total" . ":", $total_hours, $total_minutes;

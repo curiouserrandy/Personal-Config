@@ -1,0 +1,115 @@
+#!/usr/bin/perl -w
+
+$progname=`basename $0`;
+chomp $progname;
+$helpstring = <<"HelpString";
+$progname is a program for transforming wiki markup (mediawiki style)
+into html.  It takes the file(s) named on the command line (or standard in 
+if none) as wiki markup and outputs html.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [<input wiki files>]";
+
+$tmpfilename = "/tmp/wiki2html$$";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    # ($_ = shift) =~ s/^-//;	# Get just argument without -
+    # (/^{ARG}$/) && do {
+    # 	# Process {ARG}
+    # 	next ARGS;
+    # };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+open(TMPFILE, ">$tmpfilename") || die "Couldn't open tmp output file.\n";
+select TMPFILE;
+
+## Only need single element unordered lists for now; upgrade later.
+my ($list_in_progress) = (0);
+my ($last_line_whitespace) = (1);
+while (<>) {
+    /^\s*$/ && do {
+	if (!$last_line_whitespace) {
+	    print "<p>\n";
+	    $last_line_whitespace = 1;
+	}
+	next;
+    };
+
+    $last_line_whitespace = 0;
+
+    s/\'\'\'((?:[^\']|\'[^\']|\'\'[^\'])*)\'\'\'/<b>$1<\/b>/g;
+    s/\'\'((?:[^\']|\'[^\'])*)'\'\'/<i>$1<\/i>/g;
+
+    /^(\*+)(.*)$/ && do {
+	my ($diff) = length($1) - $list_in_progress;
+	if ($diff > 0) {
+	    print "<ul>" x $diff;
+	    print "\n";
+	} elsif ($diff < 0) {
+	    print "</ul>" x -$diff;
+	    print "\n";
+	}
+	$list_in_progress = length($1);
+
+	print "<li>$2\n";
+	next;
+    };
+    print "</ul>" x $list_in_progress if ($list_in_progress);
+    $list_in_progress = 0;
+    /^(=+)(.*)\1\s*$/ && do {
+	my ($tag) = $2;
+	$tag =~ tr/ /_/;
+	printf("<h%d><a name=\"%s\">%s</a></h%d>\n", length($1), $tag, $2, length($1));
+	push(@toc, [length($1), $2, $tag]);
+	next;
+    };
+	
+    /^(\S*\.png)$/ && do {
+	print "<br><img src=\"$1\" alt=\"$1\"><br>\n";
+	next;
+    };
+    print;
+}
+
+close(TMPFILE) || die "Couldn't close temp file\n";
+select STDOUT;
+
+print "<html><body>\n";
+
+## Printing table of contents at the end, just to see if I get it right
+## before I do the whole temporary file thing.
+$list_in_progress = 1;
+for $item (@toc) {
+    my ($diff) = ($item->[0] - $list_in_progress);
+    if ($diff > 0) {
+	print "<ul>" x $diff;
+	print "\n";
+    } elsif ($diff < 0) {
+	print "</ul>" x -$diff;
+	print "\n";
+    }
+    $list_in_progress = $item->[0];
+    print "<li><a href=\"#", $item->[2], "\">", $item->[1], "</a>\n";
+}
+print "</ul>" x $list_in_progress;
+print "\n";
+
+open(TMPFILE, "<$tmpfilename") || die "Coudln't open previously written temp file for reading\n";
+while (<TMPFILE>) {
+    print;
+}
+
+print "</body></html>";
+close(TMPFILE);
+unlink $tmpfilename;
+

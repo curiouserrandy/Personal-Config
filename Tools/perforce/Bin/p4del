@@ -1,0 +1,119 @@
+#!/usr/local/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname deletes perforce client specs.  It does this by saving a
+copy of the output of "p4 diff -dc" in the sandbox directory of the
+client, reverting all client files, syncing them to the #none
+revision, and deleting the client spec via "p4 client -d".  Other than
+flag arguments, it takes a single argument which may be any one of
+(tested in order):
+	The top level directory of the client
+	The name of the perforce client
+If no such argument is given, it presumes that the current directory
+is the top level directory of the client.  If there are multiple
+non-flag arguments, they are processed separately in order. 
+Flag arguments:
+	-d		After deleting the workspace, also delete
+			everything under the top level of the directory.
+ 	-q		Quick delete: use "p4 client -d" to delete the
+			client spec, and then do rm-rf.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname <client_dir|client_name>...";
+
+# Parse all arguments.
+delete_subdirs=no
+quick=no
+while [ $# -ne 0 ]; do
+    case $1 in 
+      -d)
+        delete_subdirs=yes;
+	;;
+      -q)
+        quick=yes;
+	;;
+#     -{ARG}) 
+# 	{HANDLE NON-VALUED ARG ARG}
+# 	;;
+#     -{ARG1}) 
+# 	if [ $# -lt 2 ]; then
+# 	    echo "Usage: $usageString" 1>&2;
+# 	    exit 1;
+# 	fi
+# 	{HANDLE VALUED ARG ARG1}
+# 	shift;
+# 	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -eq 0 ]; then
+    set .
+fi
+
+start=`pwd`;
+
+while [ $# -ne 0 ]; do
+    arg=$1;
+
+    if [ -r $arg/P4ENV ]; then
+        source $arg/P4ENV;
+	client=$P4CLIENT;
+	sb=$arg
+    # elif [ $arg != "." ]; then
+    #    # See if it works as a perforce spec 
+    #	client=`p4 clients | grep " $arg " | awk '{print $2;}'`;
+    #	if [ x"$client" = x"" ]; then
+    #	    echo "Couldn't find perforce client $arg" 1>&2;
+    #	    exit 1;
+    #	fi
+    #	sb=`p4 -c $client -o | grep '^Root:' | awk '{print $2;}'`
+    else
+    	echo "No P4ENV file found in current directory" 1>&2;
+	exit 1;
+    fi
+    
+    set -x
+    if [ X"$quick" = X"yes" ]; then
+	if [ ! -d "$sb" ]; then
+	    echo $sb not found 1>&2;
+	    exit 1;
+	fi
+	p4 client -d $client
+	rm -rf $sb
+    else
+	cd $sb
+	p4 diff -dc ... > difflist
+	p4 revert ...
+	p4 sync ...#none
+	p4 client -d $client
+	if [ X"$delete_subdirs" = X"yes" ]; then
+	    subdirs=`find * -type d -prune`;
+	    if [ X"$subdirs" != X"" ]; then
+		rm -rf $subdirs
+	    fi
+	fi
+        cd $start
+    fi
+    set +x
+    
+    shift
+done

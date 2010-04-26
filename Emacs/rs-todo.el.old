@@ -1,0 +1,262 @@
+;;; Functions for manipulating outline files used as todo files.
+
+(require 'rs-outline)
+
+(load-library "outline")		;Needed for outline-regexp
+
+;; This starts todo items.  They end at this regexp (next todo item),
+;; outline-regexp, or the end of the file.
+(defcustom rstodo-todo-type-list '("--" "==" "##")
+  "List of the types that a todo item may have (should do, can do, and comment).")
+
+(defcustom rstodo-non-todo-type-list '(">>" "<<" "$$")
+  "List of the beginnings of all non-todo pieces possible (not outline).")
+
+(defvar rstodo-piece-boundaries-regexp
+  (concat "^\\(X?\\("
+	  (mapconcat 'identity rstodo-todo-type-list "\\|")
+	  "\\)\\|"
+	  (mapconcat 'identity rstodo-non-todo-type-list "\\|")
+	  "\\|"
+	  outline-regexp
+	  "\\)")
+  "Regexp matching all things reserving space at finest granularity in todo file.")
+
+;;; Functions for navigating within and between any type of entries;
+;;; specific todos, outline items, finding boundaries of either.
+(defun rstodo-beginning-of-item (item-regexp noerror)
+  "Moves point to the beginning of the current item, as defined by LINE-REGEXP.
+The regexp is presumed not to span lines, nor allow multiple items on the same
+line."
+  (end-of-line)
+  (re-search-backward item-regexp (point-min) noerror))
+
+(defun rstodo-forward-items (item-regexp num min max noerror)
+  "Move the given number of items forward or backwards.
+LINE-REGEXP defines what items are being moved to, NUM how many items should
+be moved (positive or negative, but not zero), MIN/MAX specify boundaries
+for movement, and NOERROR whether if not all items can be moved if the 
+limit should be moved to without error.
+Note that this routine assumes point is at the beginning of whatever piece
+is being moved from."
+  (if (= num 0) (error "Cannot move over no items (rstodo-forward-items)"))
+  (if (< num 0)
+      (progn
+	;; num < 0
+	(beginning-of-line)
+	(re-search-backward item-regexp min noerror (- num)))
+    ;; num > 0
+    (end-of-line)
+    (re-search-forward item-regexp max noerror num)))
+	
+(defun rstodo-item-boundaries (item-regexp min max)
+  "Return the boundaries of the current item (defined by ITEM-REGEXP); 
+bounaries are constrained between MIN and MAX.
+Note that it is the callers responsibility to make sure that the division of
+the range at ITEM-REGEXP boundaries creates the correct partition."
+  (let (start end)
+    (save-excursion
+      (end-of-line)
+      (re-search-backward item-regexp min 1)
+      (setq start (point))
+      (end-of-line)
+      (re-search-forward item-regexp max 1)
+      (beginning-of-line)
+      (setq end (point)))
+    (list start end)))
+
+(defun rstodo-piece-type (loc)
+  "Returns a string defining the type of the piece at loc.
+Possible values are {todo,cando,note,end,startr,endr}-done,none."
+  (save-excursion
+    (let (doneflag result)
+      (goto-char loc)
+      (if (looking-at "X")
+	  (progn
+	    (setq doneflag t)
+	    (forward-char)))
+      (setq intro-chars (buffer-substring (point) (+ (point) 2)))
+      (concat (cond
+	       ((equal intro-chars "--") "todo")
+	       ((equal intro-chars "==") "cando")
+	       ((equal intro-chars "##") "note")
+	       ((equal intro-chars "$$") "end")
+	       ((equal intro-chars ">>") "startr")
+	       ((equal intro-chars "<<") "endr")
+	       ((looking-at outline-regexp) "outline")
+	       (t "none"))
+	      (if doneflag "-done" "")))))
+
+;;; XXX: Note that this may return an outline piece
+;;; ???: If this is a piece boundary, why do I need to constrain to outline?
+(defun rstodo-current-piece-boundaries ()
+  (let ((region-boundaries (rstodo-item-boundaries outline-regexp
+						   (point-min) (point-max))))
+    (rstodo-item-boundaries rstodo-piece-boundaries-regexp
+			    (car region-boundaries)
+			    (cdr region-boundaries))))
+
+
+(defun randy-todo-insert-into-section (section item)
+  "Insert into the named SECTION the text ITEM.  An error will be
+thrown if no such section exists."
+  (save-excursion
+    (goto-char (point-min))
+    (re-search-forward (concat outline-regexp "[ 	]*" section "[ 	]*\\(\\+[ 	]*\\)?$"))
+    (end-of-line)
+    (re-search-forward outline-regexp 1)
+    (beginning-of-line)
+    (insert item)))
+
+(defun rstodo-delete-current-todo-item ()
+  "Deletes the current todo item, returning it's value."
+  (let* ((boundaries (rstodo-current-piece-boundaries))
+	 (type (rstodo-piece-type (car boundaries))))
+    (if (member type '("outline" "startr" "endr"))
+	(error (concat "In invalid piece type for todo item deletion: "
+		       type)))
+    (delete-and-extract-region (car boundaries) (cdr boundaries))))
+
+;;; Starting over; below this line is old stuff that I may cherry pick, but
+;;; not using right now
+
+(defun randy-todo-outline-element-boundaries ()
+    (list (save-excursion
+	    (progn
+	      (end-of-line)
+	      (re-search-backward outline-regexp nil 1)
+	      (point)))
+	  (save-excursion
+	    (progn
+	      (end-of-line)
+	      (re-search-forward outline-regexp nil 1)
+	      (point)))))
+
+(defun randy-todo-bracket-current-item ()
+  "Returns start and end of current todo item."
+  (let ((bounds (randy-todo-outline-element-boundaries))
+	start end)
+    (list
+     (save-excursion
+       (end-of-line)
+       ;; Error if we don't find a header
+       (re-search-backwards randy-todo-item-start (car bounds))
+       (point))
+     (save-excursion
+       (end-of-line)
+       ;; Don't error if we don't find a header; end of file is fine
+       (re-search-forward randy-todo-item-start (cdr bounds) 1)
+       (point)))))
+
+;;; Not bothering to disambiguate based on superheading or otherwise;
+;;; Collisions are the users problem
+(defun randy-get-outline-list ()
+  "Returns list of outline heading names in the file."
+  (let ((result '()))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward outline-regexp (point-max) t)
+	(skip-chars-forward " \t")
+	(setq result (cons result
+			   (buffer-substring (point) (save-excursion
+						       (end-of-line)
+						       (point))))))
+      result)))
+      
+
+;;; ??: How do I grab the text without putting it in the kill ring?  If I'm
+;;; moving it, that's probably what I want instead.
+;;; Ans: delete-and-extract-region
+(defun randy-todo-kill-current-item ()
+  (interactive)
+  (apply 'kill-region (randy-todo-bracket-current-item)))
+
+(defun randy-todo-cut-current-item ()
+  (interactive)
+  (apply 'delete-and-extract-region (randy-todo-bracket-current-item)))
+
+(defun randy-move-current-into-section (section)
+  "Take the current todo item and move it to the specified section."
+  (randy-todo-insert-into-section section (randy-todo-cut-current-item)))
+
+(defun randy-move-todo-items (num only-active-p)
+  "Move to the todo item NUM away from the current.  NUM may be negative.
+If ONLY-ACITVE-P is set, only count active (not completed, not pending 
+outside input) todo items.
+A NUM value of zero moves to the beginning of the current item."
+  (let (section-start section-end dest
+		      (target-regexp (if only-active-p
+					 randy-todo-active-item-start
+				       randy-todo-item-start)))
+    (save-restriction
+      (randy-todo-restrict-to-outline)
+      (save-excursion
+	(if (equal num 0)
+	    (progn 
+	      (end-of-line)
+	      (re-search-backward target-regexp))
+	  (while (> num 0)
+	    (end-of-line)
+	    (re-search-forward target-regexp)
+	    (setq num (- num 1)))
+	  (while (< num 0)
+	    (beginning-of-line)
+	    (re-search-backward target-regexp)
+	    (setq num (+ num 1))))
+	(setq dest (point)))
+      (goto dest))))
+
+(defun randy-next-todo-item (num)
+  "Move to the next todo item; error if there isn't one in the current
+outline section.  Prefix arg is number to move"
+  (interactive "p")
+  (let (section-end)
+    (save-excursion
+      (re-search-forward outline-regexp 1)
+      (setq section-end point))
+    (save-restriction
+      (narrow-to-region (point) section-end)
+      (end-of-line)
+      (while (not (equal num 0))
+	(re-search-forward (if only-active-p
+			       randy-todo-active-item-start
+			     randy-todo-item-start))
+	(setq num (- num 1))))))
+
+(defun randy-todo-insert-prioritize  () 
+  (interactive)
+  (beginning-of-line)
+  (insert ">> Prioritize\n\n\n<<\n\n")
+  (forward-line -3))
+
+;;; (defun randy-switch-top-outlines ()
+;;;  (setq outline-font-lock-faces
+;;;    [outline-2 outline-1 outline-3 outline-4
+;;;	       outline-5 outline-6 outline-7 outline-8]))
+
+(fset 'randy-todo-first-item
+   [escape ?< ?\C-\M-s ?^ ?- ?- ?  ?\[ ?^ ?\( ?\] ?\C-a])
+
+;;; (add-hook 'outline-mode-hook 'randy-switch-top-outlines)
+
+(define-derived-mode rstodo-mode outline-mode "Todo"
+  "Major mode for todo lists in Randy style.
+\\{rstodo-mode-map}"
+  (setq outline-font-lock-faces
+    [outline-2 outline-1 outline-3 outline-4
+	       outline-5 outline-6 outline-7 outline-8]))
+
+;;; Functionality you want to export:
+;;; * insert-prioritize.  
+;;; * next-todo-item		
+;;; * previous-todo-item
+;;; Going for metas that make sense; they're all open.
+
+(define-key rstodo-mode-map "\C-c\M-n" 'randy-next-todo-item)
+(define-key rstodo-mode-map "\C-c\M-z" 'randy-todo-insert-prioritize)
+
+;;; Possibly the right thing to do above is to use the 
+;;; preferred key bindings for todo mode, and the meta bindings
+;;; for outline.  
+
+(provide 'rs-todo)

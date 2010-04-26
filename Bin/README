@@ -1,0 +1,4 @@
+Machine specific non-standard commands that commands in this directory
+depend on are:
+	getpgid <pid>	Returns the process group id of a particular process.
+

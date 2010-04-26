@@ -1,0 +1,168 @@
+#!/bin/sh
+
+client_prefix=rsmith:linux:				
+sandbox_directory=/u/rsmith/Sandboxen
+run_after=createde
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program for non-interactively creating a perforce
+client and populating it.  Arguments:
+	-v <viewname>		Specific a view from which to create
+				the client.  Either this flag or -t
+				must be specified (but not both).
+				Not yet implemented.
+	-t <clientname>		Specify a client to use as a template.
+				Note if this string has ":"s in it it
+				is treated as a full client spec; if
+				it has no ":" the value of
+				<client_prefix> is appended.
+	-p <client_prefix>	The prefix to use in creating client
+				specs; defaults to $client_prefix
+	-d <sandbox_directory>	The directory in which to create
+				the sandbox; default to
+				$sandbox_directory.  The name of the
+				sandbox will be the same as the name
+				of the perforce client basename
+				(without <client_prefix>).
+	-r <run_after>		A program to run after the directory
+				has been created with the top of the
+				sandbox as default; defaults to
+				$run_after
+	<client_basename>...	Name of the client(s) to create.
+				These clients will be created with
+				full perforce viewnames of
+				<client_prefix><client_basename> in
+				directory
+				<sandbox_directory><client_basename>.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-v <viewname> | -t <clientname>] [-p <client_prefix>] [-d <sandbox_directory] [-r <run_after>] <client_basenames>...";
+
+view=
+template= 
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -v) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	view=$2;
+	shift;
+	;;
+    -t) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	template=$2;
+	shift;
+	;;
+    -p) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	client_prefix=$2;
+	shift;
+	;;
+    -d) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	sandbox_directory=$2;
+	shift;
+	;;
+    -r) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	run_after=$2;
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -eq 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ X"$view" = X"" -a X"$template" = X"" ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ X"$view" != X"" -a X"$template" != X"" ]; then
+    echo "Cannot specify both view and template client spec" 1>&2;
+    exit 1;
+fi
+
+
+# Until I enable using views
+if [ X"$view" != X"" ]; then
+    echo "Use of -v not yet implemented" 1>&2;
+    exit 1;
+fi
+
+if echo $template | grep ':' > /dev/null ; then
+    /bin/true;
+else    
+    template=${client_prefix}$template
+fi
+
+template_dir=$sandbox_directory/`echo $template | sed 's/^.*://'`
+
+while [ $# -ne 0 ]; do
+	if [ -d $sandbox_directory/$1 ]; then
+	    echo "Directory $sandbox_directory/$1 already exists" 1>&2; 
+	    exit 1;
+	fi
+
+	mkdir $sandbox_directory/$1;
+	if [ -r $template_dir/.exclude_file_list ]; then 
+	    cp $template_dir/.exclude_file_list $sandbox_directory/$1;
+	fi
+	p4 -c $template client -o | \
+		sed -e 's;^Client:.*$'";Client: ${client_prefix}$1;" \
+		    -e 's;^Root:.*$'";Root: $sandbox_directory/$1;" \
+		    -e "s;//$template/;//${client_prefix}$1/;" | \
+	p4 client -i 
+	cat > $sandbox_directory/$1/P4ENV << EOF
+P4CLIENT=rsmith:linux:$1
+P4PORT=p4netapp:1666
+EOF
+	cd $sandbox_directory/$1
+	p4 sync
+	if [ x"$run_after" != x"" ]; then
+	    $run_after
+	fi
+	shift
+done
+
+
+

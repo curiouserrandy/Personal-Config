@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$logfile=$ENV{'HOME'} . "/.timelog";
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname is a program to automatically keep a time log.  It reads 
+from standard input, and for each line read, it writes it into 
+its logfile with a timestamp prepended.  For each line is separately 
+opens the file, seeks to the end, appends the line, and closes the
+file; that allow multiple simultaneous invocations of this command to work 
+properly together.  The arguments to this command are:
+	-l <logfile>	Specify the log file.  The default is $logfile
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-l <logfile>]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^l$/) && do {
+	die "No argument to -l flag" unless scalar(@ARGV) > 0;
+	$logfile = shift;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+umask(0077);
+while (<>) {
+    my $lstime = time();
+    my (undef, $min, $hour, $mday, $mon, $year, undef,  undef, undef) = localtime ($lstime);
+    my $outvar;
+
+    $mon++;
+    $year += 1900;
+    die "Couldn't open $logfile\n" unless open (LOGFILE, ">>$logfile") ;
+
+    $outvar = sprintf("%02d/%02d/%04d_%02d:%02d: %s",
+		      $mon, $mday, $year, $hour, $min, $_);
+
+    print LOGFILE $outvar;
+    close(LOGFILE);
+}
+
+
+    
+

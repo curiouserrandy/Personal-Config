@@ -1,0 +1,37 @@
+#!/usr/bin/perl -w
+
+$enable_debugging = 0;
+
+$progname=`basename $0`;
+chomp $progname;
+$helpstring = <<"HelpString";
+{MULTI-LINE HELP STRING}
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="{SHORT USAGE STRING}";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^{ARG}$/) && do {
+	# Process {ARG}
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    (/^D([0-9])?/) && do {
+	$enable_debugging = $1 ? $1 : 1;
+	next;
+    };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > {EXPECTED NON-FLAG ARGS});
+

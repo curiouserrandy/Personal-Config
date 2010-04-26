@@ -1,0 +1,31 @@
+# Bring up to date with current version in backing store.  Actually updates 
+# the predecessor version instead of relying on merge arrows.  Preserved here
+# for self-teaching purposes (I use findmerge now).
+cttrack () {
+    local i;
+    for i in $*; do
+	local pdv=`cleartool describe -fmt "%f\n" $i`;
+	local lbv=`echo $pdv | sed 's;/[0-9][0-9]*$;/LATEST;'`
+
+	if diff $1@@$pdv $1@@$lbv > /dev/null; then
+	    echo "$i requires no update";
+	else
+	    cp $i $i.keep-f.$$
+	    cleartool lscheckout -cview -fmt "%c" $i > $i.keep-c.$$
+	    cleartool uncheckout -rm $i
+	    cleartool checkout -unr -nc $i
+	    cleartool merge -base $i@@$pdv -narrows -to $i $i.keep-f.$$
+	    if [ $? -ne 0 ]; then
+	        echo "**Merge failed; contents and comments of $i saved in .keep-f.$$ and .keep-c.$$" 1>&2;
+	    else
+	    	cleartool chevent -rep -cfile $i.keep-c.$$ $i;
+		if diff $i $i@@$lbv > /dev/null; then
+		    echo "$i: Local changes match update; unchecking out file";
+		    cleartool uncheckout -rm $i;
+		else
+		    rm -f $i.keep-c.$$ $i.keep-f.$$;
+		fi
+	    fi
+	fi
+    done
+}

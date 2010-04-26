@@ -1,0 +1,187 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# TODO:
+
+$progname=$0;
+$procmailLogFile="$ENV{'HOME'}/MH/procmail.log";
+$helpstring = <<"HelpString";
+$progname is a program to track mail messages delivered under Randy's 
+current mail system.  Specifically, it follows $procmailLogFile outputing
+a single line for each message deliveredshowing folder and subject.  
+In addition, at a time interval set by the user (default 15 minutes) it
+outputs the time.  The arguments are:
+	-m <interval minutes>	The number of minutes between timestamps.
+	-s <interval seconds>	The number of seconds between timestamps
+				(incompatible with -m)
+	-b <lines>		Number of lines to output at the end of the
+				existing file.  Default is 6.
+	-t			Actually track; without this flag
+				the program just does the initial pass
+				through the file and exits.  This isn't
+    				the default because tracking is usually
+    				done within a script and scanning the
+        			file quickly is usually done from the
+        			command line.
+	<Tracking File>		Optional; file to track for output.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-m|-s] [<Tracking file>]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+$minutesset="no";
+$secondsset="no";
+$intervalSeconds=15*60;
+$taillines=6;
+$track="no";
+
+# For all flag args
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { 
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^t$/) && do { $track = "yes"; next; };
+    (/^m$/) && do {
+	die "Usage: $usageString" if (scalar(@ARGV) == 0);
+	die "Interval value must be numeric" if (! ($ARGV[0] =~ /[0-9]*/));
+	$minutesset="yes";
+	$intervalSeconds=60*shift;
+	next ARGS;
+    };
+
+    (/^s$/) && do {
+	die "Usage: $usageString" if (scalar(@ARGV) == 0);
+	die "Interval value must be numeric" if (! ($ARGV[0] =~ /[0-9]*/));
+	$secondsset="yes";
+	$intervalSeconds=shift;
+	next ARGS;
+    };
+    
+    (/^b$/) && do {
+	die "Usage: $usageString" if (scalar(@ARGV) == 0);
+	die "-b argument must be numeric" if (! ($ARGV[0] =~ /[0-9]*/));
+	$taillines=shift;
+	next ARGS;
+    };        
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 1);
+
+$procmailLogFile=shift if (scalar(@ARGV) == 1);
+
+# Main program.
+$timeBase=time;
+$currentTime=$timeBase;
+
+open PROCMAILLOGFILE, $procmailLogFile;
+$fileSize=(stat(PROCMAILLOGFILE))[7];
+
+# Create an array to store the last output lines.
+$#outputArray = $taillines -1;
+$outputOnQueue = 0;
+
+$subject="";
+$folder="";
+
+sub queueline {
+    $folder = "<unfound>" if ($folder eq "");
+    $subject = "<unfound>" if ($subject eq "");
+    
+    # Let's leave sixteen spaces for the folder.  
+    my $pad = 16 - length($folder);
+    $pad = 0 if ($pad < 0);
+
+    my $result = "$folder:" . " " x $pad . $subject . "\n";
+
+    if ($outputOnQueue) {
+	print $result;
+    } else {
+	push(@outputArray, $result);
+	shift @outputArray;
+    }
+    $folder = "";
+    $subject = "";
+}
+
+sub OutputLines {
+    while (<PROCMAILLOGFILE>) {
+	if (/^  Folder: .*rcvstore\s*(\$UNSEEN_FLAG|-nounseen)?\s*\+(.*[^\s])\s+[0-9]+\s*$/) {
+	    queueline() unless ($folder eq "");
+	    $folder = $2;
+	    queueline();
+	} elsif (/^  Folder:  cat \> \/dev\/null/) {
+	    queueline() unless ($folder eq "");
+	    $folder = "<null>";
+	    queueline();
+	} elsif (/^  Folder:.*\/dev\/null/i) {
+	    # Ignore; we delivered in an earlier CC.
+	    $subject = "";
+	    $folder = "";
+	} elsif (/^ Subject: (.*)$/i) {
+	    queueline() unless ($subject eq "");
+	    $subject = $1;
+	}
+    }
+}
+	
+# Move towards the end, but leave enough room to be pretty sure you
+# have all the lines you need.
+seek PROCMAILLOGFILE, 0, 2;
+$size = tell(PROCMAILLOGFILE);
+seek PROCMAILLOGFILE, -($size > $taillines * 160 ? $taillines * 160 : $size), 2;
+
+OutputLines();
+
+foreach $i (@outputArray) {
+    print $i if defined($i);
+}
+
+exit 0 if ($track eq "no");	# Don't track if not requested.
+
+$outputOnQueue = 1;
+$now_string = localtime;
+print "-- $now_string\n";
+
+$timeOutputAfterMessages=1;
+while (1) {
+    sleep 5;
+    $currentTime += 5;
+    
+    $lastFileSize=$fileSize;
+    @statresult2 = stat($procmailLogFile);
+    @statresult = stat(PROCMAILLOGFILE);
+
+    $fileSize=$statresult[7];
+
+    if ($fileSize > $lastFileSize) {
+	OutputLines();
+	$timeOutputAfterMessages=0;
+    }
+    if (!$timeOutputAfterMessages
+	&& $currentTime >= $timeBase + $intervalSeconds) {
+	$now_string = localtime;
+	print "-- $now_string\n";
+	$currentTime = $timeBase = time;
+	$timeOutputAfterMessages = 1;
+    }
+
+    if ($statresult[0] != $statresult2[0]
+	|| $statresult[1] != $statresult2[1]) {
+	# The file's been moved and truncated; start over.
+	close(PROCMAILLOGFILE);
+	open PROCMAILLOGFILE, $procmailLogFile;
+	$lastFileSize = 0;
+    }
+}

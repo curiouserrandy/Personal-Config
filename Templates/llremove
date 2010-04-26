@@ -1,0 +1,10 @@
+  {
+      <ItemType> **ptr;
+      for (ptr = &<listHead>;
+	   *ptr && *ptr != <ItemP>;
+	   ptr = &(*ptr)->next)
+	;
+      assert(*ptr); /* Should be on list.  */
+      *ptr = (*ptr)->next; /* Remove from list.  */
+  }
+

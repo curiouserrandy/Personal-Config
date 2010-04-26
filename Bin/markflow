@@ -1,0 +1,51 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname is a program that acts like "cat" except that it prints the 
+flow of data (a hash mark ever n bytes) through it to stderr.  Args:
+	-n <count>		# Defaults to 10000
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="{SHORT USAGE STRING}";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$hashbytes = 10000;
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^n$/) && do {
+	die "No arg to -n\n" if (scalar(@ARGV) == 0);
+	$hashbytes = shift;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+$count = 0;
+while (1) {
+    $actual_length = sysread(STDIN, $buf, 2048);
+    last unless $actual_length;
+    $count += $actual_length;
+    while ($count > $hashbytes) {
+	syswrite (STDERR, "#");
+	$count -= $hashbytes;
+    }
+    syswrite(STDOUT, $buf, $actual_length);
+}

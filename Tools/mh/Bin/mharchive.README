@@ -1,0 +1,60 @@
+============================
+Design for mharchive program
+============================
+
+Questions
+---------
+-- Can I use cbreak mode or equivalent in a shell script?  Do I want
+   to?  (interrupts).
+
+
+Modes
+-----
+Going through archived saves.
+Entering new saves
+	By pattern
+	By message
+
+Subroutines
+------------
+-- Find height of window
+-- Show window-chunk of messages (via scan)
+
+Entering new saves by pattern:
+	Show beginning of Pack
+	Allow user to keep going (what's "next page" flag?)
+	Allow them to enter a pattern
+
+
+Saving by pattern mode
+	Has as input a pattern to scan with, and optionally a file to save in
+	Allows editing of pattern
+	Allows optional replacing of pattern (& file) in source.
+
+
+--------------------------------------
+
+This is getting way too complicated.  What's a simple solution that
+solves almost all of my problem?  Try this:
+	* The only thing the program can do is work based on a file.
+	* It does prompt you with what it's about to do, but only 
+	  allows "do it/next page/quit/next pattern".  Suggest
+	  return/n/q/s (for skip). 
+	* Individual message filing is done directly with mh programs
+	  (possibly with function assist) (I'd love to have completion
+	  here).
+	* If the pattern's wrong, you edit it in the file.
+
+I still need:
+	* cbreak mode (want to be interacting with single keystrokes).
+	* Routines to handle lists of messages gracefully (pagewise).
+
+Questions:	  
+	* Perl or shell?  Perl, I think.
+	* What happens to "s" at the end of the list?  Repeat, or
+	  quit?  Quit's simpler; it's what we'll do for now.
+
+
+
+
+

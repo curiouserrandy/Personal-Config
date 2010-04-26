@@ -1,0 +1,25 @@
+/* Sticky, doubling array growth.  Done without realloc for greater
+   portability, though realloc is probably available everywhere.  */
+
+/* Declarations.  */
+
+unsigned long		{ArrayName}Size = {StartingSize};
+unsigned long 		{ArrayName}Next = 0;
+{ElementType} *		{ArrayName} =
+    ({ElementType} *) malloc({ArrayName}Size * sizeof({ElementType}));
+
+/* Additions to array.  */
+
+assert({ArrayName}Next <= {ArrayName}Size);
+if ({ArrayName}Next == {ArrayName}Size) {
+	{ElementType} *		tmp = {ArrayName};
+	unsigned long		copySize = {ArrayName}Size;
+
+	{ArrayName} =
+	  ({ElementType} *)
+	    malloc(({ArrayName}Size *= 2)
+		   * sizeof({ElementType}));
+	bcopy(tmp, {ArrayName}, copySize * sizeof({ElementType}));
+	free(tmp);
+}
+{ArrayName}[{ArrayName}Next++] = {newElement};

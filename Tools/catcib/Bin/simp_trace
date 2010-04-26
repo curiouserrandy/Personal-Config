@@ -1,0 +1,227 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname is an attempt to simplify the text output of the CATC IB 
+tracer.  It parse the tracer output and outputs a transformed version
+that is only one line per packet, with the fields requested by the user.
+Flags (capitals reverse the meaning):
+	-f	Show packet frame # (default)
+	-l	Show lids
+	-s	Show source (Tx or Rx)
+	-t	Show packet type (default)
+	-n	Show sequence numbers
+	-q	Show Q_Key
+	-z	Show data size (default)
+	-c	Show CRCs
+	-m	Show Timestamp
+	-a	Show everything
+HelpString
+;				# Tail off emacs commenting 
+
+%flag_mapping = (
+    'f' => 'frames',
+    'l' => 'lids',
+    's' => 'source',
+    't' => 'types',
+    'n' => 'seqnos',
+    'q' => 'qkeys',
+    'z' => 'size',
+    'c' => 'crc',
+    'm' => 'timestamp'
+    );
+
+$usageString="$progname [-flstnqzcmaFLSTNQZCMA] [<file>]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+
+    (/^[flstnqzcmaFLSTNQZCMA]$/) && do {
+	while (/^([flstnqzcmaFLSTNQZCMA])(.*)$/) {
+	    my ($flag, $remainder) = ($1, $2);
+	    
+	    $show_field{$flag_mapping{$flag}} = 'yes'
+		if ($flag =~ /^[flstnqzcm]$/);
+	    $show_field{$flag_mapping{lc($flag)}} = 'no'
+		if ($flag =~ /^[flstnqzcm]$/);
+	    if ($flag eq "a") {
+		foreach $i (keys %flag_mapping) {
+		    $show_field{$flag_mapping{$i}} = 'yes';
+		}
+	    }
+	    if ($flag eq "A") {
+		foreach $i (keys %flag_mapping) {
+		    $show_field{$flag_mapping{$i}} = 'no';
+		}
+	    }
+	}
+	die "Bad trailing argument $_\n" if ($_ ne "");
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Scan to first line.
+while (<>) {
+    last if (/[0-9]+_+\| /);
+}
+
+while (!eof()) {
+    # Null optional values
+    $q_key = undef;
+
+    $packet = "";
+    do {
+	$packet .= $_;
+	$_ = <>;
+    } until (/[0-9]+_+\| /);
+    $nextline = $_;
+
+    ($_ = $packet) =~ s/_+\|(_+Filtered Traffic)?//g;
+
+    die "Bad format packet: $_\n" unless
+	( ($packet_id, $packet_source, $dlid, $slid,
+	   $packet_type, $rcud, $rcflags, $rest) =
+	  /^
+	  ([0-9]+)\s
+	  (Rx|Tx)\s
+	  LRH\s DLID\((0x[A-F0-9]+)\)\s SLID\((0x[A-F0-9]+)\)\s
+	  BTH\s (SEND|Acknowledge|RDMA\s WRITE|RDMA\s READ|RDMA\s READ\s r)
+	  \((RC|UD)\s ([A-F0-9][A-F0-9])\)\s
+	  (.*)$/sx);
+
+    if ($packet_type eq "SEND") {
+	if ($rest =~ /^DETH\s+Q_Key\((0x[0-9A-F]+)\)\s+(.*)$/s) {
+	    $q_key = $1;
+	    $rest = $2;
+	}
+	$_ = $rest;
+	die "Bad packet format for general data: $_\n" unless
+	    ( ($size, $rest) = 
+	       /^
+	       Data\(([0-9]+)\sdwords\)\s
+	       (.*)$/sx);
+	$_ = $rest;
+	die "Bad packet format for trailer: $_\n" unless
+	    ( ($icrc, $vcrc, $timestamp) =
+	      /^ICRC\((0x[0-9A-F]+)\)\s+
+	       VCRC\((0x[0-9A-F]+)\)\s+
+	       Time\sStamp\(([0-9]+\.[0-9]+\s[0-9]+)\)\s*
+	       $/sx);
+
+	# ***Output send packet
+
+    } elsif ($packet_type eq "Acknowledge") {
+	die "Bad packet format for ack: $_\n" unless
+	    ( ($ack_flags, $msn, $rest) =
+	       /^
+	       AETH\s+
+	       ACK\(CC\s([0-9]+)\)\s
+	       MSN\((0x[0-9A-F]+)\)\s
+	       (.*)
+	       $/sx);
+	      
+	$_ = $rest;
+	die "Bad packet format for trailer: $_\n" unless
+	    ( ($icrc, $vcrc, $timestamp) =
+	      /^ICRC\((0x[0-9A-F]+)\)\s
+	       VCRC\((0x[0-9A-F]+)\)\s
+	       Time\sStamp\(([0-9]+\.[0-9]+\s[0-9]+)\)\s*
+	       $/sx);
+    
+	# Output acknowledgement packet.
+
+    } elsif ($packet_type eq "RDMA WRITE") {
+	die "Bad packet format for RDMA: $_\n" unless
+	    ( ($vaddr, $rest) =
+	      /^
+	      RETH\s+
+	      Virtual\sAddress\((0x[0-9A-F]+)\)\s+
+	      (.*)$/);
+	$vaddr =~ s/0x0+/0x/;
+
+	$_ = $rest;
+	die "Bad packet format for general data: $_\n" unless
+	    ( ($size, $rest) = 
+	       /^
+	       Data\(([0-9]+)\sdwords\)\s
+	       (.*)$/sx);
+
+	$_ = $rest;
+	die "Bad packet format for trailer: $_\n" unless
+	    ( ($icrc, $vcrc, $timestamp) =
+	      /^ICRC\((0x[0-9A-F]+)\)\s
+	       VCRC\((0x[0-9A-F]+)\)\s
+	       Time\sStamp\(([0-9]+\.[0-9]+\s[0-9]+)\)\s*
+	       $/sx);
+
+	# Output RDMA write packet.
+    } elsif ($packet_type eq "RDMA READ") {
+	die "Bad packet format for RDMA: $_\n" unless
+	    ( ($vaddr, $rest) =
+	      /^
+	      RETH\s+
+	      Virtual\sAddress\((0x[0-9A-F]+)\)\s
+	      (.*)$/);
+	$vaddr =~ s/0x0+/0x/;
+
+	die "Bad packet format for trailer: $_\n" unless
+	    ( ($icrc, $vcrc, $timestamp) =
+	      /^ICRC\((0x[0-9A-F]+)\)\s
+	       VCRC\((0x[0-9A-F]+)\)\s
+	       Time\sStamp\(([0-9]+\.[0-9]+\s[0-9]+)\)\s*
+	       $/sx);
+
+	# Output RDMA Read packet.
+
+    } elsif ($packet_type eq "RDMA READ r") {
+	die "Bad packet format for ack: $_\n" unless
+	    ( ($ack_flags, $msn, $rest) =
+	       /^
+	       AETH\s+
+	       ACK\(CC\s([0-9]+)\)\s
+	       MSN\((0x[0-9A-F]+)\)\s+
+	       (.*)
+	       $/sx);
+	      
+	$_ = $rest;
+	die "Bad packet format for general data: $_\n" unless
+	    ( ($size, $rest) = 
+	       /^
+	       Data\(([0-9]+)\sdwords\)\s
+	       (.*)$/sx);
+
+	die "Bad packet format for trailer: $_\n" unless
+	    ( ($icrc, $vcrc, $timestamp) =
+	      /^ICRC\((0x[0-9A-F]+)\)\s
+	       VCRC\((0x[0-9A-F]+)\)\s
+	       Time\sStamp\(([0-9]+\.[0-9]+\s[0-9]+)\)\s*
+	       $/sx);
+
+	# Output RDMA Read response.
+
+    } else {
+	die "Bad packet type $packet_type\n";
+    }
+    $_ = $nextline;
+}
+    
+
+    
+	      
+
+    

@@ -1,0 +1,53 @@
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a wrapper program to put ahead of other programs 
+to automatically setup the correct values for SF access.  Currently, 
+all it does is search up the directory tree for a SFENV file, sources 
+that file, and executes the commands on the rest of the line. 
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="sf <command to execute with env vars set>";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -eq 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+dir=`pwd`;
+while [ $dir != "/" -a $dir != "." -a ! -r $dir/SFENV ]; do
+    dir=`dirname $dir`;
+done
+
+if [ $dir = "/" -o $dir = "." ]; then
+    echo "No SFENV file found" 1>&2;
+    exit 1;
+fi
+
+source $dir/SFENV
+
+$*

@@ -1,0 +1,68 @@
+
+# Things I should only do if the shell is interactive
+
+if [ "$PS1" != "" ]; then
+# Directory changing commands
+# ---------------------------
+    if [ "`whoami`" = "root" ]; then
+        pchar='#';
+    else
+        pchar='$';
+    fi
+    
+    reset_working_directory () {
+      hd=~
+      end_pwd=`echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'`
+      # if [ ~ = $PWD ]; then
+      #  end_pwd='~';
+      # else
+      #  end_pwd=`echo $PWD | sed 's;^..*/\([^/]*/[^/]*\);../\1;'`
+      # fi
+      PS1="\h:$end_pwd $pchar "
+    }
+    
+    function massage_path () {
+      massage_path_result=`echo $PWD/ | sed 's;/'"$1"'/;/'"$2"'/;'`
+    }
+    
+    function cd () {
+      if test $# -eq 2 ; then
+        massage_path $1 $2;
+        cd $massage_path_result;
+      else
+        builtin cd $*;
+      fi
+      reset_working_directory
+    }
+    
+    function pushd () {
+      builtin pushd $*
+      reset_working_directory
+    }
+    
+    function popd () {
+      builtin popd $*
+      reset_working_directory
+    }
+    
+    reset_working_directory
+    
+    # Terminal setup.
+    if [ "$TERM" = "dialup" -o "$TERM" = "network" ]; then
+        # This seems to work for my usual.
+        eval `tset -sQ ?vt100`
+    fi
+    
+    # Set terminal characteristics correctly
+    stty intr '^C' erase '^?'
+fi
+    
+# Put my bin directory on the path
+prefix_dirlist_to_path PATH ~/bin ~/bin/$systype
+
+# Read in my aliases
+. $configuration_files_directory/aliases
+
+# Attempt to get non-interactive shells to pull in aliases also
+export ENV=$HOME/.bashrc
+export BASH_ENV=$HOME/.bashrc

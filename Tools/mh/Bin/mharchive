@@ -1,0 +1,316 @@
+#!/usr/bin/perl -w
+
+# Todo
+#	Allow showing of messages
+#	Allow exclusion of messages
+#	Allow two lines of keystrokes
+# X	Allow variables in archive guide file
+# X	Functions/macros of some sort in guide file?  Might be taken care of 
+#		by program editing, but might not (re-editing).
+# 	Setup a single screen object that everyone uses.
+#	Generalize the template facility?  (I.e. do some special variable
+#		syntax that sets it up?)
+#	Indicate (with ...?) when there's a next or previous screen
+
+# Routines
+# screenShowLines -- Shows lines in page sized chunks with specified prompt.
+# mhShowLines -- Like the above, only operates on a specified folder and 
+#	message list.
+# readMHArchiveGuide -- Reads a specifically formatted file and pulls out a 
+#	suggested mapping between pick arguments and archive file.
+# mhListFromPick -- Transforms pick arguments and a folder name into a 
+#	message list.
+
+
+
+require Term::Screen;		# Simple screen handling.
+use Data::Dumper;
+
+# Insert argument processing here.
+
+# Pager/input subroutine.  It shows a large number of text lines (arg
+# 1) in page sized chunks, prompting between each.  The prompt is the
+# concatenation of arg 2 with something like " n) next screen, p)
+# previous screen".  Arg 3 (if it exists) is a two character
+# concatenation of what the next line character should be with what
+# the previous line character should be (default "np").  Arg 4 (if it exists)
+# is the prompt suffix; default is "<next line character>) next line,
+# <previous line character>) previous line".  This routine, in cbreak mode,
+# reacts to single character inputs from the user; anything but a next or
+# previous line character results in returning with a value of that character.
+# The screen is cleared upon entry.
+sub screenShowLines {
+    die "Too many arguments to screenShowLines\n" if (@_ > 4);
+    die "Too few arguments to screenShowLines\n" if (@_ < 2);
+
+    my ($text, $prompt_pre, $mchars, $prompt_suf) = @_;
+
+    if (defined($mchars)) {
+	die "Bad format for third argument to screenShowLines: $mchars\n"
+	    if (length($mchars) != 2);
+    } else {
+	$mchars = "np";
+    }
+    my ($next_char, $previous_char) = split(//,$mchars);
+
+    if (!defined($prompt_suf)) {
+	$prompt_suf = ", $next_char) next screen, $previous_char) previous screen";
+    }
+
+    my $prompt = $prompt_pre . $prompt_suf . ": ";
+    $prompt =~ s/\n/\r\n/;
+    my @prompt_split = split(/\n/, $prompt);
+    my $prompt_lines = 1 + @prompt_split;
+
+    my @text_lines = split(/\n/, $text);
+
+    # Setup a screen object.
+    my $scr = new Term::Screen;
+    die "Screen creation failed\n" unless ($scr);
+
+    # Allow room for a blank line and a prompt
+    my $room_for_lines = $scr->{ROWS} - $prompt_lines - 1; 
+
+    my $first_line = 0;
+
+    my $key;
+    my $i;
+
+    do {
+	$scr->clrscr();
+
+	my $lines_to_end = @text_lines - $first_line;
+	my $lines_to_print = ($lines_to_end > $room_for_lines
+			      ? $room_for_lines
+			      : $lines_to_end);
+
+	for ($i = 0; $i < $lines_to_print; $i++) {
+	    $scr->at($i, 0);
+	    print "$text_lines[$i+$first_line]";
+	}
+
+	$scr->at($scr->{ROWS} - $prompt_lines, 0);
+	print $prompt;
+	$key = $scr->getch();
+	if ($key eq $next_char) {
+	    $first_line += $room_for_lines
+		if ($first_line + $room_for_lines <= @text_lines);
+	}
+	if ($key eq $previous_char) {
+	    $first_line -= $room_for_lines
+		if ($first_line - $room_for_lines >= 0);
+	}
+    } until ($key ne $next_char && $key ne $previous_char);
+    return $key;
+}
+
+# This subroutine is identical to the above except that the first argument
+# is a folder identifier (with or without "+") and the second (scalar) 
+# list of numbers which are messages within that folder to scan.
+# The text becomes the scan output.
+sub mhShowLines {
+    die "Too many arguments to screenShowLines\n" if (@_ > 5);
+    die "Too few arguments to screenShowLines\n" if (@_ < 3);
+
+    my ($folder, $mlist, $prompt_pre, $mchars, $prompt_suf) = @_;
+
+    $folder = "+" . $folder if ($folder !~ /^\+/);
+    die "Null message list\n" if ($mlist =~ /^\s*$/);
+
+    # Grab the output of scan.
+    open(SCANOUTPUT, "scan $folder $mlist|") or 
+	die "Couldn't open scan process\n";
+
+    my @scanlines = <SCANOUTPUT>;
+    close(SCANOUTPUT);
+
+    return screenShowLines(join("", @scanlines), $prompt_pre,
+			   $mchars, $prompt_suf);
+}
+    
+# Reads a file (the first argument) which is an archive directive file.
+# Returns the contents of this file in an array of hashes; each hash is
+#	pickArg ==> <argument to the pick routine>
+#	file ==> <relative file name>
+# The file is in the format:
+# <filename>: <pickArg>
+# In addition, the file may have lines of the form
+# var_name=value
+# where var_name matches the regexp [A-Za-z_]+.  The distinction between
+# these two lines is based on which of '=' or ':' occurs first (which 
+# disallows the equals character in filenames).  
+# Comments (starting with '#') are also allowed.
+#
+# For serious conveniences sake (what a hack), the line format
+# <email>=><filename>
+# will be treated as the lines:
+# correspondent=<email>
+# <filename>:$basic_filter
+# Any line which contains an => will be treated this way.
+sub readMHArchiveGuide {
+    die "Wrong number of arguments to readMHArchiveGuide\n"
+	if @_ != 1;
+
+    my $filename = shift @_;
+    my @result;
+    my %symtab;
+
+    open(ARCHIVEGUIDE, $filename) or die "Couldn't open file $filename\n";
+
+    while (<ARCHIVEGUIDE>) {
+	next if /^\s*$/;
+	next if /^#/;
+	if (/^([A-Za-z_]+)=([^>].*)$/) {
+	    # Variable definition
+	    $symtab{$1} = $2;
+	    next;
+	}
+
+	if (/^(.*?)\s*=>\s*(.*)$/) {
+	    # Special case; serious hack alert here.  This is based
+	    # on there being a definition somewhere in this file for the
+	    # variable "basic_filter" based on the variable "correspondent". 
+	    $symtab{'correspondent'}=$1;
+	    $_ = "$2:\$basic_filter\n";
+	    # Fall through.
+	}
+
+	die "Bad format for line in archive guide file: $_\n"
+	    if !/^([a-zA-Z0-9\/_]+):(.*)$/;
+
+	my $hash = {};
+	$hash->{'file'} = $1;
+	my $pickArg = $2;
+
+	while ($pickArg =~ /^(.*[^\\])\$([A-Za-z_]+)(.*?)$/
+	       || $pickArg =~ /^(.*[^\\])\${([A-Za-z_]+)}(.*?)$/
+	       || $pickArg =~ /^()\${([A-Za-z_]+)}(.*?)$/
+	       || $pickArg =~ /^()\$([A-Za-z_]+)(.*?)$/) {
+	    my $var = $2;
+	    die "Variable \$$var not defined in archive file read\n"
+		unless defined($symtab{$var});
+
+	    $pickArg = $1 . $symtab{$var} . $3;
+	}
+
+	$hash->{'pickArg'} = $pickArg;
+
+	push @result, $hash;
+    }
+
+    close(ARCHIVEGUIDE);
+
+    return @result;
+}
+
+# A subroutine that takes a folder (first argument) and a list of arguments
+# to pick (second argument) and returns a list of messages (as a string).
+# The message list may be null.  The arguments to pick and the folder must 
+# be valid.  A null message list is guaranteed to be false if used as a 
+# boolean by perl (specifically, it will be the string "0"), and a non-null 
+# list true.
+sub mhListFromPick {
+    die "Wrong number of arguments to mhListFromPick\n" if @_ != 2;
+
+    my ($folder, $arg) = @_;
+    $folder = "+" . $folder if ($folder !~ /^\+/);
+
+    my $result;
+
+    open(PICK, "pick -list $folder $arg 2>/dev/null |")
+	|| die "Can't fork pick: $!\n";
+    while (<PICK>) {
+	$result .= $_;
+    }
+
+    $result =~ s/\n/ /g;
+
+    # Strip off leading and trailing whitespace, incidentally
+    # guaranteeing that a "0" return from pick will look false to
+    # perl.
+    $result =~ s/^\s*(.*?)\s*$/$1/;
+    
+    # Ignore a bad return if the result is the expected bad return
+    close PICK || ($result eq "0") or die "Bad return from pick: errno: $! exit status: $?\n";
+
+    return $result;
+}
+
+# Takes three arguments:
+#	A folder (must start with "+")
+#	A message list (must be non-null)
+#	An absolute file name to archive it to.
+# Executes the mh command
+#	packf $folder -file $file $list
+# and reports any errors.
+sub mhArchiveMessagesToFile {
+    die "Wrong number of arguments to mhArchiveMessagesToFile\n" if @_ != 3;
+    my ($folder, $list, $file) = @_;
+    
+    die "Archive file must be absolute\n" unless ($file =~ /^\//);
+    die "First argument must be folder\n" unless ($folder =~ /^\+/);
+    $list =~ s/^\s*(.*?)\s*$/$1/;
+    die "Message list must not be null\n" unless ($list);
+
+    system("packf $folder -file $file $list") &&
+	die "Bad return value from packf: $? (errno: $!)\n";
+    system("rmm $folder $list") &&
+	die "Bad return value from rmf: $? (errno: $!)\n";
+}
+
+# Takes three arguments: a folder, an mh archive guide file, and the root of
+# a directory tree containing archive files.  Uses the above to
+# loop through each of the lines out of the archive file, prompting the 
+# user whether or not they'd like to archive the set of messages the pick
+# shows.  User options:
+#	s)kip this filter
+#	r)eread the guide file and restart
+#	<cr>) Archive the messages as specified.
+
+sub mhArchiveLoop {
+    die "Wrong number of arguments to mhArchiveLoop\n" if @_ != 3;
+    my ($folder, $guidefile, $archiveRoot) = @_;
+
+    my @guideFilter = readMHArchiveGuide($guidefile);
+
+    # Break out for loop to allow resetting back to beginning.
+    my $i = 0;
+    while ($i < @guideFilter) {
+	my $currentFilter = $guideFilter[$i];
+	my $pickArg = $currentFilter->{'pickArg'};
+	my $file = $currentFilter->{'file'};
+
+	my $messages = mhListFromPick($folder, $pickArg);
+
+	if ($messages) {
+	    my $rkey = mhShowLines($folder, $messages,
+				   "s)kip this folder, r)eread file, <cr>) archive to $file\nq)uit");
+	    if ($rkey eq "\r") {
+		mhArchiveMessagesToFile($folder, $messages,
+					$archiveRoot . $file);
+	    } elsif ($rkey eq 's') {
+		# Null; default action ok.
+	    } elsif ($rkey eq 'r') {
+		@guideFilter = readMHArchiveGuide($guidefile);
+		$i = 0;
+		next;
+	    } elsif ($rkey eq 'q') {
+		print "\r\n";
+		exit(0);
+	    } else {
+		my $asccode = ord($rkey);
+		print STDERR "Key $rkey ($asccode) not recognized\n";
+		print STDERR "Hit <return> to continue\n";
+		$_ = <STDIN>;
+		next;
+	    }
+	}
+	$i++;
+    }
+}
+
+# The current, very simple archive program.
+mhArchiveLoop("+Pack", "/home/randy/.mh_archive_guide", "/home/randy/ArchiveMail/");
+
+# print Dumper(readMHArchiveGuide("/home/randy/.mh_archive_guide"));
+

@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Setup the help and usage messages
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$0 sends a signal to all members of a process group.  
+It takes either one or two arguments.  The last argument is always the 
+process group to signal; the first argument, if present, is the signal to 
+use.  This signal is passed verbatim to "kill".
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$0 [-<signal>] <process group>";
+
+# Parse all arguments.
+signal="-TERM";
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	# We assume this is the signal, and that there's only one
+	# of it.
+	signal="$1";
+	break;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+kill $signal -$1;

@@ -1,0 +1,5 @@
+
+-- Rethink domain startup file parsing.  Two things you may want to
+   expand to handle: 
+	* A given hostname in different domains (blueboat.local & etc)
+	* netapp.com global stuff, not just nane.netapp.com.

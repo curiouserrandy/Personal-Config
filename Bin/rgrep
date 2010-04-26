@@ -1,0 +1,114 @@
+#!/bin/sh 
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program for grepping all files matching a pattern in a 
+directory tree rooted at a particular location.  egrep is used under
+the covers, and the regular expression syntax expected is that of 
+egrep.  Arguments:
+	-t <filter>		Filename filter to apply to
+				the files under the directory tree.
+				Used as an argument to "-name" of
+				find if provided.  If multiple
+				instances are provided, they are
+				or'd together; files matching any
+				pattern will be searched.
+	-*			Any other "-" argument preceding a "--"
+				will be passed to egrep.
+	<first arg>		Regular expression with which to search.
+	<All other args>	Files and directories to search.
+				May be null; defaults to "."
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-t filter] [-[egrep args]] <regexp> [<files/dirs to search>]";
+
+filter="";
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -t) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filter="${filter} ${filter:+-o} -name $2";
+	shift;
+	;;
+
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+
+    --) 
+    	shift;
+    	break;		# Start regular arg processing.
+        ;;
+
+
+    # Single argument egrep args; based on GNU egrep.
+    -G|-E|-F|-V|-b|-c|-H|-h|-i|-L|-l|-n|-q|-r)
+        egrep_args="$egrep_args $1";
+	;;
+	
+    -s|-a|-v|-w|-x|-y|-U|-u|-Z|-[0-9]*|--*)
+        egrep_args="$egrep_args $1";
+	;;
+
+    # Two argument egrep args; based on GNU egrep.
+    -A|-B|-d|-e|-f)
+	if [ $# -lt 2 ]; then
+	    echo "$progname: egrep arg requires value: $1"
+	    exit 1;
+	fi
+	egrep_args="$egrep_args $1 $2";
+	shift;
+	;;
+
+    # Special egrep args; based on GNU egrep.
+    -C)
+	if [ $# -lt 2 ]; then
+	    egrep_args="$egrep_args $1";
+	else
+	    case $2 in 
+	    [0-9]*)
+	        egrep_args="$egrep_args $1 $2";
+		shift;
+		;;
+	    *) 
+	        egrep_args="$egrep_args $1";
+		;;
+	    esac
+	fi
+	;;
+
+    *)  break;		# All other arguments given to grep.
+	;;
+    esac
+    shift;
+done
+
+# Make sure we have a pattern and at least one directory.
+if [ $# -lt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+pat="$1";
+shift;
+
+# Update filter
+if [ X"${filter}" != X ]; then
+    filter="( ${filter} )";
+fi
+
+# Do the job
+
+if [ $# -lt 1 ]; then
+    find . -type f $filter -print | xargs egrep -n "$pat" /dev/null 
+    # debugarg . -type f $filter -print
+else
+    find "$@" -type f $filter -print | xargs egrep -n "$pat" /dev/null
+fi

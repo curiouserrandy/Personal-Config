@@ -1,0 +1,83 @@
+# Add a value (in $1) to a variable named in $2.  $2 names a colon separated
+# list of strings, usually a directory list.  If the contents of the variable
+# in $2 is null, it is set equal to $1.
+function suffix_val_to_var ()
+{
+    eval "deref="'$'"$2";
+    if [ "$deref" = "" ]; then
+	eval "$2=$1";
+    else
+        eval "$2="'$'"$2:$1";
+    fi
+}
+
+function prefix_val_to_var ()
+{
+    eval "deref="'$'"$2";
+    if [ "$deref" = "" ]; then
+	eval "$2=$1";
+    else
+        eval "$2=$1:"'$'"$2";
+    fi
+}
+
+# Add directories to paths, if they exist and are searchable.
+# Directory in $1, path variable name in $2
+function suffix_dir_to_path ()
+{
+    if [ -d $1 -a -x $1 ]; then
+        suffix_val_to_var $1 $2
+    fi
+}
+
+function prefix_dir_to_path ()
+{
+    if [ -d $1 -a -x $1 ]; then
+        prefix_val_to_var $1 $2
+    fi
+}
+
+# Go through a list of directories, either prefixing or suffixing them
+# onto the variable (passed as $1) as requested.  Note that the prefix
+# operation will reverse the order, as the arguments are processed left
+# to right.
+function prefix_dirlist_to_path ()
+{
+    dir=$1;
+    while [ $# -gt 1 ] ; do
+	shift;
+        prefix_dir_to_path $1 $dir;
+    done
+}
+
+function suffix_dirlist_to_path ()
+{
+    dir=$1;
+    while [ $# -gt 1 ] ; do
+	shift;
+        suffix_dir_to_path $1 $dir;
+    done
+}
+
+function read_if_exists ()
+{
+    if [ "$trace_read_if_exists" != "" ]; then
+	echo -n read_if_exists called on $1
+	if [ -r $1 ]; then
+	    echo ", reading."
+	else
+	    echo ", not found."
+	fi
+    fi
+
+    if [ -r $1 ]; then
+        . $1
+    fi
+}
+
+# A little sad to make this a basic tool, but it allows me to have 
+# files that can be read by either bourne or C shell variants.
+function setenv ()
+{
+    export $1=$2;
+}

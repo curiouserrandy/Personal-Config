@@ -1,0 +1,16 @@
+set $__asmback_incr = 4
+
+define asmback
+   set $__asmback_count = $arg1
+   set $__asmback_addr = $arg0
+   while $__asmback_count > 0
+	info line *$__asmback_addr
+	set $__asmback_count = $__asmback_count -1
+	set $__asmback_addr = $__asmback_addr + $__asmback_incr 
+   end
+end
+
+document asmback
+asmback START COUNT does an "info line *<addr>" for each address starting 
+at address START and going for COUNT addresses.
+end

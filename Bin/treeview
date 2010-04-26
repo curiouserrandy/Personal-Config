@@ -1,0 +1,21 @@
+!#/usr/bin/env python
+
+# Display a directory tree as a graph.  Relies on having the "dot" executable 
+# on the path.
+
+# Basic algorithm:
+#	* Read arguments (single argument, directory)
+#	* Find all directories under that argument.  (*)
+#	* Create a temporary file
+#	* Output a digraph to that temporary file.  Visible names are
+#	  just directory entry name, actual names have __ in place of slashes
+#	  with an XXX prefix (in case the top level is ".")
+#	* Use dot to turn that into a .png
+#	* Display the .png inside of python.  This probably requires PIL and 
+#	  getting the GM widget to work right.
+#	* When that widget is exitted, destroy all temp files.
+
+# (*) Eventually, I also want to discover symlinks within the directory
+# tree and store them, but not for the first round.
+
+

@@ -1,0 +1,50 @@
+Notes on things I might want to do with emacs customization in the future.
+
+;;; TODO:
+;;;	*) Ability to read this file (startup.el) from a different account.
+;;;	*) Move all machine specific stuff out to a separate file.
+;;;	*) Directory changing command.
+;;;	*) Menu of tags tables
+;;;	*) Grep in a dired should cd to the current (position wise)
+;;;	   subdirectory before executing.
+;;;	*) C-p and C-n in rmail summary not changing the rmail buffer.
+;;;	*) Function to find a file wherever it is in the backing list.
+;;;	*) Function to visit file under point (in other window and in
+;;;	   current window).
+;;;	*) Save RMAIL file if idle for more than one hour.  Kill buffer if
+;;;	   idle for more than two hours(?)
+;;;	*) Get C language auto-filling to work the way you'd like.
+;;;	*) Way to set window boundaries based on the mouse?  (May already
+;;;	   exist).
+;;;	*) Interactive function "narrow buffer to region"
+;;;	*) Function to pop up a page, and then return directly to the
+;;;	   previous position.  Maybe make general?  marks probably do that.
+;;;	*) Completion in C code needs to be on C symbols, not partial symbols.
+;;;	*) Play with completion.
+;;;	*) Mouse command to bring line I click on to top of screen.
+;;;	*) Deal somehow with file aliasing through symbolic links.
+
+;;; Shell-mode function to send a cd to the shell to move to
+;;; whatever directory is current in the other window.  Does current
+;;; dired have anything like this?  XXX
+
+;;; Functions to force deletion of symlinks when they are saved to.
+;;; XXX
+
+;;; List all (C) functions within a file.
+;;; XXX
+
+;;; Dired stuff not put in; I need to decide what to keep and what to
+;;; toss.  Stuff that would be included:   (XXX)
+;;;	*) print file on current line (includes dealing with dvi files).
+;;;	*) Enscript file on current line
+;;;	*) Execute current file.
+;;;	*) Copy current file to <file>.distrib
+;;;	*) Make a directory.
+;;;	*) UUencode the current file.  UUdecode the current file.
+;;;	*) Visit Makefile in directory under cursor.
+;;;	*) Flag (for deletion) all files matching regexp.
+;;;	*) Flag all files ending in .o (for deletion).
+;;;	*) Read current file into rmail.
+;;;	*) Load current file as emacs lisp code.
+

@@ -1,0 +1,20 @@
+#!/usr/bin/python 
+
+from math import sqrt
+import sys
+
+def factor(num):
+    assert num == int(num)
+
+    for i in range(2, int(sqrt(num))+1):
+        if (num // i) * i == num:
+            return (i,) + factor(num//i)
+    return (num,)
+        
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        for i in sys.argv[1:]:
+            print i, ": ", factor(int(i))
+    else:
+        for i in iter(sys.stdin.readline, ""):
+            print factor(int(i))

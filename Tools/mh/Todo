@@ -1,0 +1,25 @@
+Shell stuff
+-----------
+
+Mh Configuration
+----------------
+Drafts folder
+Eliminate uninteresting header fields from "show" output. 
+
+
+mh.el configuration
+-------------------
+Forwarding shouldn't prompt me for who to.
+Don't bother me about backups on drafts (may be solved by setting up
+	drafts folder).  
+Appropriate fill adaptation for email messages (make this a general
+	"mail mode"):
+	Fills either "> " or "  ".
+	Handles indentation with bullet items correctly.
+	Handles paragraph starts (indenting) correctly.
+
+Background infrastructure
+-------------------------
+Cron job cleaning up , messages regularly.
+mhfollow needs to handle a lack of a Subject line in the procmail log. 
+

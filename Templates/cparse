@@ -1,0 +1,27 @@
+
+  /* General argument parsing template for C executable.  */
+
+  while (++argv, --argc) {
+    if ((*argv)[0] != '-')
+	break;
+    switch((*argv)[1]) {
+    /* Handle flags with no arguments.  */
+    case '<F1>':
+      <F1boolean> = 1;
+      break;
+    /* Handle flags with single arguments.  */
+    case <F2>:
+      if (argc == 1) {
+	fprintf(stderr, "Argument to -<F2> not found\n");
+	exit(1);
+      }
+      <F2int> = atoi(argv[1]);	/* Should have some error checking that it's
+				   a number.  */
+      ++argv; --argc;
+      break;
+    default:
+      fprintf(stderr, "Unknown argument -%c\n", (*argv)[0]);
+      exit(1);
+    }
+    
+  }

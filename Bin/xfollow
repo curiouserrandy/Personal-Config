@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# Todo?:
+#	* Environment variable to default font
+#	* Way to control font.
+
+# Setup the help and usage messages
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$0 creates an xterm (in the background) that "follows" (invokes tail -f) a
+particular file.  It can also be set to follow execution of a particular 
+command; the xterm will go away when the command exits.
+Possible arguments:
+	-g <geometry>	May take the usual xterm geometry specification.
+	-t <title>
+	-n <name>	Useful for interfacing with fvwm&etc.
+	-fn <font>	Font to use for xterm.
+	-c 		Indicates that the final argument(s) is a command
+			and arguments.
+If -c is not specified, the single non-flag argument is filename to track.
+If -c is specified, all arguments after the last are invoked as a command
+with arguments to track.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$0 [-g <geometry>] [-t <title>] [-n <name>] [-fn <font>] [<file>|-c <command> <args...>]";
+
+# Parse all arguments.
+geometry=""
+title=""
+name=""
+commandSpecified=no
+command=""
+font="-fn fixed"
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -c) commandSpecified=yes;
+        ;;
+    -g) if [ $# -lt 2 ]; then
+            echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+        geometry="-geometry $2";
+	shift;
+        ;;
+    -t) if [ $# -lt 2 ]; then
+            echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	title="-title '$2'";		# May not work; test.
+        shift;
+        ;;
+    -n) if [ $# -lt 2 ]; then
+            echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+        name="-name '$2'";
+        shift
+        ;;
+    -fn) if [ $# -lt 2 ]; then
+            echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+        font="-fn '$2'";
+        shift
+        ;;
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ "$commandSpecified" = "no" -a $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+# Use execCommand so that quotes setup by -n and -t above will
+# be paid attention to.
+if [ "$commandSpecified" = "yes" ]; then
+    execCommand xterm $font $geometry $title $name -e "$*" &
+else
+    filename="$1";
+    execCommand xterm $font $geometry $title $name -e tail -f "$filename" &
+fi
+
+

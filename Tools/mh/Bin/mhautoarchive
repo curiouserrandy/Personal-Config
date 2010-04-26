@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Move all message from the +Archive/... folder into the mbox archives.
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname automatically moves any messages under the +Archive folder
+over into the mailbox archives under ~/ArchiveMail.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname";
+
+homedir=~randy
+mharchivedd=$homedir/Mail
+mharchive=$mharchivedd/Archive
+mbarchive=$homedir/ArchiveMail
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+#    -{ARG}) 
+#	{HANDLE NON-VALUED ARG ARG}
+#	;;
+#    -{ARG1}) 
+#	if [ $# -lt 2 ]; then
+#	    echo "Usage: $usageString" 1>&2;
+#	    exit 1;
+#	fi
+#	{HANDLE VALUED ARG ARG1}
+#	shift;
+#	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -gt 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+tmpfile=/tmp/mhautoarchive$$;
+
+find $mharchive -name '[0-9]*' -name '*[0-9]' -print | \
+	sed 's;'"$mharchive"/';;' | sed 's;^\(.*\)/\([0-9]*\)$;\& \1;' > $tmpfile;
+
+directories=`cat $tmpfile | awk '{print $2}' | sort | uniq`;
+echo $directories;
+# (cd $mbarchive ; mkdir -p $directories;)
+
+# sed 's;^.*$/packf -file '"$mbarchive"'/\&
+
+#	sed 's;'"$mharchive"'/\(.*\)/\([^/]*\)$;packf -file '"$mbarchive"'/\1 +Archive/\1 \2 < /dev/null; && rmm +Archive/\1 \2';
+

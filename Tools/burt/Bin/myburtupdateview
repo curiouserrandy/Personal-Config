@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$burtdir=$ENV{'HOME'} . "/.burt";
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname takes an arbitrary number of BURTs on the command line and
+updates the views of those burts stored in a specified directory.
+Arguments:
+	-b	Put self in the background
+	-d	Directory that holds burt views.  Defaults to $burtdir
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-d <burt dir>] burt# ... ";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$background=0;
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^d$/) && do {
+	die "Usage: $usageString\n" unless scalar(@ARGV) > 0;
+	$burtdir = shift;
+	next ARGS;
+    };
+
+    (/^b$/) && do {
+	die "Usage: $usageString\n" unless scalar(@ARGV) > 0;
+	$background = 1;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+if ($background) {
+    exit 0 if fork();
+}
+
+foreach $i (@ARGV) {
+    system "burt view $i > $burtdir/$i";
+}
+

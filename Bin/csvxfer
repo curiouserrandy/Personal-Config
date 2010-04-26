@@ -1,0 +1,162 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname transforms spreadsheet output (in comma-separated-value form) into
+various other formats.  Arguments
+	-w		Set output format to wiki (default)
+	-c		Set output format to C array (unimplemented)
+	-o <output>	Output file; defaults to stdout.
+	<file>		Input file; defaults to stdin.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname -[wc] [-o <output>] [<input file>]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$output_format="wiki";
+$output_file="-";
+$input_file="-";
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^w$/) && do {
+	die "Output format multiply specified\n"
+	    if $output_format ne "unset";
+	$output_format = "wiki";
+	next ARGS;
+    };
+
+    (/^w$/) && do {
+	die "Output format multiply specified\n"
+	    if $output_format ne "unset";
+	$output_format = "ccode";
+	die "C code output format unimplemented\n";
+	next ARGS;
+    };
+
+    (/^o$/) && do {
+	$output_file = shift;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 1);
+if (scalar(@ARGV) == 1) {
+    $input_file = $ARGV[0];
+}
+
+# The general part: Get the data into arrays.  Leave the quotes on; 
+# whether or not they're removed is based on the output format.
+
+$quote_re = qr/\"[^\"\\]*(?:\\.[^\"\\]*)*\"/;
+$any_v = qr/\s*([^\",]*|$quote_re)\s*/;
+
+my @lines;
+open(INPUT, "<$input_file") || die "Couldn't open input file $input_file: $ERRNO\n";
+while (<INPUT>) {
+    chomp;
+    # $_ is now a comma separated list of values.  It looks like:
+    my @result_array;
+
+    die "Bad format line: $_\n" if !/^$any_v(,$any_v)*$/;
+
+    @result_array = m/\G$any_v(?:,|$ )/gx;
+    # Hack; wish I could figure out how to do this cleanly.
+    # I believe what's going on is that, since the above re can match a
+    # null expression at the end of the line, it will do so, but only once.
+    # That's accurate if the last character is a comma, but otherwise 
+    # it's a gratuitous match.
+    pop(@result_array) if !/,$/;
+
+    push(@lines, \@result_array);
+}
+close(INPUT) || die "Couldn't close input file $input_file: $ERRNO\n";
+
+my ($title, @headers);
+$title = "TITLE GOES HERE";
+
+my (@firstline) = @{$lines[0]};
+if (grep(/^$/, @firstline) == scalar(@firstline) - 1) {
+    $title = $firstline[0];
+    if ($title =~ /^\"/) {
+	$title =~ s/^\"(.*)\"$/$1/;
+	$title =~ s/\\(.)/$1/g;
+    }
+    shift(@lines);
+    @headers = @{shift(@lines)};
+}
+
+# The specific part; output the data in the format requested
+open(OUTPUT, ">$output_file") || die "Couldn't open output file $output_file: $ERRNO\n";
+select OUTPUT;
+if ($output_format eq "wiki") {
+    print "{| border=1 cellpadding=2 cellspacing=0\n";
+    print "|+ $title\n";
+    print "|-\n";
+    if (@headers) {
+	print "! ";
+	while ($hdr = shift(@headers)) {
+	    if ($hdr =~ /^\"/) {
+		$hdr =~ s/^\"(.*)\"$/$1/;
+		$hdr =~ s/\\(.)/$1/g;
+	    }
+	    print $hdr;
+	    print " !! " if (@headers);
+	}
+	print "\n";
+    } else {
+	print "! HEADERS !! GO !! HERE\n";
+    }
+    my $line_array;
+    while ($line_array = shift @lines) {
+	print "|-\n";
+	if (grep (/^..*/, @$line_array) == 1
+	    && length(${$line_array}[0]) > 0) {
+	    print "!";
+	    my $ele = shift @$line_array;
+	    if ($ele =~ /^\"/) {
+		$ele =~ s/^\"(.*)\"$/$1/;
+		$ele =~ s/\\(.)/$1/g;
+	    }
+	    print $ele;
+	    print "\n";
+	    next;
+	} else {
+	    print "|";
+	}
+	while (@$line_array) {
+	    my $ele = shift @$line_array;
+	    if ($ele =~ /^\"/) {
+		$ele =~ s/^\"(.*)\"$/$1/;
+		$ele =~ s/\\(.)/$1/g;
+	    }
+	    print " $ele ";
+	    print "||" if (@$line_array);
+	}
+	print "\n";
+    }
+    print "|}\n";
+} else {
+    die "Unknown output format: $output_format\n";
+}
+    
+			       
+
+    
+    
+

@@ -1,0 +1,73 @@
+# Read in functions intended to be used as tools by the startup process.
+. $configuration_files_directory/tools
+
+# Create a path that we intend will, for all machines, have the 
+# following executables on it:
+# 	uname, hostname, nslookup, awk, sed
+PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/ucb:/etc:/usr/etc
+export PATH
+
+if [ "`type -p nslookup`" != "" ]; then
+    nslookup_path="`type -p nslookup`";
+fi
+
+# Get the fully qualified hostname and the domain name.
+hostname=`uname -n`
+if echo $hostname | grep '\.' > /dev/null ; then
+    fqhname=$hostname
+else
+    fqhname=`$nslookup_path $hostname | awk '/^Name:/ {print$2}'`
+    if [ "$fqhname" = "" ]; then
+	fqhname=$hostname;
+    fi
+fi
+hostname=`echo $fqhname | awk -F. '{print $1}' | tr '[A-Z]' '[a-z]'`
+
+domainname=`echo $fqhname | sed 's/^[^\.]*\.//' | tr '[A-Z]' '[a-z]'`
+if [ "$domainname" = "" ]; then
+    domainname=NODOMAIN
+fi
+
+# Get the system type; protect against systypes with "/"s (BSD/OS,
+# specifically)
+systype=`uname | sed 's;/;_;'`
+
+# Do a reasonable default for the various paths.  They will get
+# modified by the various files read in below, using
+# prefix_dir{list}?_to_path.  Thus the latter files will override the
+# earlier ones.  suffix_dir{list}?_to_path may also be used if it is
+# wished to add a directory onto the path without overriding other
+# possibilities.
+PATH=""
+suffix_dirlist_to_path PATH /usr/bin /bin /usr/sbin /sbin 
+export PATH
+
+MANPATH=""
+suffix_dirlist_to_path MANPATH /usr/man 
+export MANPATH
+
+LD_LIBRARY_PATH=""
+suffix_dirlist_to_path LD_LIBRARY_PATH /usr/lib /lib 
+export LD_LIBRARY_PATH
+
+# Some systems use LIBPATH rather than LD_LIBRARY_PATH, so replicate.
+export LIBPATH=$LD_LIBRARY_PATH
+
+
+# Get my personal stuff that needs to come in before machine specific files
+. $configuration_files_directory/pre-system
+
+# Suck in machine specific files, in most to least general order (to 
+# allow overriding). 
+read_if_exists $configuration_files_directory/OS/$systype
+read_if_exists $configuration_files_directory/$domainname/all
+read_if_exists $configuration_files_directory/$domainname/OS/$systype
+read_if_exists $configuration_files_directory/$domainname/$hostname
+
+# Local stuff should always (?) override the "standard system" stuff.
+prefix_dirlist_to_path PATH /usr/local/bin /usr/local/sbin 
+prefix_dirlist_to_path MANPATH /usr/local/man
+
+# Get my personal stuff that needs to come in after machine specific files
+. $configuration_files_directory/post-system
+

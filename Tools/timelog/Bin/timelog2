@@ -1,0 +1,322 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 1999 Randall David Smith
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+$logfile=$ENV{'HOME'} . "/.timelog";
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+$progname is a program to automatically keep a time log.  It reads 
+from standard input, and for each line read, it writes it into 
+its logfile with a timestamp prepended.  It interprets the lines entered
+to mark the different tasks dumped in the timelog with lengths.  
+
+The syntax understood is:
+	. 			Exit, dumping any saved state
+    	[<timespec>] <text>	Just did task <text> taking <timespec>
+    				time and am returning to previous task
+    				(i.e. fielded an interrupt)
+	> <text>		Starting task <text>
+	< <text>		Ending task <text>
+    	< 			Forces end to existing task.
+    	<> <text>		Have been doing task <text> for some time
+    				and am still doing it (i.e. "oops").
+	[Any of the above]	This task is a non-work task.
+
+The output format is:
+
+	yyyy/mm/dd-hh:mm x [hh:mm] d Text
+    
+where:
+	yyyy/mm/dd hh:mm	The time the line was written
+	x			Either a literal 'x' (meaning
+ 				"misc task"; it is intended that
+				this be handed editable in the file)
+				or "*" (meaning a non-work task).
+	[hh:mm]			Time taken for this task
+        d			< or > for when the task is believed
+    				to have been done.
+	Text			Task done.    
+
+
+For each line $progname separately 
+opens the file, seeks to the end, appends the line, and closes the
+file; that allow multiple simultaneous invocations of this command to work 
+properly together.  An opening of a file that has a different timestamp
+than this instance of the program last wrote to the file will produce a 
+reset of any saved state and a note written to the console.
+
+The arguments to this command are:
+	-l <logfile>	Specify the log file.  The default is $logfile
+	-x		Make "unknown" time fall into the
+    			"non-work" category.     
+HelpString
+
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-l <logfile>]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$unknown_cat = 'x';
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^l$/) && do {
+	die "No argument to -l flag" unless scalar(@ARGV) > 0;
+	$logfile = shift;
+	next ARGS;
+    };
+
+    (/^x$/) && do {
+	$unknown_cat = '*';
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+# Timespec processing of 1:23, 1h23m, 0.5h, 23.
+sub parse_timespec
+{
+    my ($hours, $minutes);
+
+    ($_) = @_;
+    if (/^\s*(([\d\.]+)h)?\s*((\d+)m?)?\s*$/) {
+	$hours = $2;
+	$minutes = $4;
+	if ((!defined($hours) || $hours eq "")
+	    && (!defined($minutes) || $minutes eq "")) {
+	    print "Bad format timespec: $_\n";
+	    $hours = 0;
+	    $minutes = 0;
+	}
+    } elsif (/^\s*(\d+):(\d+)\s*$/) {
+	$hours = $1;
+	$minutes = $4;
+    } else {
+	$hours = 0;
+	$minutes = 0;
+	print "Bad format timespec: $_\n", next;
+    }
+    $hours = 0 if (!defined($hours));
+    $minutes = 0 if (!defined($minutes));
+
+    if (int($hours) != $hours) {
+	my $frac = $hours - int($hours);
+	$hours = int($hours);
+	$minutes += $frac * 60.0;
+	$minutes = int($minutes);
+    }
+
+    if ($minutes > 60) {
+	my $frac = int($minutes / 60);
+	$minutes -= $frac * 60;
+	$hours += $frac;
+    }
+
+    return ($hours, $minutes);
+}
+
+sub tsint_sub {
+    my ($starting_ts, $ending_ts, $int_sub) = @_;
+
+    die "Bad interval\n" if ($ending_ts < $starting_ts);
+    my $interval = $ending_ts - $starting_ts;
+    $interval = $int_sub > $interval ? 0 : $interval - $int_sub;
+
+    my $hours = int($interval/3600);
+
+    return ($hours, int(($interval - $hours * 3600)/60));
+}
+
+sub tsint_div {
+    my ($tshours, $tsminutes, $div) = @_;
+
+    $tsminutes += $tshours * 60;
+    $tsminutes /= $div;
+    $tshours = int($tsminutes/60);
+    $tsminutes = int($tsminutes - $tshours * 60);
+    return ($tshours, $tsminutes);
+}
+
+my $curtask = "";
+my ($curtask_starting_ts, $curtask_subtract, $curtask_work) = (0,0,"");
+my $file_ts;
+my $output_format = "%02d/%02d/%04d %02d:%02d %s [%02d:%02d] %s %s\n";
+
+sub int_handler {
+    if ($curtask) {
+	my $lstime = time();
+	my (undef, $min, $hour, $mday, $mon, $year, undef,  undef, undef) = localtime ($lstime);
+
+	# Get the month and year in form suitable for output.
+	$mon++;
+	$year += 1900;
+
+	my ($int_hours, $int_minutes)
+	    = tsint_sub($curtask_starting_ts, $lstime, $curtask_subtract);
+	print LOGFILE sprintf($output_format, $mon, $mday, $year, $hour, $min,
+			      $curtask_work,
+			      $int_hours, $int_minutes, "<", $curtask);
+    }
+    exit (0);
+}
+
+$SIG{'INT'} = \&int_handler;
+
+umask(0077);
+while (<>) {
+    my $lstime = time();
+    my (undef, $min, $hour, $mday, $mon, $year, undef,  undef, undef) = localtime ($lstime);
+    my $outvar;
+    my $line_nonwork = 0;
+
+    # Get the month and year in form suitable for output.
+    $mon++;
+    $year += 1900;
+
+    # Non-work item?
+    if (/\[(.*)\]\s*$/) {
+	$_ = $1;
+	$line_nonwork = 1;
+    }
+
+    # Open the file and get the file timestamp
+    $file_ts = (stat($logfile))[9];
+    die "Couldn't open $logfile\n" unless open (LOGFILE, ">>$logfile") ;
+    $file_still_ours =
+	($lastfile_ts &&
+	 ($file_ts < $lastfile_ts + 10 && $lastfile_ts < $file_ts + 10));
+    # Force a value.
+    $file_still_ours = 0 if (!$file_still_ours);
+
+    # Figure out what we're printing.
+    # Output from this code block is setting of the following variables:
+    # $curtask, $curtask_starting_ts, $curtask_subtract, $curtask_work
+    # $printtask_text, $printtask_work, $printtask_hours, $printtask_minutes,
+    # $printtask_direction
+    if (/^\s*\[([^\]]*)\]\s*(.*)$/) {
+	# Don't modify curtask except for curtask_subtract
+	# Just output the information on this task.
+	my $pt_text = $2;
+	my ($pt_hours, $pt_minutes) = parse_timespec($1);
+
+	$curtask_subtract += $pt_hours * 3600 + $pt_minutes * 60;
+	print LOGFILE sprintf($output_format, $mon, $mday, $year, $hour, $min,
+			      $line_nonwork ? "*" : "x",
+			      $pt_hours, $pt_minutes, "<", $pt_text);
+    } elsif (/^\s*\>\s*(.*)$/) {
+	my $ttext = $1;
+	if ($curtask) {
+	    # We print the current task out.
+	    my ($int_hours, $int_minutes)
+		= tsint_sub($curtask_starting_ts, $lstime, $curtask_subtract);
+	    print LOGFILE sprintf($output_format, $mon, $mday, $year, $hour, $min,
+				  $curtask_work,
+				  $int_hours, $int_minutes, "<", $curtask);
+	} else {
+	    # We have a gap.  Check on $curtask_starting_ts is in case
+	    # the last entry didn't affect curtask (i.e. []) and we
+	    # haven't yet set it.
+	    if ($file_still_ours && $curtask_starting_ts) {
+		# It's a gap.
+		# Print something out if it's the same day and we're
+		# still owners of the file
+		my (undef, undef, undef, $fmday, $fmon, $fyear, undef, undef, undef)
+		    = localtime($lastfile_ts);
+		$fmon++;
+		$fyear += 1900;
+		if ($fmon == $mon && $fmday == $mday && $fyear == $year) {
+		    my ($int_hours, $int_minutes)
+			= tsint_sub($curtask_starting_ts, $lstime,
+				    $curtask_subtract);
+
+		    print LOGFILE sprintf($output_format, $mon, $mday, $year,
+					  $hour, $min, $unknown_cat,
+					  $int_hours, $int_minutes,
+					  "<", "*unknown*");
+		}
+	    }
+	}
+		
+	# We set the current task variables.
+	$curtask = $ttext;
+	$curtask_starting_ts = $lstime;
+	$curtask_subtract = 0;
+	$curtask_work = $line_nonwork ? "*" : "x";
+    } elsif (/^\s*\<(\>?)\s*(.*)$/) {
+	my ($int_hours, $int_minutes)
+	    = tsint_sub($curtask_starting_ts, $lstime, $curtask_subtract);
+	my $ttext = $2;
+	my $double_bracket = $1;
+	if ($curtask) {
+	    # Darn, the user dumped two tasks into the same time
+	    # interval.  Split them (but only if what's listed here
+	    # isn't null; treat "<" by iteslf specially).
+
+	    if ($ttext !~ /^\s*$/) {
+		($int_hours, $int_minutes)
+		    = tsint_div($int_hours, $int_minutes, 2);
+		
+		print LOGFILE sprintf($output_format, $mon, $mday, $year,
+				      $hour, $min,
+				      $curtask_work,
+				      $int_hours,
+				      $int_minutes, "/", $curtask);
+		print LOGFILE sprintf($output_format, $mon, $mday, $year,
+				      $hour, $min,
+				      $line_nonwork ? "*" : "x",
+				      $int_hours,
+				      $int_minutes, "/", $ttext);
+	    } else {
+		print LOGFILE sprintf($output_format, $mon, $mday, $year,
+				      $hour, $min,
+				      $curtask_work,
+				      $int_hours,
+				      $int_minutes, "<", $curtask);
+	    }
+	} else {
+	    # Just the latest task.
+	    print LOGFILE sprintf($output_format, $mon, $mday, $year,
+				  $hour, $min,
+				  $line_nonwork ? "*" : "x",
+				  $int_hours,
+				  $int_minutes, "<", $ttext);
+	}
+
+	if ($double_bracket) {
+	    # Set current task to be this line's task.
+	    $curtask = $ttext;
+	    $curtask_starting_ts = $lstime;
+	    $curtask_subtract = 0;
+	    $curtask_work = $line_nonwork ? "*" : "x";
+	} else {
+	    # Erase current task.
+	    $curtask = "";
+	    $curtask_starting_ts = $lstime; # For handling gaps
+	    $curtask_subtract = 0;
+	    $curtask_work = "x";
+	}
+    } else {
+	print "Bad format line: $_\n";
+    }
+    
+    close(LOGFILE);
+    $lastfile_ts = (stat($logfile))[9];
+}
+
+
+    
+

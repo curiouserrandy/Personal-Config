@@ -1,0 +1,201 @@
+#!/bin/sh 
+
+# Creates all files needed for my personal development environment.
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname creates all files need for my (Randy's) personal development
+environment.  Currently this means that a tags file is setup, glimpse
+is setup, and a file list is created, all by default in the current
+directory.  The following arguments are accepted:
+	-c <dir>	Create files in the specified directory
+	-d <dir>	Create files indexing the specified directory
+	-f <filter>	Use <filter> as input to the find -name flag to
+			determine what files to index.  Multiple uses of 
+			-f will have an "or" effect; the union of all
+			filters specified will be used.
+			The default filter is '*.[chsS]' || '*.cpp' || '*.thpl' || '*.pm';
+			this filter will be discarded if any "-f" argument
+			is used.
+	-t <tagsname>	Use <tagsname> as the tags file name.  Default is
+			(of course) "TAGS"
+	-i <filelistname> Use <filelistname> as the file containing the
+			list of files; do not create it.  This must be a
+			pure file name (no directory) that is found in the
+			devenv files directory (specified with -c).
+	-l <filelistname> Use <filelistname> as the name for the list of
+			files.  Default is ".source_file_list"
+	-e <exclude_list_fname>
+			Use <exclude_list_fname> as a list of regexps
+			to filter the filename list through; any files
+			that match this list will not be indexed.  The
+			entire file pathname is used at this point, so
+			this file may be used to exclude directories.
+			If this is a relative pathname, it will be
+			interpreted relative to the -c directory.
+
+			The default value for this flag is
+			".exclude_file_list".
+	-C		Do not interpret C files as C++
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-c <dir>] [-d <dir>] [-f <filter>]* [-t <tagsname>] [-[li] <listfilename>]";
+
+output_dir="`pwd`";
+default_input_dir="`pwd`";
+filter_string="";
+tagsname="TAGS";
+filelistname=".source_file_list";
+createfilelist="yes";
+input_dirs="";
+exclude_file_list=.exclude_file_list;
+consider_c_as_cpp="yes";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -C) 
+	consider_c_as_cpp=yes;
+	;;
+    -e) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	exclude_file_list="$2";
+	shift;
+	;;
+    -c) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	output_dir="$2";
+	shift;
+	;;
+    -d) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	input_dirs="$2 $input_dirs";
+	shift;
+	;;
+    -f) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filter_string="$filter_string ${filter_string:+-o} -name $2";
+	shift;
+	;;
+    -t) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	tagsname="$2";
+	shift;
+	;;
+    -l) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filelistname="$2";
+	shift;
+	;;
+    -i) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filelistname="$2";
+	createfilelist="no";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Finalize input dirs
+if [ X"$input_dirs" = X"" ]; then
+    input_dirs="$default_input_dir";
+fi
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ X"$consider_c_as_cpp" = X"yes" ]; then
+    extra_etags_args="$extra_etags_args -C";
+fi
+
+# Finalize exlude file list, and confirm it exists.  If it doesn't,
+# and it's not the default, error and exit.
+case $exclude_file_list in
+    /*)
+	# Absolute; leave alone
+	;;
+    *)
+    	# Relative; prepend output directory.
+	exclude_file_list="$output_dir/$exclude_file_list";
+	;;
+esac
+
+if [ ! -r $exclude_file_list ]; then
+    if [ "$exclude_file_list" != "$output_dir/.exclude_file_list" ]; then
+	echo "Exclude file list not found.\n" 1>&2;
+	exit 1;
+    fi
+    exclude_file_filter="cat";
+else
+    exclude_file_filter="egrep -v -f $exclude_file_list";
+fi    
+
+# Finalize filter
+if [ X"$createfilelist" = X"yes" ]; then
+    set -f
+    filter_string="( ${filter_string:--name *.[chsS] -o -name *.cpp -o -name *.cc -o -name *.thpl -o -name *.pm } )";
+
+    # Do the job.  Filename list first.
+
+    find $input_dirs $filter_string -print | $exclude_file_filter > $output_dir/$filelistname;
+    set +f
+fi
+
+# Tags next.  Need to seaprate out .thpl files, since we need 
+# to mark those as perl.
+
+cat $output_dir/$filelistname | egrep -v '\.thpl$' | \
+	etags $extra_etags_args -o $output_dir/$tagsname -
+cat $output_dir/$filelistname | egrep '\.thpl$' | \
+	etags $extra_etags_args -a -o $output_dir/$tagsname -l perl -
+
+# Glimpse next
+
+cat $output_dir/$filelistname | glimpseindex -F -i -o -B -H $output_dir -n
+
+# Last, create a gdb file to easily set the dirlist from this sandbox
+
+cat $output_dir/$filelistname | sed 's;/[^/]*$;;' | sort -u | \
+	sed 's/^/dir /' > $output_dir/.gdbdirlist

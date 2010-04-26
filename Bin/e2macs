@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Setup emacs in a particular geometry
+
+# TODO:
+#	Auto-adapt to different monitors to do the right size, font, and 
+#	height
+
+emacs -geometry 80x60+0+0 -font 7x14 -f second-frame

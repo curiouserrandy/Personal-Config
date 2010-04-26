@@ -1,0 +1,4 @@
+# Evaluate a particular variable contained in a variable:
+
+echo $i = `eval echo '$'$i`;
+

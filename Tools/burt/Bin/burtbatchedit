@@ -1,0 +1,79 @@
+#!/bin/sh 
+
+# Parsing arguments for a bash shell function of shell script.
+# {RETURN} == "exit" for shell script, "return" for shell function.
+
+burt_status_dir=$HOME/.burt
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname updates all BURTs on the command line from the burt
+status directory.  By default this is $burt_status_dir, but it may be 
+changed via the -d flag.
+Arguments:
+	-d <dir>		Directory in which to find BURTs to use
+				for update.
+	-M			Don't send mail when updating the burt. 
+	burtid1 burtid2 ...	Burts to update based on the files with their
+				name in the burt status directory.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-d <dir>] burtid1 burtid2 ...";
+
+# Parse all arguments.
+burt_nomail=no
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -d) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	$burt_status_directory=$2;
+	shift;
+	;;
+    -M) 
+	burt_nomail=yes;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -lt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+for i in $*; do
+    if [ ! -r $burt_status_dir/$i ]; then
+	echo "Coudln't read $burt_status_dir/$i" 1>&2;
+	exit 1;
+    fi
+done
+
+if [ X"$burt_nomail" = X"yes" ]; then
+    BURT_NO_MAIL=yes
+    export BURT_NO_MAIL
+fi
+
+for i in $*; do
+    burt edit -xi $i < $burt_status_dir/$i
+done

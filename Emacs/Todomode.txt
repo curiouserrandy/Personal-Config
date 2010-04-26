@@ -1,0 +1,484 @@
+## -*-mode: rstodo; fill-prefix: "   ";-*-
+
+* Old notes   
+
+** Goals
+
+-- Need something to reorder todolist items   
+
+** Notes from beginning of file
+
+;;; Eventually you might want to create your own major mode based on outline 
+;;; mode
+
+;;; Argh.  Goals:
+;;;	* Keystroke to kill current todo item.
+;;;	* Keystroke to move all completed todo items in section to top
+;;;	  of section.
+;;;	* Keystroke to move all completed todo items in section to other
+;;;	  (default) section.  Note that this isn't just for completing
+;;;	  items; it's for picking them out of different categories for
+;;;	  the day.  Probably can just use sub-mode below, though. 
+;;;	* Keystroke to move current todo item down a single item.  I may not
+;;;	  use this, but it's simple enough that it's worth doing.
+;;;	* Sub-mode in which number keys cut the current todo item and put
+;;;	  it in a specified section.  I think I throw something together
+;;;	  here and play with it.  The simple way might be to mark the
+;;;	  destination sections with something in their headers.
+;;;	* Keystroke to toggle nature of current todo item (todo, cando, other?) 
+
+;;;	* Recognized external file syntax and keystroke to visit.
+;;;	* Keystroke to move all completed todo items to other
+;;;	  (default/specified) file.  (?)
+;;;	* Manage blank lines between todo items intelligently in copying.
+;;;	  I'm not sure there's an obvious way to do this.
+
+;;;	* Keystroke to move curent item to specified complete section (?)
+;;;	* Follow on to moving all completed todo items in section to other
+;;;	  (specified) section: Key a running timestamp in that other section. 
+;;;	* Hide all but first line of a todo item.
+
+;;; Fine.  Plan:
+;;;	* Create basic sub-mode under outline; make it as simple as outline
+;;;	  and play with it.  Basically done; it's outline, but with
+;;;	  a new mode name.
+;;;	* Think about and implement basic navigation.  Issues:
+;;;	  forward/back always moving to the next one (zero being
+;;;	  current) not dependent on at/not-at beginning, clean
+;;;	  interface to done/not-done and dependent/not-dependent.  
+;;; 	* Create "kill current todo item" and play with it.
+;;;	* Create functions to move completed todo items and play with it.
+;;;	* Create sub-mode (new mode?  Pretty restrictive, but you want to
+;;;	  have movement keys) for sorting, based on format in outline modes;
+;;;	  play with it.
+
+** Notes on navigation
+
+What do I expect from navigation?  I like next/previous, but I don't
+think it's going to be used *that* often.  Next jumping over done, or
+done and dependent stuff, yes.  Ok.  So what I think I want is:
+	* Single command taking +,0,- argument indicating where to
+	  move, as well as flags indicating what to skip.
+	* Some commands (can be lambdas for key defines) to
+	  navigation.  I think simplest should be skipping both
+	  dependent and done, and second most should be skipping just
+	  done.  Don't bother to bind basic movement for now.  
+	  C-c C-p/n and C-c C-f/b.
+
+Conceptually, outline entries are bounded by the last character of the
+previous entry, and todo entries the same.  In other words, if I'm at
+the beginning of a line with the outline header/todo element in front
+of me, I'm still in that outline header/todo element.  One character
+earlier, and I'm before it.
+
+Ok.  How to write basic command
+	* Computes regexp to search for based on flags
+	* Computes range to search within based on outline regexp.
+	* If 
+
+Question: Where are the limites of regexp searches forward/back wrt/
+point?
+
+re-search-foward behaves as you'd expect (needs to start at or ahead
+of point).  re-search-backward must end before origin of search.  This
+means that if point is *within* the regexp searched for, neither
+direction will find it.  How to handle this?
+
+I think I need to rely on both outline and todo items starting at the
+beginning of a line.  So:
+	* Current X algorithm is:
+		* Beginning of line
+		* If looking-at, done
+		* If not looking-at, re-search backwards for regexp
+	* Next X algorithm is:
+		* Current x algorithm
+		* End of line
+		* re-search forward N
+ 	  (Using end-of-line because it works even if you're on a
+	  non-todo item and moving by todos.)
+	* Previous X algorithm is:
+		* Current X algorithm
+		* re-search backwards N
+
+Range algorithm is:
+	* Current X algorithm
+	* Next X algorithm
+
+Note that you need the concept of things that aren't todo items as
+well.  Everything in the file (well, ok, pre-amble--how to deal?) is
+part of an outline entry.  But not everything is part of a todo
+entry.  I *think* the way to handle this is to have a concept of
+diving the file up at a low level into pieces (some of which are todo
+entries, some of which are other) and into outline entries
+(everything's an outline entry).  The "current" algorithm should be
+given all boundaries, and will figure out what thing you're within.
+The previous and next algorithms should search for what's ahead of or
+behind you.  
+
+So primary workhorse here is
+
+(defun rstodo-item-boundaries (item-boundary-regexp)
+   "Return boundaries of item deliniated by regexp."
+...)
+
+(defun rstodo-item-type (loc)
+   "Return type of item at LOC.  LOC must be at the beginning of the
+   defining regexp for the item."
+...)
+
+item-boundary-regexp can be either outline regexp or
+outline+todo+done+>>. 
+
+Skimming outline mode, outline-regexp is used for:
+	* Font lock faces
+	* paragraph start
+	* auto-fill-inhibit-regexp (hmmm ... should use in wiki)
+	* paragraph-separate (wish I understood why these were the way
+	  they are)
+	* imenu-generic-expression (Huh?)
+	* Various movement commands
+	* outline-demote (good to know).
+	* outline-map-region
+But I don't think there's anything generic to use there. Pity.
+Reconstruct; it'll take you less time.  But use outline-regexp.
+
+Tried to figure out paragraph-start and paragraph-separate, and
+failed.  Sigh.  Maybe over time.  Free form musing: paragraph-start
+matches anything that either starts or separates; paragraph-separate
+only things that separate (not start).  But paragraph-start doesn't
+seem to allow for "^    Paragraph starts here ...".  So I'm not sure
+what that's about.
+
+I think I'm going to propose that for navigation we:
+	* Figure out search limits (beginning and end of file for
+	  outline, beginning and end of outline for todo).
+	* Move to the beginning of the current entry, whatever it is
+	  (either outline or piece)
+	* Use appropriate regexp searchs to move N in the direction
+	  wanted, erroring if we can't find what we're looking for. 
+
+To move to the beginning of the current entry, I think we:
+	* Move to end of line
+	* re-search backwards for apprpriate regexp
+
+To get outline limits we:
+	* Move to begining of current outline; store
+	* Move to beginning of next entry; return pair
+
+To get todo limits we do the same thing, with the most general
+regexp. 
+
+
+** Random notes
+
+Use cases:
+	* Mark deleted
+	* Change nature of item (e.g. todo/cando)
+	* Expunge deleted (several meanings).  Timestamps in done
+   	  section? 
+	* Reorder items (need to understand common use cases here)
+	* Move items between sections.  I think this is two modes:
+   	  sorting items (going through a single section and farming
+   	  them out) and selecting specific items to go into a
+   	  particular section (pulling off main list items into main
+   	  list).
+	* Adjust blank lines between todo items?  For now, I'm
+   	  inclined to do this with straight editor commands.
+	* Hide all but first line of todo item.
+	* Navigation (next/prev, next/prev jumping over done and/or
+   	  dependent stuff)
+
+* New Notes 
+
+Wow.  I must have redesigned this five or so times :-}.  The problem
+is that I'm not getting a structured design.
+
+Design phases:
+	X * Use case listing and prioritization (if you want to split
+	  priorities within the use case list, you don't have a fine
+	  enough granularity).
+	X * File format specification
+	X * Infrastructure design and outline (don't build any of these,
+	  just specify the pieces you think are useful for
+	  infrastructure design).  I'd write these out as defuns with
+	  doc, raising not yet implemented errors.
+	X * Use case implementation.  Implement the first N use cases
+	  (3?) based on the infrastructure design and outline.
+	* Infrastructure implementation: Implement the necessary
+	  pieces, but no more.
+	* Binding.  Bind the use case implementations to keys as appropriate. 
+
+	* Testing; get first N use cases working
+	* Iterate on remaining use cases.
+
+** Use case listing and prioritization 
+
+## Prioritized   
+
+"T" means tentatively done through regular editing commands.    
+
+X-- Navigation: Next/previous item, skipping done
+
+X-- Navigation: Next/previous item, skipping done and dependencies. 
+
+T-- Mark deleted.  Suggest initial implementation is just putting an
+   "X" on an item.
+   
+X-- Exp Dels: Move deleted to top of section
+   
+X-- Reorder: Move current item up or down one (but leave cursor on it so
+   that doing this repeatedly does what you'd think).
+
+##
+   
+X-- Reorder: Move current item to mark (? maybe specified other point?
+   But mark might be simplest).  Should shift cursor to next
+   item so doing this repeatedly is a way of sorting.  
+   
+X-- Kill current todo item.
+
+## Non-prioritized (but below above)
+
+-- Move item to section: Specified section in same file.
+
+-- Move item to section: Section specified through key binding. 
+
+-- Exp Dels: Move deleted to separate section
+   
+-- Change nature of item (e.g. todo/cando)
+   
+-- Exp Dels: Move deleted to separate section in separate file
+-- Exp Dels: (separate section cases) Add a timestamp to separate section
+   if "now" is a day different from the last timestamp in the
+   list. 
+   
+-- Move item to section: Specified section in differnet file. 
+
+T-- Adjust blank lines between todo items?  For now, I'm
+   inclined to do this with straight editor commands.
+   
+-- Hide all but first line of todo item.
+   
+-- Navigation: Next/previous item
+
+*** Use case notes (semi-random)
+
+-- Note that when navigating, you don't want to move to the end of the
+   current todo item on "next todo item", as that'll (at the end of an
+   outline section) put you into the next outline section.
+
+-- Not currently putting in any intelligence around groupings
+   (>>/<<). 
+
+*** Notes on moving things to different sections
+
+That's for re-ordering within a section.  I'm not certain how to
+handle moving items to different sections.  There's two different
+pieces of these:
+	* Dispatching items to multiple specialized sections
+	* Moving specific items from a specialized section to a
+	  non-specialized section
+One issue in both of these cases is where within the section to move
+it?  I'm inclined to not worry about that for now (put it at end) and
+play and see what I think.  Ok.
+
+So I think both use cases above are handled by a single keystroke mode
+for sections.  I'm further inclined (at least at first) to make those
+keystrokes (and the sections they can move to) hand-picked.  Ok, so if
+an outline header has a [<letter>], that's it's keystroke in this
+mode.  This mode will only have:
+	* Those keystrokes
+	* Normal navigation commands (including whatever navigational
+   	  commands I decide to include in the mode).
+	* C-c C-C: Back to todo mode
+
+In case of conflicts last entry in file wins (for todo case with
+multiple days).
+
+How to handle multiple files?  Everything works if no conflict.  When
+go into dispatch mode, scan all buffers in todo mode and collect
+dispatch keys; if there's a conflict, error out of switching into
+dispatch mode.  Fun.
+
+** Bindings/workflow
+*** Basic commands   
+
+I'd like to come up with a list of things that I'd like to do as a
+normal part of working with todo lists, to give them the simplest
+bindings I can.  Off the top of my head:
+	* First (non-deleted? yes) item in list?
+	* Next item (all types, I think)
+	* Move current item to mark
+
+Also need better navigational bindings; can I do something with arrow
+keys? 
+
+Let's try:
+	C-c right/left moves active todo items
+	C-c up/down moves to first/last active todo item
+	C-c C-x moves deleted to top (as current)
+	C-c C-k kills piece (as current)
+
+	F5 move piece to mark
+	F6 move to next piece
+	F7 move piece up
+	F8 move piece down
+
+Done.  
+   
+*** Moving to different sections
+
+See above.  This'll get its own mode (for heavy usage) and I'd like to
+have the scan basic movement (with pre-scan) bound to a key which then
+prompts after scanning for keystrokes.
+
+** File format specification
+
+outline_header := re("^" + outline_regexp + ".*$")
+todo_header := re("^X?(--|==|??)" + ".*$")
+other_header := re("^##|$$|>>|<<" + ".*$")
+
+header := outline_header | todo_header | other_header
+content := !header
+piece := header, content *
+
+leader := content *
+
+file := leader, piece + 
+
+## Note that it is assumed that all headers begin at the beginning of
+## the line, and occupy the entire line.  
+
+## Note that the above does not include the implicit structure of an
+## outline file; that's beyond the scope of this design.  That
+## structure does apply, we just inherit it from the outline mode.
+
+## Note that unless you are in the leader, you are always within a
+## current piece.  If you are anywhere on the line for the piece
+## header (including at the beginning of the line) you are within that
+## piece. 
+
+?? Note that normally the position marking the end of a piece is
+?? in the next piece.  This will not be the case at the end of the
+?? file.
+
+** Infrastructure design and outline
+
+As previously planned, this will inherit from outline mode via
+define-derived-mode.  An appropriate call to define-derived-mode
+already exists in rs-todo.el.  Further note that I do not commit
+myself to blindly inheriting bindings from outline-mode; variations in
+bindings are very important.
+
+Key classes of infrastructure functions:
+	* Get information (start, end, type) on piece @ location
+	* Get information on outline section @ location
+	* Get information on piece related to current piece, subject
+	  to constraints (e.g. next completed todo item after current
+	  outline piece within current outline boundaries)
+	* Delete piece, returning text deleted
+
+Questions to resolve:
+	* Throw or return error conditions?  Go through after first spec
+	  on this one.
+
+** Possible next steps
+
+X-- Implement move-to-mark and kill todo item use case.
+
+-- Implement first non-dependent in section.
+
+-- Go over bindings; try and come up with some better ones as noted in
+   bindings/workflow. 
+
+-- Think about what you'd like to have happen in various use cases
+   around spaces on either side of todo items--can you specify this
+   precisely?  If so, how hard would it be to implement?
+
+-- Implement more use cases
+   
+-- Restructure specfication of todo items so that all info for each
+   one is in one place and the various lists/regexps are created from
+   that place.  This should include the various lists of things that
+   can be moved or collected as deleted items that are currently
+   embedded in the code.
+
+-- Maybe change names for non-outline pieces to symbols?  Probably
+   should, though it's not vital.
+
+-- How to deal with the fact that customizing the todo mode variables
+   after file loading will not update the constants that depend on
+   them? defcustom :set?  Or just don't make them be customizable :-}.   
+
+-- Would it be useful to have some other definition of rel 0 for
+   moving between pieces?
+
+-- Think carefully about workflow when you're actually working with
+   todo lists; what do you want to do?  Map this into what gets bound
+   to what keys (and specifically, figure out waht you'd like your
+   function keys to look like).  Done for now; come back to.
+
+* Todo +
+
+X-- Change "move todo item to mark" to use it's own, buffer specific
+   mark.  Must include command for setting that mark (C-c C-@).  Want
+   a variant that copies as cando item (and removes category
+   markings).  Coded whole thing; prefix should copy todo item as
+   cando (minus >! markings).
+
+X-- Create a navigation command to go to a particular section in the
+   current file based on some single letter flagging (ordering in hint
+   buffer?)   
+
+X-- Allow recognition of other marks before -- besides "X"; make this
+   configurable by variable.
+
+-- Update copying todo item ot mark to move forward one when it's
+   done. 
+
+-- Move copying version to mark onto it's own key.
+
+-- Maybe a keystroke to move to mark?   
+
+-- Maybe default todo mark into "Sorting"?  Probably not, but should
+   do navigation thing.
+
+X-- Change todo mark to C-c C-space?  Yes!  That took a while; sigh.   
+
+-- Default navigation to first active entry of default section.
+   Keystroke to do the same.
+
+* Done (todo items)
+
+X?? Are arguments to functions local variables?  Yes.
+
+X-- Maybe symbolic access to piece info?
+
+X-- Go over relative piece info; corner cases and logic.
+
+X-- Read through file beginning to end.
+
+X-- Same for outline?  Not as much crap in outline, but probably
+   simplest. 
+
+X-- Is rstodo-beginning-of-piece ever used where we don't want to move
+   to limit and return nil?  Ditto end?  (Beginning: In leader; end;
+   nothing but leader).  No, though I'm going to cheat slightly (these
+   are pretty much only helper functions for rstodo-get-piece-info):
+	* rstodo-beginning-of-piece will return null if in the leader
+	* rstodo-end-of-piece will never return null; it'll either
+   	  give end of file or end of piece (or both)
+
+X-- Start debugging:
+	X * Collecting deleted items goes into an infinite loop.
+	X * I use ?? and sometimes put X in front of it.  Treat as todo
+   	  item, I think.
+
+X-- Problem: Basing piece regexps on outline-regexp risks getting the
+   wrong outline regexp.  I think I'm picking up the elisp version
+   when I do an eval-current-buffer in rs-todo.el.  Not certain how to
+   handle this one.
+
+X-- Problem: Move piece to point keeps point before piece; I'd like to
+   insert stuff before point.  Sigh.
+

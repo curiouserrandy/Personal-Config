@@ -1,0 +1,262 @@
+#!/usr/bin/perl -w
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+TBD--generalized C++ parsing.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname <files...>";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+#    (/^{ARG}$/) && do {
+#	# Process {ARG}
+#	next ARGS;
+#    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+# Process any non-flag arguments
+# die "Usage: $usageString" if (scalar(@ARGV) > {EXPECTED NON-FLAG ARGS});
+
+$q = '"';
+$dqstring = qr/$q [^$q\\]* (?:\\.[^\\$q]*) * $q/x;
+$q = "'";
+$sqstring = qr/$q [^$q\\]* (?:\\.[^\\$q]*) * $q/x;
+
+$scsep = qr/[^;\{\"\'\\]* (?: (?:\\.|$dqstring|$sqstring) [^\{;\"\'\\]* ) */x;
+$anid = qr/[a-zA-Z_][a-zA-Z_0-9]*/;
+$baseclass = qr/\s* (?: (?:virtual|public|private|protected)\s+)* $anid \s*/x;
+
+if (0) {
+    print "DQSTRING: $dqstring\n";
+    print "SQSTRING: $sqstring\n";
+    print "SEMISEP: $scsep\n";
+}
+
+$/ = undef;
+			  
+$curlysep = qr/[^\{\}\"\']* (?: (?:\\.|$dqstring|$sqstring) [^\{\}\"\']*)*/x;
+
+sub parse_to_matching_curly {
+    my ($string) = @_;
+
+    my ($accum);
+    while ($string =~ /^($curlysep)([\{\}])(.*)$/s) {
+	$accum .= $1;
+	if ($2 eq "}") {
+	    return ($accum, $3);
+	} else {
+	    my ($before, $rest) = parse_to_matching_curly($3);
+	    $accum .= "\{$before\}";
+	    $string = $rest;
+	}
+    }
+    die "Couldn't find matching curly brace in string $_[0]\n";
+}
+
+	 
+# Split the string passed in into cpp high level units (declarations
+# or definitions), returning the result in an array. 
+# Must not have preprocessor commands, comments, or ^Ms
+sub split_cpp_units {
+    my ($proc) = @_;
+    my (@sections);
+    my ($chunk);
+    
+    while ($proc =~ /^($scsep) ([\;\{])(.*)$/sx) {
+	$chunk = undef;
+	if ($2 eq ';') {
+	    # That's a simple chunk; push it onto the stack
+	    $chunk = "$1;";
+	    $proc = $3;
+	} else {
+	    # The hard part; we're ending in a curly bracket.  I
+	    # believe that there are two cases here; a function
+	    # definition (in which case the last thing before the
+	    # beginning curly was a ")" and we want to go until the ending
+	    # curly and stop) and a typedef or initialitzation of some sort
+	    # (in which case the last thing before the beginning curly
+	    # was not a ")" and we want to go until the next non
+	    # curlied semicolon).  Regardless we want the stuff in
+	    # the curlies.
+	    $chunk_start = $chunk = $1;
+	    $proc = $3;
+	    my ($before_curly);
+	    ($before_curly, $proc) = parse_to_matching_curly($proc);
+	    $chunk .= "\{${before_curly}\}";
+	    # If it was a function definition, we're done.  Otherwise...
+	    if ($chunk_start !~ /\)\s*(?:const\s*)?$/s) {
+		# Just keep going until you get to a semi-colon
+		while ($proc =~ /^($scsep) ([\;\{])(.*)$/sx) {
+		    $chunk .= "$1$2";
+		    $proc = $3;
+		    last if ($2 eq ";");
+		    ($before_curly, $proc) = parse_to_matching_curly($proc);
+		    $chunk .= "${before_curly}\}";
+		}
+	    }
+	}
+	push(@sections, $chunk);
+    }
+    return @sections;
+}
+
+# See parsecpp-ds.graffle in this directory for the DS description
+
+while (@ARGV) {
+    $current_file = shift @ARGV;
+
+    open(CFILE, "<$current_file") || die "Couldn't open file $current_file\n";
+    $_ = <CFILE>;	# SLURP!!
+
+    # Get rid of comments and preprocessor commands, and ^Ms
+    s/^#.*$//mg;
+    s;//.*$;;mg;
+    s;/\*[^*]*\*+([^/*][^*]*\*+)*/;;msg;
+    s/\r\n/\n/g;
+    s/\r/\n/g;
+
+    my (@file_sections) = split_cpp_units($_);
+
+    if (0) {
+	foreach $s (@file_sections) {
+	    print "\nvvv File section vvv\n";
+	    print $s;
+	    print "\n^^ File section ^^\n";
+	}
+    }
+
+    while ($_ = shift(@file_sections)) {
+	# If it ends in a curly it's a function definition.
+	# Otherwise, if it begins with class/structure tags it's that.
+	# Otherwise, we don't care.
+
+	/^[^\(\{]*?\s*(?: ($anid) :: )?($anid)\s*(\([^\{]*)\{(.*)\}\s*$/sx && do {
+	    if (!defined($1)) {
+		$fnref = {};
+		push(@{$functions{$2}}, $fnref);
+	    } else {
+		die "Huh?: $_\n" if (!defined($2) || !defined($1));
+		$fnref = {};
+		push(@{$methods{$2}->{$1}}, $fnref);
+		push(@{$classes{$1}->{methods}->{$2}},  $fnref);
+	    }
+	    # $fnref->{body} = $4;
+	    $fnref->{args} = $3;
+	    $fnref->{file} = $current_file;
+
+	    my ($body) = $4;
+	    
+	    my (@body_refs) = split(/\W+/, $body);
+	    @body_refs = grep(!/^\d/, @body_refs);
+	    $fnref->{refs} = \@body_refs;
+	};
+
+	/^\s*
+	 (?: template\s*<(?: [^>]*)>\s*)?
+	 (?: class|struct|union)\s*
+	 ($anid)\s*
+	 (?: \: ($baseclass (?:, $baseclass )*))?
+	 \{(.*)\}\s*;\s*$/sx && do {
+	     my $class = $1;
+	     $classes{$class}->{bases} = [];
+	     $classes{$class}->{decl} = $3;
+	     $classes{$class}->{file} = $current_file;
+	     if (defined($2)) {
+		 my (@base_list) = split(/,/, $2);
+		 for $i (@base_list) {
+		     my ($flags, $classname)
+			 = ($i =~ /^\s*((?:(?:virtual|public|private|protected)\s+)*) ($anid) \s*$/sx);
+		     my %base_desc;
+		     $base_desc{flags} = $flags;
+		     $base_desc{class} = $classname;
+		     push(@{$classes{$class}->{bases}}, \%base_desc);
+		 }
+	     }		 
+	};
+    }
+
+}
+		    
+# I have all the data; dump it as requested.
+$output_class_inheritance_graph = 0;
+if ($output_class_inheritance_graph) {
+    print "digraph class_inheritance {\n";
+    print "\trankdir=LR;\n";
+    foreach $i (keys %classes) {
+	foreach $j (@{$classes{$i}->{bases}}) {
+	    print "\t$i -> $j->{class};\n";
+	}
+    }
+    print "};\n";
+}
+	    
+
+sub set_file_dep {
+    my ($source_file, $refname) = @_;
+    my ($i,$j);
+    $source_file =~ s/\.cpp$//;
+    my ($dest_file);
+    
+    if (defined($functions{$refname})) {
+	foreach $i (@{$functions{$refname}}) {
+	    $dest_file = $i->{file};
+	    $dest_file =~ s/\.cpp//;
+	    $file_dep{$source_file}->{$dest_file}++;
+	}
+    }
+    if (defined($methods{$refname})) {
+	foreach $i (keys %{$methods{$refname}}) {
+	    foreach $j (@{$i}) {
+		$dest_file = $j->{file};
+		$dest_file =~ s/\.cpp//;
+		$file_dep{$source_file}->{$dest_file}++;
+	    }
+	}
+    }
+}
+
+$output_file_dependencies = 1;
+if ($output_file_dependencies) {
+    # $file_dep{"from_file"}->{"to_file"} = num
+    my ($i, $j, $k, $l);
+    foreach $i (keys %functions) {
+	foreach $j (@{$functions{$i}}) {
+	    foreach $k (@{$j->{refs}}) {
+		set_file_dep($j->{file}, $k);
+	    }
+	}
+    }
+    foreach $i (keys %methods) {
+	foreach $j (keys %{$methods{$i}}) {
+	    foreach $k (@{$j}) {
+		foreach $l (@{$k->{refs}}) {
+		    set_file_dep($k->{file}, $l);
+		}
+	    }
+	}
+    }
+
+    print "digraph file_dependencies {\n";
+    print "\trankdir=LR;\n";
+    foreach $i (keys %file_dep) {
+	foreach $j (keys %{$file_dep{$i}}) {
+	    next if ($i eq $j);
+	    print "\t$i -> $j;\n";
+	}
+    }
+    print "}\n";
+}
+		
+
+	    

@@ -1,0 +1,8 @@
+#!/bin/sh 
+MAILDIR=/u/rsmith/MH
+find $MAILDIR -name ,\* -mtime +7 | xargs -l50 rm -f
+
+# Clean out mailing lists 
+find $MAILDIR/rlists -mtime +90 | xargs -l50 rm -f 
+find $MAILDIR/mlists -mtime +30 | xargs -l50 rm -f 
+find $MAILDIR/alists -mtime +30 | xargs -l50 rm -f 

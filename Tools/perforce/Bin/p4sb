@@ -1,0 +1,59 @@
+#!/bin/sh
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname determines the basename of the current sandbox and writes it out
+to stdout.  Args:
+	-c 		Write perforce client name instead
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-c]";
+
+write_client_name=no
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -c) 
+	write_client_name=yes;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+while [ `pwd` != "/" -a ! -r P4ENV ]; do
+    cd .. 
+done
+
+if [ ! -r P4ENV ]; then
+    echo "unknown_sandbox";
+    exit 1;
+fi
+
+if [ X"$write_client_name" = X"yes" ]; then
+    awk -F= '/P4CLIENT/ {print $2;}' < P4ENV;
+else
+    pwd
+fi
+    

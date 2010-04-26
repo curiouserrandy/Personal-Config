@@ -1,0 +1,30 @@
+#!/usr/bin/python 
+
+import quopri
+import sys
+import string
+
+ceqp = 0
+
+# Read the header
+line = sys.stdin.readline()
+while line:
+    if line[0] == "\n" or len(line) == 0:
+        sys.stdout.write(line)
+        break
+    
+    if string.find(line, "Content-Transfer-Encoding") == 0 and \
+       string.find(line, "quoted-printable"):
+            ceqp = 1
+            line = sys.stdin.readline()
+            continue
+
+    sys.stdout.write(line)
+    line = sys.stdin.readline()
+        
+if ceqp:
+    quopri.decode(sys.stdin, sys.stdout)
+else:
+    sys.stdout.writelines(sys.stdin.readlines())
+
+    

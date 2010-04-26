@@ -1,0 +1,87 @@
+#!/bin/sh
+
+# Todo:
+#	Figure out how to incorporate ".p4ignore" files in searched dirs.
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program for showing all view private (not reflected in the
+depot) files in the current view.  It takes the following arguments:
+	-f <filter>	A filter to be matched against files; if a 
+			match occurs, that file should not be
+			listed in the output.  The default filters are 
+			'*~', '.*', and '*.o'
+	-a		Allow anything (i.e. filter nothing)
+	<args>		Files and directories to search.  Any directories
+			in this list will be searched recursively.  The
+			default is ".";
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-f <filter>]* <files>";
+
+filters=""
+roots="."
+
+use_filter=yes;
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -a)
+	use_filter=no;
+	;;
+    -f) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filters="$filters ${filters:+-o} -name '$2'";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -ne 0 ]; then
+    roots="$*";
+fi
+
+if [ X"$filters" = X"" ]; then
+    filters="-name *~ -o -name .* -o -name *.o";
+fi
+
+# Gimme a file list.
+
+tmpfile=/tmp/p4lvp$$;
+
+if [ "$use_filter" = "yes" ]; then
+    set -f
+    find $roots -type f ! \( $filters \) -print > $tmpfile;
+    set +f
+else
+    find $roots -type f -print > $tmpfile;
+fi
+
+p4 -x - files < $tmpfile 2>&1 1>/dev/null | grep 'no such file' | awk '{print $1;}'
+
+# Figure out why you think you needed this.
+#cat $tmpfile.2 | xargs p4 opened 2>&1 > /dev/null | grep 'not opened' | \
+#	sed 's/ - file(s) not opened.*//'
+
+rm -f $tmpfile

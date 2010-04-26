@@ -1,0 +1,91 @@
+The general architecture of this directory is:
+	* Indvidual files in this directory control the process of
+	  configuration startup.  There may also be files in this
+	  directory that contain bash aliases that apply to all
+	  systems; eventually I'd like to give them their own separate
+	  sub directories.
+	* I will use the suffix .bf for files of bash functions, and
+	  .el for emacs lisp files.  The directory name "Bin" will be
+	  used for directories that should go on my search path (if
+	  whatever context their location in the tree implies is
+	  tree).
+	* In general, for each type of program that may be initialized
+	  by usage of this directory structure, I will have a
+	  "incorporate_for_initialization" function that takes a
+	  single argument (e.g. "xxx").  This function will:
+		* Check to see if xxx.<suffix> exists; if so it will
+	  	  source that file.
+		* If xxx.<suffix> doesn't exists, it will check to see
+	  	  if xxx exists.
+		* If xxx exists and is not a directory, it will raise
+	  	  an error.
+		* If xxx exists and is a directory, it will check to
+	  	  see if xxx/all.<suffix> exists; if so it will source
+	  	  that file.
+	  Note that non-existence of any of xxx.<suffix>, xxx/, or
+	  xxx/all.<suffix> is allowed.  
+	* In addition, bash startup will check for the existence of 
+	  xxx/Bin and add that directory at the front of the path if
+	  it exists.
+	* In addition, emacs lisp startup will check for both .el and
+	  .elc files.  If they both exists, and the .el is newer than
+	  the .elc file, the .el file will be compiled before the .elc
+	  file is loaded.
+[Finish the outline then bring directory structure into alignment.  ]
+	* Following this structure, the file ./all.bf is the initial
+	  file sourced for bash startup.  The file ./all.el[c] is the
+	  initial file used for emacs lisp initialization (Not Yet
+	  Implemented).
+	* The "Tools" directory holds files and directories for
+	  specific tools which may be available on all systems.  The
+	  idea is that I will do me-specific customization for tools
+	  in these directories, and then include/refer to them from
+	  the system-specific area where I can confirm I'll be using
+	  those tools.
+	* The "OS" subdirectory holds files for each OS on which I run
+	  (the name of the files should be the output of the "uname"
+	  command). 
+	* There is a subdirectory for each domain (all but the first
+	  atom in the hostname) in which I run.  
+	* The domain subdirectories also have an "OS" subdirectory for
+	  each OS as above.
+	* The "most general to least general" order is considered to
+   	  be:
+	  	* OS- and domain/host- independent.
+		* OS-dependent.
+		* Addition of "standard" local directories (/usr/local
+   	  	  & etc)
+		* domain-dependent.
+		* domain-dependent & OS-dependent.
+		* host-dependent.
+	  For bash, the appropriate files will be executed in this
+   	  order, allowing the latter stuff to override the earlier stuff.
+	  
+	  Note that the main problem (I think) in the above is that
+   	  there are times when you want OS-dependent to override
+   	  domain-dependent.  In this case, you re-override in the
+   	  domain&OS dependent section.  
+	* TAGS file is basically useless except for global query
+   	  replace (I think).
+	  
+Todo
+----
+-- Break getpgid out into shell scripts in all bin subdirectories (OS
+   area).
+-- Get Bin stuff onto path.  
+-- Modify the various path management functions so that they preserve 
+   order of the lists entered.
+-- Write quick squibs on when to use each.  I think that prefix_*
+   should be used for system directories, and suffix_* for directories
+   in which functions for one particular package are kept.
+-- Setup emacs lisp structure.
+-- [Not high priority] Setup structure so that it will work for ksh;
+   some places may not have bash.   
+-- [Not high priority] Setup structure so that it can be used for csh
+   style startup as well.  Arrange to share all configurations (this
+   isn't *too* hard, if you have functions for the common
+   configuration activities, like "setenv").  
+X-- Decide whether you want to handle this structure automatically from
+   top level, or delegate at each level (allows more complex
+   overrides).  Handle automatically from top level; simplifies
+   programming. 

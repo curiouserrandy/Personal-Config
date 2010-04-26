@@ -1,0 +1,109 @@
+#!/bin/sh
+
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+Run a command and direct output to a file.  
+This takes the following flag arguments:
+	-b 	Put command in background.
+	-e	Echo the command to the file.
+	-q	Don't echo process group id to output.
+		Note that not specifying this flag means that the
+		process group id will show up in both the output
+		file and on stdout of this command, regardless of -b.
+	-nb	Don't auto-backup file if it exists; just overwrite.
+		Ignored if -a is set.
+	-a	Append to file rather than erasing it.
+The non-flag arguments are the file name to output to, and the command
+to run.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$0 [-b|-bq|-a] <output file> <command>";
+
+background=no;	# Other options are "yes" and "quiet".
+append=no;
+nobackup=no;
+quiet=no;
+echocommand=no;
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -q) quiet=yes;
+        ;;
+    -b) background=yes;
+        ;;
+    -a) append=yes;
+        ;;
+    -nb) nobackup=yes;
+        ;;
+    -e) echocommand=yes;
+        ;;
+    -h|-\?)
+        echo "$helpString" 1>&2;
+        exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi    
+
+outfile="$1";
+shift;
+
+# Save the old file, if the user hasn't turned off backup, if we aren't
+# supposed to append to it, and if it exists. 
+if [ "$nobackup" = "no" -a "$append" != "yes" -a -r $outfile ]; then
+    suffix=1;
+    # If it examples rather than being left alone, we need a new suffix.
+    if [ "`echo $outfile.~*~`" != $outfile'.~*~' ]; then
+	suffix=`ls $outfile.~*~ | sed 's;^'"$outfile"'\.;;' | tr -d '~' | \
+		sort -n | tail -1`;
+	suffix=`expr $suffix + 1`;
+    fi	# Otherwise, we simply use '1'.
+    mv $outfile $outfile.~$suffix~;
+fi
+
+# Initialize the file
+if [ X"$append" = "no" ]; then
+    cat /dev/null > "$outfile";
+fi
+
+if [ "$quiet" = "yes" ]; then
+    bflag=;		
+else
+    bflag=-g;
+fi
+
+if [ "$echocommand" = "yes" ]; then
+    eflag=-e;
+else
+    eflag=;
+fi
+
+if [ "$background" != "no" ]; then
+    execCommand $eflag $bflag "$@" >> "$outfile" 2>&1 &
+    # Wait until the file exists.  
+    while [ ! -s $outfile ]; do
+	sleep 0;
+    done
+    if [ "$quiet" = "no" ]; then
+	head -1 $outfile;		# Output process group id.
+    fi	
+else
+    if [ "$quiet" = "no" ]; then
+        echo "Process group id: " `getpgid $$`;
+    fi
+    exec execCommand $eflag $bflag "$@" >> "$outfile" 2>&1; 
+fi

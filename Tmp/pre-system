@@ -1,0 +1,14 @@
+# Environ variables
+export EDITOR=emacs
+
+# Figure out who am I, as best is possible.
+
+if test "$USER" != "" ; then
+    LOGNAME=$USER;
+    export LOGNAME USER
+elif test "$LOGNAME" != "" ; then
+    USER=$LOGNAME;
+    export LOGNAME USER
+fi
+
+

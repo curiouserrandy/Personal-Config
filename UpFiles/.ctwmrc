@@ -1,0 +1,282 @@
+# Screen appearence
+TitleFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+ResizeFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+MenuFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
+
+Color
+{
+    BorderColor           "Red"
+    DefaultBackground     "gray50"
+    DefaultForeground     "gray85"
+    BorderTileBackground  "red4"
+    BorderTileForeground  "Black"
+    TitleBackground       "red"
+    TitleForeground       "Black"
+    MenuBackground        "#686B9F"
+    MenuForeground        "white"
+    MenuTitleBackground   "gray70"
+    MenuTitleForeground   "White"
+    IconBackground        "LightSlateBlue"
+    IconForeground        "White"
+    IconBorderColor       "gray85"
+    IconManagerBackground "red"
+    IconManagerForeground "Black"
+    MapWindowBackground   "DeepSkyBlue1" {
+	"root*" "Red"
+	"xterm" "DeepSkyBlue3"
+	"Axe"	"Yellow"
+    }
+    MapWindowForeground   "Black"
+}
+
+
+# Random Behavior variables
+RandomPlacement "on"
+NoGrabServer
+RestartPreviousState
+NoShowOccupyAll
+#SqueezeTitle
+#DecorateTransients
+
+# Workspace manager.
+workspacemanagergeometry        "170x70-0-0" 4
+WorkSpaces {
+    "Work1" {"white" "black" "gray50" "black" "root_weave"}
+    "Work2" {"white" "black" "gray50" "black" "root_weave"}
+    "Work3" {"white" "black" "gray50" "black" "root_weave"}
+    "Work4" {"white" "black" "gray50" "black" "root_weave"}
+    "Work5" {"white" "black" "gray50" "black" "root_weave"}
+    "Work6" {"white" "black" "gray50" "black" "root_weave"}
+    "Work7" {"white" "black" "gray50" "black" "root_weave"}
+    "Work8" {"white" "black" "gray50" "black" "root_weave"}
+}
+
+Occupy {
+    "*-work1" { "Work1" }
+    "*-work2" { "Work2" }
+    "*-work3" { "Work3" }
+    "*-work4" { "Work4" }
+    "*-work5" { "Work5" }
+    "*-work6" { "Work6" }
+    "*-work7" { "Work7" }
+    "*-work8" { "Work8" }
+}
+
+# WorkSpaces {
+#     "Mail"	{"white" "black" "gray50" "black" "root_weave"}
+#     "Program1"	{"white" "black" "gray50" "black" "root_weave"}
+#     "Program2"	{"white" "black" "gray50" "black" "root_weave"}
+#     "Browser"   {"white" "black" "gray50" "black" "root_weave"}
+#     "AltHost" 	{"white" "black" "gray50" "black" "root_weave"}
+#     "Program3"	{"white" "black" "gray50" "black" "root_weave"}
+#     "Program4"	{"white" "black" "gray50" "black" "root_weave"}
+#     "TiganaRoot"	{"white" "black" "gray50" "black" "root_weave"}
+# }
+
+MapWindowCurrentWorkSpace { "white" "black" "white" "root_weave"}
+
+# Divide up applications by workspace.
+
+# Occupy {
+# 	"Netscape" { "Browser" }
+# 	"Maker" { "Document" }
+# 	"Borodin" { "Program1" }
+# 	"Metheny" { "Program2" }
+# 	"Brian" { "Program3" }
+# 	"WorkMail" { "AltHost" }
+# 	"Orca" { "Program1"}
+# }
+
+StartInMapState				# start with workspcace manager up
+ShowWorkSpaceManager			# and mapping
+ReallyMoveInWorkspacemanager
+DontPaintRootWindow
+
+
+# UseThreeDMenus
+# UseThreeDTitles
+# UseThreeDIconManagers
+# UseThreeDBorders
+# UseThreeDWMap
+SunkFocusWindowTitle
+
+IconifyByUnmapping
+ShowIconManager
+IconManagerGeometry "260x70+0-0" 3
+
+IconManagerDontShow {
+    "WorkSpaceManager"
+    "xclock"
+    "xbiff"
+    "xload"
+}
+
+DontIconifyByUnmapping {
+    "xclock"
+    "xbiff"
+    "xload"
+    "WorkSpaceManager"
+    "TWM Icon Manager"
+}
+
+NoTitle {                  # little programs that look like icons
+    "TWM Icon Manager"
+    "WorkSpaceManager"
+    "xclock"
+    "xbiff"
+    "xload"
+}
+
+OccupyAll {
+    "xclock"
+    "xbiff"
+    "xload"
+    "WorkSpaceManager"
+    "TWM Icon Manager"
+}
+
+# Extra title button (s?)
+
+LeftTitleButton "star" {
+	Button1 : f.fullzoom
+	Button2 : f.horizoom
+	Button3 : f.zoom
+}
+
+#
+# Define some useful functions for motion-based actions.
+#
+MoveDelta 3
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+
+#
+# Set some useful bindings.  Sort of uwm-ish, sort of simple-button-ish
+#
+Button1 =	: root		: f.menu "utilities"
+Button2 =       : root		: f.menu "windowops"
+
+Button1 = m	: window|icon	: f.lower
+Button2 = m	: window|icon	: f.move
+Button3 = m	: window|icon	: f.raise
+
+Button2 = m|c   : window|icon   : f.resize
+Button3 = m|c	: window	: f.menu "windowmenu"
+Button3 = m|c	: icon		: f.menu "iconmenu"
+
+
+Button1 =	: title		: f.function "move-or-raise"
+Button2 =	: title		: f.raiselower
+
+Button1 =	: icon		: f.function "move-or-iconify"
+Button2 =	: icon		: f.iconify
+
+Button1 =	: iconmgr	: f.iconify
+
+Button1 =       : frame         : f.resize
+Button1 = m     : frame         : f.move
+Button2 =       : frame         : f.raiselower
+
+# Moving 'round the workspaces
+
+"Left"   = m	: all		: f.leftworkspace
+"Right"  = m	: all		: f.rightworkspace
+"Up"     = m	: all		: f.upworkspace
+"Down"   = m	: all		: f.downworkspace
+
+"F1"     = m	: all		: f.gotoworkspace "Work1"
+"F2"     = m	: all		: f.gotoworkspace "Work2"
+"F3"     = m	: all		: f.gotoworkspace "Work3"
+"F4"     = m	: all		: f.gotoworkspace "Work4"
+"F5"     = m	: all		: f.gotoworkspace "Work5"
+"F6"     = m	: all		: f.gotoworkspace "Work6"
+"F7"     = m	: all		: f.gotoworkspace "Work7"
+"F8"     = m	: all		: f.gotoworkspace "Work8"
+
+#
+# And menus with the usual things
+#
+
+menu "startup" {
+    "Startup"		f.title
+    "Console"		!"xterm -name Console -iconic -sb -C -geometry 80x24+0-0 &"
+    "Xterm"		!"xterm  -geometry 80x24-0+0 -ls +ut &"
+    "Maillog"		!"xterm -geometry 80x24-0-85 -name Maillog -e HOME/bin/snwatch &"
+    "Mail"		!"emacs -geometry 80x56+0+0 -name Mail -fn 6x13 HOME/Mail /usr/spool/mail/randys-pmd &"
+    "Xclock"		!"xclock -geometry 62x62-166-0 &"
+    "Xbiff"		!"xbiff -file /usr/spool/mail/randys-pmd/work -geometry 62x62-230-0 &"
+    "Xload"		!"xload -geometry 120x62-290-0 &"
+    "Ical"		!"ical -calendar .calendar -geometry +510+0 &"
+    "Randys_RMA"	!"cleartool setview -exec \"/usr/local/bin/emacs -name Randys_RMA -geometry 80x60+0+0 /vobs/mk++/src\" randys_rma &"
+    "Netscape"		!"netscape -install -geometry 1280x895+0+0 &"
+    "Framemaker"	!"maker -geometry 322x66-0-80 &"
+    "Vmsummary"		!"xterm -geometry 80x24-0+540 -name Vmsummary -iconic -e HOME/bin/vmsummary.update &"
+}
+
+menu "utilities" {
+    "Utilities" f.title
+    "Xterm"	!"xterm&"
+    "Root"	!"xterm -e su&"
+    "Emacs"	!"emacs -font 7x14 -fg black -bg white &"
+    "Pysol"	!"pysol&"
+    "Netscape"	!"netscape -geometry 1130x750+0+0&"
+    "Mozilla"   !"mozilla -geometry 1130x750+0+0&"
+    "------"	f.nop
+    "Startup"	f.menu "startup"
+    "------"	f.nop
+    "Restart"	f.restart
+    "Exit"	f.quit
+}
+
+menu "windowops" {
+    "Windows"		f.title
+    "Occupy"		f.occupy
+    "Occupy All"	f.occupyall
+    "Iconify"		f.iconify
+    "Refresh"		f.refresh
+    "Vanish"		f.vanish
+    "Info"		f.identify
+    ""			f.separator
+    "Resize"		f.resize
+    "Move"		f.move
+    "Adopt Window"	f.adoptwindow
+    "Animate"		f.startanimation
+    "Don't animate"	f.stopanimation
+    ""			f.separator
+    "Send Delete"	f.delete
+    "Kill Window"	f.destroy
+    "Pin menu"		f.pin
+}
+
+menu "windowmenu" {
+    "Occupy ..."	f.occupy
+    "Occupy All"	f.occupyall
+    "Iconify"		f.iconify
+    "RaiseLower"	f.raiselower
+    "Refresh"		f.winrefresh
+    "Zoom"		f.menu "Zoom"
+    "Vanish"		f.vanish
+    "Focus"		f.focus
+    "Unfocus"		f.unfocus
+    ""			f.separator
+    "Send Delete"	f.delete
+    "Kill Window"	f.destroy
+    "Resize..." 	f.resize
+    "Move..."		f.move
+}
+
+menu "iconmenu" {
+    "Actions"		f.title
+    ""			f.separator
+    "Restore"		f.iconify
+    "Move"		f.move
+    "Occupy ..."	f.occupy
+    "Occupy All"	f.occupyall
+    ""			f.separator
+    "Send Delete"	f.delete
+    "Kill Window"	f.destroy
+}
+

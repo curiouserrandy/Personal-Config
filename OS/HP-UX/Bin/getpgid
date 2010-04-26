@@ -1,0 +1,3 @@
+#! /usr/local/bin/perl -w
+
+print getpgrp($ARGV[0]), "\n";

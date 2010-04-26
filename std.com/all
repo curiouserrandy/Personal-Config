@@ -1,0 +1,66 @@
+# This is a tricky one.  In general, we assume that this is a ppp connection
+# to world and we're on tigana.  The one exception to this is if we're
+# actually on world.  I.e. these are basically tigana specific aliases.
+
+if [ "`hostname | sed 's/\..*$//'`" = "world" ]; then
+    # To be filled in.
+    /bin/true;
+else
+    # Tigana specific aliases.
+    prefix_dirlist_to_path PATH /usr/X11/bin
+	
+    alias getmail="date; popclient -c world.std.com | formail -s procmail"
+    alias getkmail="popclient -k -c world.std.com | formail -s procmail"
+    # export PATH=$PATH:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin:/usr/games:/usr/local/jdk/bin
+    # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib:/usr/local/jdk/lib
+
+    alias worldmail="finger randy@world.std.com | tr -d '\015' | awk '/^randy[ 	]/,/new mail/'"
+
+    export MOZILLA_HOME=/usr/local/netscape
+    export MOZILLA_SHARED_REGISTRY=1
+
+    PROCMAILDIR=/var/spool/mail/randy-procmail
+
+    function snfrom () {
+	from $PROCMAILDIR/$1
+    }
+
+    function snsenders () {
+	senders $PROCMAILDIR/$1
+    }
+
+    function snsubs () {
+	subjects $PROCMAILDIR/$1
+    }
+
+    function snwaiting () {
+	ls -algt $PROCMAILDIR | head -23
+    }
+
+    function snmail () {
+	Mail -f $PROCMAILDIR/$1
+    }
+
+    function snwatch () {
+	tail -f $PROCMAILDIR/Logs/splitlog | awk -f ~/bin/snarfed.awk
+    }
+
+    function waitppp () {
+	while ! netstat -i | grep ppp ; do
+	    sleep 4;
+	done
+    }
+
+    function watchmess () {
+	tail -f /var/log/messages
+    }
+
+    function rlw() {
+	rlogin -8 world.std.com
+    }
+    
+    function world () {
+	rlogin -8 world.std.com
+    }    
+
+fi

@@ -1,0 +1,154 @@
+#!/bin/sh 
+
+# Possible Todo:
+#	* Add environ variables to default program (I'm thinking gnu 
+#	  make versus sun make); make sure output to file includes 
+#	  full name.
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname executes the command "make" with arguments as specified on the 
+command line.  The make is spawned into the background, with stdout and
+stderr outputing to the file "make.log".  If that file already exists,
+a backup of it is created.  The first line of the output file 
+will include the make command being executed.  An xwindow to track the 
+output is created unless the -nx flag is used.  Arguments:
+	-a		Append to the make.log file instead of creating a
+			new one.
+	-nb		Overwrite the make.log file; don't back it up.
+	-nx		Don't create an xwindow to track the output.
+	-ng		Don't put the command into the background.
+	-p <program>	Use <program> as the initial command argument instead
+			of "make"
+	-f <filename>	Use <filename> as the log file name.  The default
+			is to find the first argument not processed
+			by this command not beginning with a "-" and make
+			the file be "make-<arg>.log".  If no such argument
+			exists, the file is "make.log".
+	--		Stop processing arguments to makelog; all later
+			arguments are arguments to "make".
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-a] [-nb] [-nx] [-p <program>] [-f <filename>] [-g <geometry>] [-t <title>] [-n <name>] [--] <make args>";
+
+# Parse all arguments.
+append="no";
+backup="yes";
+background="yes";
+filename="";			# Default it.
+program="make";
+xlog="yes";
+xlogargs="";
+titlespecd="no";
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -a)
+    	append="yes";
+	;;
+    -nb)
+    	backup="no";
+    	;;
+    -nx)
+    	xlog="no";
+    	;;
+    -nb)
+    	background="no";
+    	;;
+    -p) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	program="$2";
+	shift;
+	;;
+    -f) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	filename="$2";
+	shift;
+	;;
+    -g|-n) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	xlogargs="$xlogargs $1 $2";
+	shift;
+	;;
+    -t) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	titlespecd="yes";
+	xlogargs="$xlogargs $1 $2";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ "$titlespecd" = "no" ]; then
+    xlogargs="$xlogargs -t \"makelog $@\"";
+fi
+
+ectf_args="-e";
+if [ X"$append" = X"yes" ]; then
+    ectf_args="$ectf_args -a";
+fi
+
+if [ X"$backup" = X"no" ]; then
+    ectf_args="$ectf_args -nb";
+fi
+
+if [ X"$background" = X"yes" ]; then
+    ectf_args="$ectf_args -b";
+fi
+
+# Figure out what filename we want.
+if [ X"$filename" = X"" ]; then
+    for a in $*; do
+        case $a in
+	-*)
+	    continue;
+	    ;;
+	*)
+	    filename="make-$a.log";
+	    ;;
+	esac
+    done
+fi
+
+if [ X"$filename" = X"" ]; then
+    filename=make.log
+fi
+
+ectf_args="$ectf_args $filename";    
+
+execCommandToFile $ectf_args $program "$@"
+
+if [ X"$xlog" = X"yes" ]; then
+    sh -c "xfollow $xlogargs $filename";
+fi
+
+

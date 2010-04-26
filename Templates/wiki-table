@@ -1,0 +1,7 @@
+{| border=1 cellpadding=2 cellspacing=0
+|+{TABLE TITLE}
+|-
+! {HEADER1} !! {HEADER2} !! {HEADER3}
+|-
+| {ENTRY1} || {ENTRY2}  || {ENTRY3}
+|}

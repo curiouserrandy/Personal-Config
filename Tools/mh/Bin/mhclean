@@ -1,0 +1,6 @@
+#!/bin/sh 
+MAILDIR=/home/randy/Mail
+find $MAILDIR -name ,\* -mtime +7 | xargs -l50 rm -f
+mv $MAILDIR/procmail.log $MAILDIR/procmail.log.0
+touch $MAILDIR/procmail.log
+echo "Remember to restart mhfollow"

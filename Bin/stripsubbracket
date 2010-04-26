@@ -1,0 +1,7 @@
+#!/usr/bin/perl -wp
+
+$fs = 0;
+if (!$fs && /^Subject:/) {
+    s/^(Subject:\s*([Rr][Ee]: ?)?)\s*\[[^\]]*\]/$1/;
+    $fs = 1;
+}

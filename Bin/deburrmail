@@ -1,0 +1,59 @@
+#!/usr/local/bin/python 
+
+import quopri
+import base64
+import sys
+import string
+
+ceqp = 0
+base64_found = 0
+decode_qp = 0
+decode_base64 = 0
+textFound = 0
+
+# Read the header
+# Relies on Content-Transfer-Encoding headers not being
+# split between lines :-{.
+line = sys.stdin.readline()
+while line:
+    if line[0] == "\n" or len(line) == 0:
+        # Decide what you're doing and output the app headers.
+        if ceqp:
+            decode_qp = 1
+        elif base64_found and textFound:
+            decode_base64 = 1
+	elif base64_found:
+            sys.stdout.write("Content-Transfer-Encoding: base64\n");
+        
+        sys.stdout.write(line)
+        break
+    
+    if string.find(line, "Content-Transfer-Encoding") == 0 and \
+       string.find(line, "quoted-printable") != -1:
+            ceqp = 1
+            line = sys.stdin.readline()
+            continue
+
+    if string.find(line, "Content-Transfer-Encoding") == 0 and \
+       string.find(line, "base64") != -1:
+            base64_found = 1
+            line = sys.stdin.readline()
+            continue
+
+    if string.find(line, "Content-Type") == 0 and \
+       string.find(line, "text/") != -1:
+            textFound = 1
+            # Means that line still gets written, in place, and
+            # new line read.
+
+    sys.stdout.write(line)
+    line = sys.stdin.readline()
+        
+if decode_qp:
+    quopri.decode(sys.stdin, sys.stdout)
+elif decode_base64:
+    base64.decode(sys.stdin, sys.stdout)
+else:
+    sys.stdout.writelines(sys.stdin.readlines())
+
+    

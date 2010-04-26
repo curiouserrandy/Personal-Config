@@ -1,0 +1,65 @@
+#!/bin/sh
+# Want to setup something to auto-glimpse index stuff as I usually want; 
+# this will just be a wrapper around glimpseindex. XXXX
+
+# Setup the help and usage messages
+progname=`basename $0`;
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a wrapper around glimpseindex.  It changes glimpseindex
+defaults so that the index files are put in the same directory as source
+files are found from, and so that numbers are indexed as well.  It takes 
+a single non-flag argument, the directory to index (defaults to ".").  The 
+flag arguments are:
+	-H <directory>		Output the index files into the specified
+				directory, not the directory being indexed.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-H <outputdir>] <directory>";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -H)
+        if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	output_dir=$2;
+	shift;
+	;;
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+direct=".";
+if [ $# -eq 1 ]; then
+    direct=$1;
+fi
+
+if [ "X$output_dir" = "X" ]; then
+    output_dir="$direct";
+fi
+
+args="-i -o -B -H $output_dir -n $direct"
+glimpseindex $args

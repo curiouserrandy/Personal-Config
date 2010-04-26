@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+$progname=`basename $0`;
+$helpstring = <<"HelpString";
+
+$progname takes a list of column headings, and outputs a header for a
+table with those headings as column headings.  Enough rows are used so
+each column heading starts in the column it heads and is printed out
+in its entirety without overwriting the next column heading on that
+row.  Column headings may be specified in files as arguments to the
+command, or provided on standard input.  Arguments:
+	-s <starting column>	Column index in which to place the
+				first heading
+	-w <column width>	Amount of space between column entries
+				in the table.
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname [-s <starting column> [-w <column width>] [file1 ...]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$width = 3;
+$start = 0;
+$gap = 1;
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^w$/) && do {
+	$width = shift;
+	next ARGS;
+    };
+    (/^s$/) && do {
+	$start = shift;
+	next ARGS;
+    };
+
+    (/^g$/) && do {
+	$gap = shift;
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+@row = ();
+$trynext = 0;
+$lpos = $start;
+
+LINE: while (<>) {
+    chomp;
+    $numrows = @row;
+    for ($i = 0; $i < $numrows; $i++) {
+	$rownum = ($trynext + $i) % $numrows;
+	if ($lpos >= length($row[$rownum]) + $gap) {
+	    $row[$rownum] .= " " x $gap;
+	    $row[$rownum] .= $_;
+	    $trynext = ($rownum + 1) % $numrows;
+	    next LINE;
+	}
+    }
+    # Need a new row
+    $row[$numrows] = " " x $lpos;
+    $row[$numrows] .= $_;
+    $trynext = 0;
+}
+
+foreach $r (@row) {
+    print $r, "\n";
+}

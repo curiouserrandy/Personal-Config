@@ -1,0 +1,72 @@
+#!/bin/sh
+
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$0 runs the command given as its second (and subsequent) non-flag argument,
+on the machine specified by its first non-flag argument.  It attempts to
+do this in the current directory on that machine, with various important
+environmental variables duplicated.
+	-e <envname>	Duplicate this environment variable remotely.
+			Adds to list of env to duplicate.
+			List starts as "DISPLAY"
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$0 <machine> <command>";
+
+# Echoing the process group requires that somewhere
+# on the path the executable "getpgid" exists, takes a process id as a
+# single argument, and returns the process group id.
+
+dupenv="DISPLAY";
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -e) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	dupenv="$dupenv $2";
+	shift;
+	;;
+
+    -h|-\?)
+        echo "$helpString" 1>&2;
+        exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+machine=$1; shift;
+command="$*";
+lpwd=`pwd`;
+
+if [ X"$DISPLAY" = X":0.0" ]; then
+    DISPLAY="`hostname`:0.0";
+fi    
+
+dupcmd="";
+for i in $dupenv; do
+    dupcmd="$dupcmd $i=";
+    dupcmd="$dupcmd`eval echo \\${$i}`; export $i";
+done
+
+echo $lpwd
+
+echo rsh $machine sh -c "cd $lpwd ; $dupcmd; $command;"
+

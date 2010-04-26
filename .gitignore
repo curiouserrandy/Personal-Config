@@ -1,0 +1,11 @@
+*.elc
+
+# Arguably this should be in my .gitconfig file, as they're emacs or Randy
+# specific
+*~
+.filesync_info
+
+# Not sure where this should be; mac specific
+.DS_Store
+._.DS_Store
+
