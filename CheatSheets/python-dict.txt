@@ -1,0 +1,33 @@
+file:///Users/randy/Documentation/python-2.6.2-docs-html/library/stdtypes.html#mapping-types-dict
+
+len(d)				
+
+# Testing key presence, accessing value by key
+key in d, d.has_key(key)
+key not in d
+
+d[key]				# lvalue
+d.get(key[, default])
+d.setdefault(key[, def])	# if key not in d: d[key] = def; return d[key]
+
+# Full list vs. just iterator for each type.
+d.keys(), d.iterkeys() (== d.iter())
+d.values(), d.itervalues()
+d.items(), d.iteritems()
+
+# New dictionaries
+dict(), dict(dict), dict(((key,val), ...)), dict(key=value, ...)
+d.copy()				# Shallow copy
+dict.fromkeys(seq[, value])	# New dictionary with keys from seq,
+	       			# values set to value (default None)
+				# Uniq: seq=dict.fromkeys(seq).keys()
+
+# Dictionary modifications
+d.pop(key[, default])	# if key in d: res = d[key]; del d[key]; return res
+d.popitem()		# Return and delete a random key
+d.clear()
+d.update([other])	# Fold other (dict or seq of key,value pairs) into d
+
+
+
+

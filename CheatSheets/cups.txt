@@ -1,0 +1,1 @@
+lpstat -t		# Lists info on all printing options

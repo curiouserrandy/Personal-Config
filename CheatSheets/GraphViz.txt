@@ -1,0 +1,53 @@
+// file:///usr/local/share/graphviz/doc/html/index.html   
+digraph G {
+    rankdir=LR;  	// Specify left to right layout (TB default).
+    node [shape=box];	// Specify default attributes for nodes
+
+    // Node declarations
+    mynode [shape=box,style=filled,color=".7 .3 1.0", fillcolor=red];
+   
+    /*
+     * Node style values: filled diagonals rounded
+     * Node shape values: ellipse(default) box circle diamond point
+     * 	    		  plaintext record Mrecord
+     * Common colors: gray lightgray black red brown orange yellow
+     *		      green blue navy purple
+     */
+
+    // Edge specifications (directed/arrowed by default)
+    A -> B [style=dotted, color=red, label="lab", fontcolor=blue];
+    B -> C [headlabel="head",taillabel="tail"];  // C is head of arrow
+    C -> {D, E};		/* Two lines at once.  */
+    D -> E -> F;		/* Two other lines at once :-}.  */
+    F -> G [arrowhead="none"]; // If you don't want an arrow
+
+    /*
+     * Edge Style values: solid dashed dotted bold invis
+     */
+   
+    // Record nodes
+    mynode [shape=record,label="complicated\nstructure | { int a; | int b; | { <pre> prev | <next> next } }"];
+    yournode [shape=recrd,label="{ ... | { <prev> prev | <next> next} }"];
+    mynode:next -> yournode:prev;
+    /*
+     * "prev" and "next" are also set as port names for the box which
+     * point to those specific labels.
+     *
+     * Use "shape=Mrecord" for rounded corners
+     */
+
+    // Subgraphs -- Must have "cluster" prefix to show up in boxes.
+      subgraph cluster0 {
+          a0 -> a1 -> a2 -> a3;
+     	  label = "process #1";
+      }
+      subgraph cluster1 {
+          b0 -> b1 -> b2 -> b3;
+          label = "process #2";
+      }
+      start -> {a0, b0};
+      a1->b3;
+      {a3, b3} -> end;
+}
+
+// dot -Tpng -ooutfile.png

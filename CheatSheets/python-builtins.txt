@@ -1,0 +1,123 @@
+file:///Users/randy/Documentation/python-2.6.2-docs-html/library/functions.html
+
+## Can generally get to function doc by appending #<name> to above.
+
+## Iterables
+
+len( s )
+all( iterable )		# map( and, iterable ) ( w/ short circuit )
+any( iterable )		# map( or, iterable ) ( w/ short circuit )
+enumerate( iterable )	# zip( range( len( iterable ), iterable ) )
+zip( [iterable, ...] )
+
+iter( o[, sentinel] )	# Without sentinel, converts sequence into iter
+			# With sentinel, iter calls o until == sentinel
+
+filter( function, iterable )	
+map( function, iterable, ... )	
+reduce( function, iterable[, initializer] )
+
+reversed( seq )
+sorted( iterable[, cmp[, key[, reverse]]] )
+
+range( [start,] stop[, step] )
+xrange( [start,] stop[, step] )
+slice( [start,] stop[, step] )
+
+## Files
+
+open( filename[, mode[, bufsize]] )	# Preferred
+file( filename[, mode[, bufsize]] )	# For type testing
+					# Modes 'r'/'w'/'a'.
+					# suf 'b' binary, suf "+" append
+					# 'w+' truncates
+					# bufsize: 0 unbuf, 1 line buf
+					# - or omitted system default.
+
+input( [prompt] )			# eval( raw_input( prompt ) )
+raw_input( [prompt] )
+
+## Abstract Type Management and Testing
+
+callable( object )
+isinstance( object, classinfo )
+issubclass( class, classinfo )
+
+type( object )				# Returns type of object
+
+classmethod( function )
+staticmethod( function )
+
+object()
+
+super( type[, object-or-type] )		# Delegater to parent/sibling; read doc
+type( name, bases, dict )		# Construct new type
+
+## Strings
+
+chr( integer_val )	# ascii mapping
+ord( char_val )		# ascii mapping
+oct( x )
+hex( x )
+unichr( integer_val )
+unicode( [object[, encoding [, errors]]] ) 	# See above #unicode
+repr( object )
+str( [object] )
+
+basestring()			# String/unicode superclass
+
+## Numeric Functions
+
+abs( x )
+cmp( x, y )
+divmod( a, b ) 
+max( [iterable | args...][, key=keyfunc] )
+min( [iterable | args...][, key=keyfunc] )
+pow( x, y[, z] )		   # x^y [%z]
+round( x[, numdigits] )
+sum( iterable[, startval] )
+
+## Object Management
+
+getattr( object, name[, default] )	# object.name ( unstring ) unless default
+setattr( object, name, value )
+hasattr( object, name )	
+delattr( object, name )
+dir( [object] )				# List of attrs for object
+dir(  )					# List of names in local scope
+property( [fget[, fset[, fdel[, doc]]]] )  # Create property attr; read docs
+
+## Package/File/Symbol Table Management
+
+__import__( name[, globals[, locals[, fromlist[, level]]]] )
+reload( module )			# Reload module
+					# Use as reload(sys.modules['<name>'])
+
+compile( string, filename, kind[, flags[, dont_inherit]] )
+eval( expression[, globals[, locals]] )
+execfile( filename[, globals[, locals]] )
+
+globals()				# Global (module) symbol table
+locals()				# Local (function) symbol table
+vars( [object] )			# locals() or object.__dict__
+
+## Misc
+
+hash( object )				# val that may be used for eq test
+id( object )				# Unique id (addr of object)
+
+help( [object] )			# Interactively invoke built-in help
+
+## Conversion/Creation of Specific Types
+
+bool( [x] )
+int( [x[, radix]] )
+float( [x] )
+long( [x[, radix]] )
+complex( [real[, imag]] )
+tuple( [iterable] )
+list( [iterable] )
+dict( [arg] )		# arg: dict, Nx2 pos arg, keywords
+set( [iterable] )
+frozenset( [iterable] )
+

@@ -1,0 +1,41 @@
+file:///Users/randy/Documentation/python-2.6.2-docs-html/library/re.html
+
+## Module methods
+re.compile(regexp)			# Produces re object
+
+re.search(regexp, string, flags)
+re.match(regexp, string, flags)		# Beginning of string only
+
+re.split(regexp, string, maxsplit=0)	# A little weird; can't capture
+
+re.findall(regexp, string, flags)	# List of non-overlapping matches
+re.finditer(regexp, string, flags)	# Above only iter
+
+re.sub(regexp, repl, string, count=0)	# repl may be function
+re.subn(regexp, repl, string, count=0)	# Above but return (newstr, num subs)
+
+re.escape(string)			# Make literal string regexp 
+
+# RE object methods
+# Same as above, only w/o regexp/flags and with pos=0, endpos=None
+# 	* search, match, findall, finditer
+# Same as above, only without regexp:
+#	* split, sub, subn
+ro.flags				# Flags used when compiling
+ro.groups				# Number of groups in pattern
+ro.groupindex				# dict[name] = number
+ro.pattern				# Original pattern string
+
+# Match object methods
+mo.expand(template)			# Do backslash sub on template
+mo.group(gi=0), mo.group(g1, g2, ...)	# Return specified group or groups
+mo.groups(default=None)			# Tuple of groups; default
+					# used for groups that didn't match
+mo.groupdict(default=None)		# Dict of named groups
+mo.start(gi=0), mo.end(gi=0)		# Indices of start and end of group
+					# -1 if group didn't match
+mo.span(gi=0)				# (mo.start(gi), mo.end(gi))
+mo.pos, mo.endpos, mo.string		# Args to search/match
+mo.lastindex				# Index of last matched group
+mo.lastgroup				# Name of last matched group
+mo.re					# Pattern that produces this mo

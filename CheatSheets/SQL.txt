@@ -1,0 +1,43 @@
+create table <table> (
+   <name1> <type1> [default <defaultvalue>]
+   	   	   [[CONSTRAINT <cname>] CHECK <constraint>]
+		   [NOT NULL] [UNIQUE] [PRIMARY KEY]
+		   [REFERENCES <tname> [(<cname>)]]
+   [CONSTRAINT <cname>] CHECK <constraint>
+   UNIQUE (<colname>[,<colname> ...])
+   FOREIGN_KEY (<cname>[,<cname>]) REFERENCES <tname> [(<cname>, ..)]
+
+   <name2> integer default 23,
+   <name3> integer DEFAULT nextval('<table>_<name3>_seq'),
+   <name3> SERIAL,  -- Same as above
+   <name4> integer CHECK (<name4> > 0),
+   CHECK (<name4> > <name2>)	  -- table constraint
+);
+drop table <table>;
+select <expressionsL> from <table1>[, <table2>, ...];
+insert into <table> (<cname>, <cname2>, ...) VALUES (<v1>, <v2>,...), ...;
+update <table> SET <cname> = <value> WHERE <cname2> = <val>;
+create index <name> ON <table>(<column>);
+
+Types:
+	SERIAL (integer not null unique defaulted from auto created sequence)
+	integer
+	string
+	boolean
+
+create type <name> as enum(<alt1>, <alt2>, ...);
+
+-- Joins:
+	Cross join == Cartesian product of tables
+	  Inner join: Adds a constraint/filter
+	    Equi-join: Constraint/filter conditions are all equalities
+	      Natural join: Equalities are all between identically named columns
+	Outer join: Inner join + retains unmatching rows (null filled)
+	  Left outer join: Retain rows from left table
+	  Right outer join: Retain rows from right table
+	  Full outer join: Retain rows from both tables
+   Note that "WHERE" happens after joining where "ON" does not; this
+   doesn't matter for inner joins, but can be used in outer joins to
+   eliminate rows after null filling.
+
+	
