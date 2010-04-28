@@ -106,7 +106,6 @@ while [ X"$tmp_domainname" != X"" ] ; do
     init_from $configuration_files_directory/$tmp_domainname/OS/$systype/$archtype
     init_from $configuration_files_directory/$tmp_domainname/$hostname
     tmp_domainname=`echo $tmp_domainname | sed 's/^[^.]*\.*//'`
-    echo $tmp_domainname
 done
 
 # Do project-specific configuration
