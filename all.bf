@@ -98,10 +98,16 @@ prefix_path_with_dirlist PATH $configuration_files_directory/Bin
 # (Below will dissapear when I setup my Config/.../Bin directories)
 prefix_path_with_dirlist PATH ~/bin ~/bin/$systype
 
-init_from $configuration_files_directory/$domainname
-init_from $configuration_files_directory/$domainname/OS/$systype
-init_from $configuration_files_directory/$domainname/OS/$systype/$archtype
-init_from $configuration_files_directory/$domainname/$hostname
+# Try each of the suffixes of domainname, for nested domains inside of companies.
+tmp_domainname=$domainname
+while [ X"$tmp_domainname" != X"" ] ; do
+    init_from $configuration_files_directory/$tmp_domainname
+    init_from $configuration_files_directory/$tmp_domainname/OS/$systype
+    init_from $configuration_files_directory/$tmp_domainname/OS/$systype/$archtype
+    init_from $configuration_files_directory/$tmp_domainname/$hostname
+    tmp_domainname=`echo $tmp_domainname | sed 's/^[^.]*\.*//'`
+    echo $tmp_domainname
+done
 
 # Do project-specific configuration
 
