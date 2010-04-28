@@ -1,0 +1,51 @@
+file:///Users/randy/Documentation/EmacsLisp/Edebug.html#Edebug
+
+-- Overview
+	Defuns must be instrumented before edebug will work
+	Entry into instrumented function triggers edebug-initial-mode
+	(default 'step').
+
+-- Instrumenting
+	C-u C-M-x			; Actually inverts value of below
+	(setq edebug-all-defs t)	; All defs evaled will be instrumented
+
+-- Commands
+	# Execution modes
+	S: stop
+	<spc>: step
+	n: next
+	t: trace
+	T: rapid trace
+	g: go until breakpoint
+	G: Go ignoring breakpoints
+	c: continuing, pausing 1s at each breakpoint
+	C: continuing, pausing 0s at each breakpoint
+	
+	# Jumping
+	h: Proceed to here
+	f: run one sexp
+	o: run until end of containing sexp
+	i: Step into function or macro
+
+	# Breakpoints
+	b: Set breakpiont at first stop point after point (prefix for temp)
+	u: Unset breakpoint
+	x <CONDITION>: Conditional breakpoint
+	B: Move to next breakpoint (no execution, just move)
+
+	## Eval
+	E: Switch to eval list buffer (lisp interaction)
+	C-c C-u: Build a new evaluation list from contents of buffer
+	C-c C-d: Delete evaluation list point is in
+	C-c C-w: Switch back to source
+
+	q: top-level
+	Q: top-level-nonstop
+
+	r: redisplay expression result
+	d: edebug-backtrace
+
+	e: evaluate sexp in context of program
+
+	## Can evalute expressions interactively in buffer *edebug*
+	## Can setup expressions to be evaluated automatically at each stop

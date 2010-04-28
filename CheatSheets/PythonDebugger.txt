@@ -1,0 +1,39 @@
+pdb.run("<statement>")	Debugger prompts before executing any code
+pdb.set_trace()		Enter debugger at calling stack from
+pdb.post_mortem(tb)	Post-mortem dbg of given traceback (default cur handled)
+
+.pdbrc			Debugger init file.  homedir then current dir
+
+-- Commands		Unrecognized commands are treated as python statements
+			;; separates dbg commands on same line
+
+<blank>				Repeats last command
+!<python stmt>			Execute python statement in pgm context
+
+cl(ear) bpnum ..., disable bpnum ..., enable bpnum ...
+b(reak) [[filename:[lineno | function, condition]]
+tbreak [[filename:[lineno | function, condition]]
+ignore bpnum [count]		Default count 0
+condition bpnum [condition]	Default remove condition
+commands bpnum			Commands on following lines; end to terminate
+
+s(tep), n(ext), unt(il), c(ont(inue))
+j(ump) lineno			Set next line to exe; only avail in bot from
+r(eturn)			Continue until current function returns
+run/restart [args ...]		Restart current program
+q(uit)
+
+h(elp)
+
+w(where)			Backtrace
+d(own), u(p)
+a(args)				Print args list of current func
+
+l(ist) [first, [last]]
+
+p exp				Different from "print", which executes python
+pp				Pretty prints using pprint module
+
+alias [name [command]]		Short forms list alias definitions
+unalias name
+

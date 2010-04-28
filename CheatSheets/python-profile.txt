@@ -1,0 +1,37 @@
+file:///Users/randy/Documentation/python-2.6.2-docs-html/library/profile.html
+
+import cProfile
+import pstats
+
+# Generation 
+cProfile.run('<python command>')	# Prints some results to stdout
+cProfile.run('<python command>', '<outfile>')	# Saves data 
+
+# Analysis (interaction with outfiles)
+p = pstats.Stats('<outfile>')		# Get pstats object
+p.add('<outfile>')
+p.dump_stats('<outfile>')
+
+# Analysis (methods on pstats object).  
+# All methods return another pstats object, and hence may be chained
+p.strip_dirs()		
+p.sort_stats(arg)	# arg = -1 sort by: module/line/name
+			# Key args: 'time' (1), 'cumulative' (2)
+			#	    'calls' (0), 'pcalls' Exclude recursive,
+			#	    'file', 'module', 'line', 'name'
+			#	    'nfl' (name/file/line),
+			#	    'stdname' (nfl sorted textually) (-1)
+			# Can take unabiguous prefixes for above.
+			# Can take multiple string args for secondary keys
+p.print_stats()		# Print the stats object
+p.print_stats(arg[, arg]) # Print the stats object after filtering
+			# isinstance(arg,int): First arg lines
+			# 0 < arg < 1: First arg*100 % lines
+			# isinstance(arg,str): Lines containing arg as regexp
+p.reverse_order()
+p.print_callers(print stats args)
+p.print_callees(print stats args)
+
+# Output notes
+# ncalls: If a/b, a is the total number of calls, b the number of
+# 	  primitive (non-recursive) calls

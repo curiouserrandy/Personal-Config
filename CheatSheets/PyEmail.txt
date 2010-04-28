@@ -1,0 +1,33 @@
+from email.message import Message
+
+m = Message()
+m.as_string(<include From>)	# Message as string; mangles internal From lines
+
+m.set_unixfrom(<unixfrom>)
+m.get_unixfrom()
+
+m.is_multipart()		# Payloads are also Message objects,
+				# or text
+m.attach(payload)		# Adds a payload (Message) to the list
+m.set_payload(arg) 		# Set payload to string or NOne
+m.get_payload()			# List of message objects or string
+
+# Headers; like dict, except order preserving, allows duplicate keys,
+# and matched (though not stored) case-insensitively.
+# Only noting differences below
+m.items()			# Includes all of each header
+m.__setitem__(<name>, <val>)	# Appends a header
+m.__delitem(<name>)   		# Deletes all occurences of that header
+m.__getitem__(<name>)		# Returns random value if more than one
+m.get_all(<name>, <failobj>)	# Get all instances of this header
+
+m.walk()	  		# Iterator that walks message tree
+
+from email.parser import Parser
+p = Parser()
+m = p.parse(fp[, <headersonly>])
+m = p.parsestr(text[, <headersonly>])
+
+import email
+m = email.message_from_string(s)
+m = email.message_from_file(fp)

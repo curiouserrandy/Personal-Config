@@ -1,0 +1,30 @@
+# DB specific (import and connection)
+# Postgres
+from pyPgSQL import PgSQL	
+conn = PgSQL.connect("host:port:database:user:password:options:tty")	# or
+conn = PgSQL.connect(host=h, port=p, database=d, user=u, password=p)
+PgSQL.fetchReturnsList = 1   # Return lists, not PgResultSet
+		       	     # (PgResultSet acts as lists in most contexts)
+
+# DB independent; connections
+conn.close()
+conn.commit()
+conn.rollback()
+curs = conn.cursor()
+
+# Cursors
+curs.execute("<sql>", p1, p2,..., pn)	# Subset of % op; only %s or %(name)s
+curs.execute("<sql>", dict)	  	# "
+curs.execute("<sql>", sequence)	  	# %s only
+curs.debug = 'test' 			# Echo queries to stdout
+curs.executemany("<sql>", seq_of_params)
+curs.fetchone() -> column sequence
+curs.fetchmany([size]) -> [column sequence, ...]
+curs.fetchall() -> [column sequence, ...]
+curs.description -> [(column_info), ....]
+		 column_info = (name, type code, display size,
+		 	        internal size, precision, scale,
+				null_ok) # Maybe be longer
+curs.rowcount
+PgResultSet.description -> same as curs.description
+PgResultSet.column_name -> value

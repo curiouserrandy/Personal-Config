@@ -1,0 +1,17 @@
+file:///Users/randy/Documentation/python-2.6.2-docs-html/library/stdtypes.html#mutable-sequence-types
+
+## Documentation on mutable sequence methods
+
+s[i:j], s[i:j:k]	# [s[x] for x in range(i,j,k)], k=1, lvalue
+s.append(x)		# s = s + [x]
+s.extend(x)		# s = s + x
+s.count(x)		# len(filter(lambda i: i == x, s))
+s.index(x, i=0, j=-1)	# Index of first x in range
+s.insert(i, x)		# s[i:i] = [x]
+s.pop(i=-1)		# x = s[i]; del s[i]; return x
+s.remove(x)		# del s[s.index(x)]
+s.reverse()		# Reverse in place; doesn't return value
+s.sort(cmp=lambda x,y: cmp(x,y), key=lambda x: x, reverse=False)
+			# Sort in place; doesn't return value
+			# sort args actually default to None; meaning
+			# is given.  Sort is stable
