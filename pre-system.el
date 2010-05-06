@@ -2,6 +2,7 @@
 (put 'eval-expression 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
+(put 'scroll-left 'disabled nil)
 (setq find-file-visit-truename t)
 (setq version-control t)		; Always make numeric backups
 (setq require-final-newline 1)		; Ask when saving
