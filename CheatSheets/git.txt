@@ -19,3 +19,6 @@
 	git branch		# List local branchs
 	git branch -r		# List remove tracking branches
 	git branch -a 		# List local and remote tracking branches
+
+	git blame <file>	# Annotate file list on output with commits
+	    	  		
