@@ -29,3 +29,5 @@
 	git clone --bare --no-hardlinks .git <destrepo>
 				# Clone the local repository into a
 				# bare destination
+	git clone <destrepo> .	# Clone the repo into the current
+	    	  	        # directory. 
