@@ -1,5 +1,11 @@
 # Environ variables
-export EDITOR=emacs
+case $EDITOR in
+    emacs|emacsclient)	# Leave it alone
+    	;;
+    *)
+        export EDITOR=emacs
+	;;
+esac
 
 # Figure out who am I, as best is possible.
 

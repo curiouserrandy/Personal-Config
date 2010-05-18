@@ -107,3 +107,7 @@ It's ok for this function to be called pointing into space."
       ))
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
+
+;; Unilaterally setup emacs server; I think this is an ok place for that.
+(server-start)
+(setenv "EDITOR" "emacsclient")
