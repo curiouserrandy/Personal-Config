@@ -1,0 +1,33 @@
+http://en.wikipedia.org/wiki/Class_diagram
+
+-- Types of relationship:
+	* Association [line]: Weakest form of connection between objects;
+	  represented by a line.  May be annotated by numbers on
+	  either side, and a name for the association and each end.
+
+	  a -> b [headlabel="0..*", taillabel="1..*", label="label",
+	          arrowhead="none"];
+	  // Multiple head/tail labels on each side for name+association?
+
+	* Aggregation [open diamond towards whole]: Represents a "has
+	  a" or whole/part relationship.
+	  part -> whole [arrowHead="odiamond"];
+
+	* Composition [solid diamond towards whole]: Aggregation with
+	  lifecycle matching (owner destruction->child destruction)
+	  implications.
+	  part -> whole [arrowHead="diamond"];
+	  
+	* Generalization/specialization [Arrow towards supertype/more
+	  abstract type]: Inheritance in class diagrams.
+
+	  subtype -> supertype [arrowhead="empty"];
+
+	* Realization [Generalization with dotted line]:
+	  Implementation of an interface.
+
+	  subtype -> supertype[style=dashed, arrowhead="open"];
+
+-- Representing maps: Try representing them as a cluster subgraph
+   (subgraph cluster_a), and drawing lines to the cluster.  
+
