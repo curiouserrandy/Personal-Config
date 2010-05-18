@@ -22,7 +22,6 @@
 	git branch		# List local branchs
 	git branch -r		# List remove tracking branches
 	git branch -a 		# List local and remote tracking branches
-
 	git reset --hard	# Forcibly syncs index and working
 	    	  		# tree to current commit
 
@@ -31,3 +30,5 @@
 				# bare destination
 	git clone <destrepo> .	# Clone the repo into the current
 	    	  	        # directory. 
+
+	git blame <file>	# Annotate file list on output with commits
