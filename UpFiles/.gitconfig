@@ -1,0 +1,6 @@
+[core]
+	pager=
+	excludesfile=~/.gitignore
+[user]
+	name = Randy Smith
+
