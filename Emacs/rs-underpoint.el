@@ -64,7 +64,7 @@ With prefix arg, find it in the other window."
       ;; Else will just go to beginning of file and stop, which may be right
       )
     (cond
-     ((looking-at "\\(http\\|ftp\\|file\\):[^\] 	
+     ((looking-at "\\(https?\\|ftp\\|file\\):[^\] 	
 ]*")
       (let ((urlname (buffer-substring (match-beginning 0) (match-end 0))))
 	

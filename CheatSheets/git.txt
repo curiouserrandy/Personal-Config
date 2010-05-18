@@ -5,20 +5,30 @@
 				# Apparently only under cwd
 	git add -A	 	# -u + untracked, not ignored files
 	git add			# Does nothing (just so you know)
+	git rm --cached		# Remove files from the index
 	git status		# working v index, index v head, untracked
 	git commit		# Puts index into repository (head)
 	git commit -a		# Add modified/deleted files to index & commit
 	git commit -m "msg"	# Commit message
 
-	git diff		# Working tree vs. staging area/index
-	git diff --cached	# Staging area/index vs. head
+	git diff		# Working tree vs. index
+	git diff --cached	# index vs. HEAD
 	git diff HEAD		# Working tree vs. HEAD
+	git diff <commit> <commit> # Changes between two different commits
+	git diff --cached --stat # Quick summary of changes
 	git remote -v 		# Show remote branches tracked
 	git fetch <name>	# Pull remote information into tracking branch
 	git pull <name> <branch># get fetch <name> and merge into branch
 	git branch		# List local branchs
 	git branch -r		# List remove tracking branches
 	git branch -a 		# List local and remote tracking branches
+	git reset --hard	# Forcibly syncs index and working
+	    	  		# tree to current commit
+
+	git clone --bare --no-hardlinks .git <destrepo>
+				# Clone the local repository into a
+				# bare destination
+	git clone <destrepo> .	# Clone the repo into the current
+	    	  	        # directory. 
 
 	git blame <file>	# Annotate file list on output with commits
-	    	  		

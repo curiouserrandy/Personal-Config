@@ -119,6 +119,7 @@ init_from $configuration_files_directory/Tools/timelog
 init_from $configuration_files_directory/Tools/git
 init_from $configuration_files_directory/Tools/postgres
 init_from $configuration_files_directory/Tools/python
+init_from $configuration_files_directory/Tools/X
 
 # Get my personal stuff that needs to come in after machine specific files
 . $configuration_files_directory/post-system.bf
