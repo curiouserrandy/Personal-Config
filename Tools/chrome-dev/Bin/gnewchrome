@@ -1,0 +1,113 @@
+#!/bin/bash
+
+sandboxen=${HOME}/Sandboxen
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program for creating a new chrome sandbox.  The sandbox 
+is created under the sandboxen directory (default $sandboxen).  
+	-b <branchname>		Extra branche to be created
+				(may be repeated) (UNIMPLEMENTED).
+	<sandbox name>
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-b <branchname>]* <sandbox name>";
+
+# Parse all arguments.
+branches="";
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -b) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	branches="$branches $2";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+sbname=$1
+sbd=$sandboxen/$sbname
+if [ ! -x $sandboxen ]; then
+    echo "Sandbox directory $sandboxen doesn't exist." 1>&2;
+    exit 1;
+fi
+
+if [ -r $sbd ]; then
+    echo "File $sbd already exists." 1>&2;
+    exit 1;
+fi
+
+if ! type gclient 2> /dev/null; then
+    echo "gclient not found on path." 1>&2;
+    exit 1;
+fi
+
+# There shouldn't be any problems, but if there are, I want to bail
+set -e
+
+mkdir $sbd;			# No -p; error if no Sandboxen directory
+cd $sbd
+git clone http://src.chromium.org/git/chromium.git src
+gclient config svn://svn.chromium.org/chrome/trunk/src
+ed .gclient  <<EOF
+/url
+a
+    "custom_vars" : {
+      "webkit_trunk" : "svn://svn.chromium.org/webkit-readonly/trunk"
+    },
+.
+/custom_deps
+a
+      "src/third_party/WebKit/LayoutTests": None,
+.
+/^]
+.-1a
+  { "name"	: "src-internal",
+    "url"	: "svn://svn.chromium.org/chrome-internal/trunk/src-internal",
+    "custom_deps" : {
+      "src/data/esctf" : None,
+      "src/data/memory_test" : None,
+      "src/data/mozilla_js_tests" : None ,
+      "src/data/page_cycler" : None,
+      "src/data/tab_switching" : None,
+      "src/data/saved_caches" : None,
+      "src/data/selenium_core" : None,
+      "src/tools/grit/grit/tests/data" : None,
+      "src/gpu/gles2_conform_test" : None,
+      "src/third_party/gles2_conform" : None,
+    }
+  }
+.
+w
+q
+EOF
+gclient sync
+cd src
+find . \( -name '*.[ch]' -o -name '*.cc' \) -print | etags -
