@@ -1,15 +1,24 @@
 #!/bin/bash
 
-sandboxen=${HOME}/Sandboxen
+if [ "$SANDBOXEN_DIR" != "" ]; then
+    sandboxen=$SANDBOXEN_DIR;
+else
+    sandboxen=${HOME}/Sandboxen
+fi
 
 # Setup the help and usage messages
 progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
 $progname is a program for creating a new chrome sandbox.  The sandbox 
-is created under the sandboxen directory (default $sandboxen).  
+is created under the sandboxen directory (defaults to the contents 
+of the environment variable SANDBOXEN_DIR if set, otherwise ~/Sandboxen).
+	-s <sandboxendir>	Sandboxen directory
 	-b <branchname>		Extra branche to be created
 				(may be repeated) (UNIMPLEMENTED).
+	-u <username>		Username to use for authentication.
+				Defaults to "$USER@google.com".
+	-p 			Prompt for and use password as needed.
 	<sandbox name>
 EOF
 helpString="`cat $tf`" ;
@@ -18,8 +27,15 @@ usageString="$progname [-b <branchname>]* <sandbox name>";
 
 # Parse all arguments.
 branches="";
+password="";
+username="${USER}@google.com";
+ECHO=
 while [ $# -ne 0 ]; do
-    case $1 in 
+    case $1 in
+    -p)
+	echo -n "SVN password: "
+        read -s password
+	;;
     -b) 
 	if [ $# -lt 2 ]; then
 	    echo "Usage: $usageString" 1>&2;
@@ -28,7 +44,26 @@ while [ $# -ne 0 ]; do
 	branches="$branches $2";
 	shift;
 	;;
+    -s) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	sandboxen="$2";
+	shift;
+	;;
+    -u) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	username="$2";
+	shift;
+	;;
     # Repeat as needed.
+    -E)
+        ECHO=echo
+	;;
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
@@ -64,7 +99,7 @@ if [ -r $sbd ]; then
     exit 1;
 fi
 
-if ! type gclient 2> /dev/null; then
+if ! type gclient > /dev/null; then
     echo "gclient not found on path." 1>&2;
     exit 1;
 fi
@@ -72,11 +107,18 @@ fi
 # There shouldn't be any problems, but if there are, I want to bail
 set -e
 
-mkdir $sbd;			# No -p; error if no Sandboxen directory
-cd $sbd
-git clone http://src.chromium.org/git/chromium.git src
-gclient config svn://svn.chromium.org/chrome/trunk/src
-ed .gclient  <<EOF
+$ECHO mkdir $sbd;			# No -p; error if no Sandboxen directory
+$ECHO cd $sbd
+$ECHO git clone http://src.chromium.org/git/chromium.git src
+$ECHO gclient config svn://svn.chromium.org/chrome/trunk/src
+# Try and get the authentication info cached, quickly.
+if [ "$password" != "" ]; then
+    $ECHO svn ls --username "$username" --password "$password" svn://svn.chromium.org/chrome/trunk/src
+else
+    $ECHO svn ls --username $username svn://svn.chromium.org/chrome/trunk/src
+fi
+
+$ECHO ed .gclient  <<EOF
 /url
 a
     "custom_vars" : {
@@ -108,6 +150,13 @@ a
 w
 q
 EOF
-gclient sync
-cd src
-find . \( -name '*.[ch]' -o -name '*.cc' \) -print | etags -
+$ECHO gclient sync
+$ECHO cd src
+$ECHO git svn init --prefix=origin/ -T trunk/src svn://svn.chromium.org/chrome
+$ECHO git svn fetch
+$ECHO git cl config http://src.chromium.org/svn
+if [ "$ECHO" = "" ]; then
+    find . \( -name '*.[ch]' -o -name '*.cc' \) -print | etags -
+else
+    $ECHO find . \( -name '*.[ch]' -o -name '*.cc' \) -print \| etags -
+fi
