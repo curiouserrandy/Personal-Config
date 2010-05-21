@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ $# -eq 0 ]; then
+    set chrome 		# Target
+fi
+
+if [ "$DISTCC_HOSTS" != "" ]; then
+    CCACHE_PREFIX=distcc CC="ccache gcc" CXX=ccache g++" make -j20 "$@"
+else
+    make -j4 "$@"
+fi
+
