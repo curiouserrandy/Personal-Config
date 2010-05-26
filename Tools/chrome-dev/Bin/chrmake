@@ -4,7 +4,7 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ "$DISTCC_HOSTS" != "" ]; then
-    CCACHE_PREFIX=distcc CC="ccache gcc" CXX=ccache g++" make -j20 "$@"
+    CCACHE_PREFIX=distcc CC="ccache gcc" CXX="ccache g++" make -j20 "$@"
 else
     make -j4 "$@"
 fi
