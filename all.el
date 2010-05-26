@@ -86,13 +86,23 @@ It's ok for this function to be called pointing into space."
 (randy-init-from "pre-system")
 (randy-init-from "OS" randy-configuration-os)
 (randy-init-from "OS" randy-configuration-os randy-configuration-arch)
-(randy-init-from randy-configuration-domain)
-(randy-init-from randy-configuration-domain "OS" randy-configuration-os)
-(randy-init-from randy-configuration-domain
-		 "OS"
-		 randy-configuration-os
-		 randy-configuration-arch)
-(randy-init-from randy-configuration-domain randy-configuration-host)
+
+(message "To domain loop ...")
+
+(let ((tmp-config-domain randy-configuration-domain))
+  (while (not (equal tmp-config-domain ""))
+    (message (concat "Loading from directory " tmp-config-domain))
+    (randy-init-from tmp-config-domain)
+    (randy-init-from tmp-config-domain "OS" randy-configuration-os)
+    (randy-init-from tmp-config-domain
+		     "OS"
+		     randy-configuration-os
+		     randy-configuration-arch)
+    (randy-init-from tmp-config-domain randy-configuration-host)
+    (setq tmp-config-domain
+	  (mapconcat 'identity
+		     (cdr (split-string tmp-config-domain "\\.")) "."))))
+  
 (if randy-configuration-fdomain
     (progn
       (randy-init-from randy-configuration-fdomain)

@@ -5,6 +5,7 @@ digraph G {
 
     // Node declarations
     mynode [shape=box,style=filled,color=".7 .3 1.0", fillcolor=red];
+    mynode [tooltip="Hover text"];
    
     /*
      * Node style values: filled diagonals rounded
@@ -37,6 +38,7 @@ digraph G {
      */
 
     // Subgraphs -- Must have "cluster" prefix to show up in boxes.
+    // Use "cluster" prefix with "color=none" for grouping without boxes.
       subgraph cluster0 {
           a0 -> a1 -> a2 -> a3;
      	  label = "process #1";
