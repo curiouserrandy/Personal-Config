@@ -20,6 +20,29 @@ function massage_path () {
   massage_path_result=`echo $PWD/ | sed 's;/'"$1"'/;/'"$2"'/;'`
 }
 
+# Arguments are a list of variables.  This function writes to 
+# stdout a list of commands that may be used to replicate the
+# status of each variable.
+# Possible stati:
+#	unset		Variable does not exist as a shell or environment var.
+# 	shell not env
+#	environmental var.
+envdefs () {
+    for i in $* ; do
+        local pset=`eval 'echo ${'"$i"':+xset}'`;
+	local eset=`env | grep -- '^'"$i"'='`;
+	local val=`eval 'echo $'"$i"`;
+	
+	if [ "$eset" != "" ]; then
+	    echo "export $i=\"$val\"";
+	elif [ "$pset" != "" ]; then
+	    echo "$i=\"$val\"";
+	else
+	    echo "unset $i";
+	fi
+    done
+}
+
 # Read in any bash functions that we've saved in passing.
 read_if_exists ~/.bash_save
 
