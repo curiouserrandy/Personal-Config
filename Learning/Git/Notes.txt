@@ -1,0 +1,317 @@
+## -*-mode: Outline; fill-prefix: "   ";-*-
+
+* Web docs
+
+http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
+http://git-scm.com/documentation
+http://www-cs-students.stanford.edu/~blynn/gitmagic/   
+
+* Git proper
+
+?? How can I either nuke a portion of a repository, or clone the
+   repository without a particular set of files?
+
+?? What is the format of a revision list
+
+?? How do I in general avoid piping git output into a pager?  I think
+   I've solved this problem before; may want to look around personal
+   laptop. 
+
+?? Definitions:
+	* bare repository (I think this is one without any source
+   	  checked out, or a place for it; i.e. just .git by itself)
+	* Working tree
+	* tag
+	* branch
+	* object: ?
+	* blob: blob object name
+	* tree: tree object name
+	* commit: commit object name
+	* tree-ish: tree, commit, or tag object name.  Tag/commit will
+   	  be derferences to point at tree.
+	* commit-ish: commit or tag object name.  Tag will be
+   	  dereferenced to point at commit.
+	* type: One of blob, tree, commit, or tag.
+	* file: Filename, almost always relative to root of the tree
+   	  structure GIT_INDEX_FILE (usually $GIT_DIR/index) describes.
+
+?? Replacing objects (git-replace)
+
+?? To read:
+	gitworkflows
+	gitrepository-layout
+	gitglossary
+
+-- Top level git commands:
+	* add
+	* mv
+	* rm
+	* merge
+	* commit
+	* revert
+
+	* status
+	* describe
+	* log
+	* shortlog
+	* diff
+	* grep (?)
+	* show
+ 
+	* archive (?)
+	* branch
+	* bundle (?)
+	* clean (?)
+	* format-patch
+	* gc (?)
+	* init
+	* notes
+   	  
+	* clone (?)
+	* fetch
+	* pull
+	* push
+	* checkout
+
+	* rebase (?)
+	* reset (?)
+
+	* stash
+	* tag
+	
+	* prune
+	* remote
+	* replace
+	* blame
+	* instaweb (?)
+	* rev-parse
+	* git-svn
+
+	* git-update-index
+	* git-read-tree
+
+An object is the unit of storage in git.  It it uniquely identified
+(named) by the SHA1 of its contents, and cannot be changed.  Objects
+may be blobs, trees, commits, or tags.  These are:
+	* blobs: File contents
+	* commits: A single point in git history.  Contains references
+	  to all parents (all other commits that contributed to it as
+	  ancestors). 
+	* tag: ?
+	* tree: An object consisting of a list of file names and modes
+	  along with refs to the associated blobs or tree objects
+	  (i.e. a tree object represents a difrectory.)
+Objects are reachable from a given object if we can follow tags to
+whatever they tag, commits to their parents or trees (??), and trees
+to the trees or blobs that they contain.  tree-ish objects are things
+from which a tree can be inferred (tree, tag, commit).
+
+A branch is an active line of development.  Commits are on a branch;
+the most recent commit is referred to as the tip of that branch, and
+is referenced by a branhc head, which moves forward as additional
+development is done on the branch.  A repository can have multiple
+branches, but the working tree is associated with just one), which
+HEAD points to.  HEAD may be "detached" if you've checked out a commit
+that isn't the tip of any branch; in this case HEAD points at a
+non-tip commit (?? What are the implications?).  Branch names by
+custom/default are master (for the local development) and origin
+(which really names the repository from which the current repository
+was cloned; it can have several branches.)  Tracking branches are used
+to track other lines of development; no changes not pulled are done on
+them.  
+
+New branches are created with git branch, and are switched to
+(changing the working directory to reflect the new branch (with git
+checkout).  git branch -d can delete branches (which confirms that
+everything's safely moved in).  -D nukes it (without checking).
+
+?? What happens to changes in the index on a git checkout?
+?? What happens to files modified but not yet in the index in a git
+   checkout? 
+?? Does git checkout delete files?
+
+Pulling a branch means fetching it from a remote repository (updating
+origin/<branchname> or possibly some other non-default local branch)
+and merging that branch.  Pushing a branch means getting the branch's
+head ref from a remote repository, figure out if it's a direct
+ancestor to the branch's local head ref, andin that case updating the
+remote repository.  It fails if the remote head is not an ancestor to
+the local head.
+
+A ref is an object name that denotes a particular object.  I think
+that they're often referred to as refs/<?>/name
+(e.g. refs/heads/master), so I conjecture that their namespace is
+.git/ |refs/...|
+Reference specs (refspecs) are used by fetch and push to describe the
+mapping between remote ref and local ref. [+]<src>:<dst>.  The example
+given was refs/heads/master or refs/heads/origin.  (??)  A symref
+refers to a ref through the refs namespace.
+
+A tag is an object containing a ref pointing to another object.  It
+can contain a message (like a commit object) or PGP signature (in
+which case it's a signed tag object").
+
+The index is the stored version of the working tree (possible with
+multiple versions which will be used when merging.  Things are added
+ot the index with "git add"; changes made in the working directory are
+not included in the index until git add is used.  Note that changes
+made after git add are also not included in the index until the next
+git add; git add takes a snapshot.  git commit with a list of names
+can add those files to the index before commit.  git commit -a gets
+all modified (but not new) files.
+
+A merge is bringing changes from on branch into another; if they share
+a common ancestor, the merge will be done.  
+
+?? There's text in the git tutorial that implies that if there are no
+   conflicts, doing a merge also does a commit; that the case?
+
+A fast-forward merge is a type of merge where a the changings being
+merged are a descendant of the commits already present (presumbly of
+the head commit).  In this case all that happens is an update.
+
+Grafts are for merging two different lines of development by recording
+fake ancestry information.
+
+
+?? Different between remotes and origin?
+
+?? How can origin refer to a repository?  That's not an object type
+   (as I so far understand it).  Maybe "origin" is a subdir of refs? 
+
+-- git-log --graph: Graphical display of commits and merges in a
+   repository. 
+
+git remote add <name> <repository ref>
+
+Defines shorthand for referring to a remote repository.  If a fetch is
+done with this, it's stored in a remote tracking branch using the
+short name (?? The tutorial claims <short-name>/master; what happens
+if works been done on other branches in the remote?).
+
+?? Tutorial is a little confusing; what's teh difference between git
+   merge bob/master and git pull . remotes/bob/master??  Gotta read
+   git-pull and such in more detail.
+
+== Notation
+
+<commit-ref-1>..<commit-ref-2>: [Two dot form] All commits (?)
+reachable from commit-ref-2 but not from commit-ref-1.  Can be a range
+on a single line of development, but by implication doesn't have to
+be.
+
+<commit-ref-1>..	: Commits since commit-ref-1, or commits not
+   			  reachable from commit-ref-1? (??)
+
+<commit-ref-1>...<commit-ref-2>: [Three dot form] All commits (?)
+reachable from either commit-ref-1 or commit-ref-2 but not both.  
+
+Commits can be referenced by:
+	* Name (SHA1 string)
+	* Any unique initial portion of name
+	* Symrefs (e.g. HEAD)
+	* branch names (refers to branch tip)
+	* Above suffixed with ^*n (e.g. ^, ^^) == the nth ancestor
+	* Above suffixed with -<n> == the nth ancestor
+	* Above suffixed with ^<n> == the nth parent, if multiple
+	* tag name (created with git tag)
+
+Filenames can be preceeded by a commit (e.g. tag:<filename>)
+
+gittutorial-2
+gitworkflows
+gitcore-tutorial
+
+Object relationships:
+	* commit-> tree (snapshot of commit), parent(s), author,
+   		   committer
+	* tree -> tree (subdirectory), blob (file)
+	* blob -> (nothing)
+	* Annotated tag -> commit (pretty sure)
+
+Symbolic references:
+	* Branch: Heads of branches imply branches, and are stored in
+   	  refs/heads/<branchname>
+	* Light tag: Symbolic reference to any commit:
+   	  refs/tag/<tagname>
+	* Remotes: Mirrors of branches in remote repositories:
+   	  refs/remotes/<remotename>/<branchname> (?)
+
+git diff by default compares the working directory against the index
+file.  You can specify an argument (e.g. HEAD) in which case it will
+compare against that.
+
+git add stores a new blog and put a reference to it in the index
+file. 
+
+X?? If adding a new file, does it store a new tree?  It doesn't look
+   like it, but I'm not completely sure.  It appears not;
+   interesting.  git write-tree (done as part of git-commit) creates
+   the tree object.  Hmmm.
+
+?? index is binary; what's it's format?
+
+-- The index file doesn't change because of a commit.  Just the list
+   of files that git currently knows about?  path mapping to object
+   (blob) reference?
+
+!! It looks as if git-clone "just" copies a repository and refreshes
+   the index!  When I grok why that works ok, I'll be a much happier
+   camper.  Ok, let's work it through.  If we ignore refs, all we have
+   is a DAG with many heads, and each object is uniquely identified
+   globally.  So if we try and do a merge between two objects, we'll
+   always be able to figure out how to do it, no matter where the
+   objects came from.  So that explains what "git fetch" does; it
+   creates the new chain in the repository and points FETCH_HEAD
+   (sic?) at it, and nothing more.  If it does something funky, it's
+   with symbolic refs, and effectively is a fast-forward merge (i.e. a
+   head retarget).  I think I'm beginning to get this.
+
+   Note that index files are tricky; they don't necessarily copy well,
+   because they include information on file stat times and mods.  So
+   they need to be rebuilt on a copy.
+
+   Take home: It's fine to juts copy a repository.  But it's looking
+   like it's going to be hell to peel off all references to a file in
+   a repository.  Pity.
+
+?? What manipulations of symbolic references are done in the process
+   of cloning a repository, creating a remote branch, and pushing and
+   fetching.  I think this means the following man pages:
+	* git-remote
+   	* git-clone
+	* git-fetch
+	* git-pull (may be skippable)
+	* git-branch
+	* git-tag
+
+
+gitcli(7) summary:
+	* Revisions generally come before paths on command lines
+	* If an argument could be either, put a -- between revisions
+   	  and paths.
+	* --cached: Directs a command that usually works on files in the
+   	  working tree to *only* work with the index.
+	* --index: Directs a command that usually works on files in the
+   	  working tree to *also* work with the index.
+
+?? There's a .git/branches directory; what is it?
+
+Remote urls are stores in the config file.
+   	  
+?? Why do we need logs directory?
+
+?? What is a basis?  (The thing that needs to be specified when using
+   git bundle)
+
+?? What does checkout do to modified files in the directory?  I think
+   it leaves them alone (though obviously the diff will change)?
+
+?? What does checkout do to modifications saved in the index?  Do they
+   survive a checkout and a check-back?
+
+?? How can I get a list of all git commands?
+
+?? Can I create my own git comments by putting git-<cmd> on my path?   
+
+* Git subversion bridges

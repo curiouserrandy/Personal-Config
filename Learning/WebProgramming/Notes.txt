@@ -1,0 +1,166 @@
+## -*-mode: Outline; fill-prefix: "   ";-*-
+
+* Class: HTML, CSS, and JavaScript from the ground up
+
+** In order, random choice class notes
+
+ux-webdev@google.com: Good address for asking questions.
+
+Structure, presentation, behavior maps well to Html, CSS, Javascript. 
+
+Trying to separate out within the web page in that order.  Why?
+Accessability, Portability, Maintainability, Reduced latency (from
+separate files). 
+
+Aim for graceful degredation: Start with something that works and
+layer functionality on top of it.
+
+Can tell browser to render old documents in a modern way.
+
+<fieldset> tag binds everything within together (usually used to
+contain form elements).  Not required, but adds meaning to sections
+within a form.  It isn't used by post method, but might be by CSS or
+screen readers.  <legend> subtag is how you explain what a fieldset
+means.  Does produce formatting.
+
+<form> Everything inside is sent as a group.  Cannot nest forms.
+
+Think about meaning around <ul> versus <ol>; often you want ordered
+lists. 
+
+<input>: Must use unique ids within a page (else javascript getters
+will be confused.)  name field -> server (key in transmission), id
+field->css & javascript.
+
+<label>: Used to indicate that you're labeling a form.  "for=<id>"
+associates with a specific form.  Can make sense outside of the
+context of the form; doesn't currently have used meaning.  Can also
+wrap the entire label+form with <label>; means you don't need to give
+an id.  Clicking on a label brings focus to the form.
+
+<input type="radio">; names match, ids don't, must have value.
+
+<dl>: Definition list.  Expects title->definition.  Not bad for
+forms.   <dt> == Definition title, <dd> = Definition.
+
+Can give id to any tag??
+
+** CSS
+
+Can put in item "style="
+Can put in a <style> tag as well.  Would recommend putting them into
+the header; force a relayout of document, so should show up early.
+Can link in external documents as well.
+
+Selector { property: value; }  E.g.
+
+h1 { color: red; font-size: 12px; }
+
+Selector can be tag name, class, id, document structure.
+
+p 		is all paragraphs.
+.help 		anything with class name help
+#about 		id about.  Not ideal as ids are unique.
+
+#about p	Select any p element that is a descendant of any
+       		element with an id attribute that equals about.
+p.intro		paragraph with class name that contains word intro.
+
+class="" 	space delimitted; means list of spaces.  Only one
+       		class attribute per tag.
+
+Recommend using -'s to separate words in class names (not
+underscores). 
+
+There is a way to get direct descendant.
+
+Some tags have pseudo-selectors (eg. unvisited or visited links)
+
+w3schools.com: Properties for what you can change.
+
+Some properties come in different granularities (border, border-width,
+border-left-width).  Can also specify many things on the same line for
+the coarser granularity (e.g. border).  
+
+Most specific wins.  Within most specific, order (last) wins.  There's
+real gotchas in the context of what's more specific; e.g. inherited id +
+tag is more specific than actual id.
+
+Text related properties are inherited; layout related elements do
+not. 
+
+*** Units
+
+Absolute vs. relative
+
+Pixels (px) are absolute; always the same size.  (Except mobile, and
+except Cmd-+/-.)
+
+em is relative to current value of font-size.  e.g. width: 2em;
+font-size:2em;
+
+% is relative to things in different contexts. (and means different
+things; relative to 50% of what the thing you're setting used to be.)
+
+*** Font families
+
+Based on system browser is on (not browser).  
+
+** Layout
+
+Content: Cats
+Padding: Pillow/blankets 
+Border: Wood in the crate
+Margin: Space around the crate
+
+Declaration options:
+margin: 1em	All margins = 1em
+margin: 1em 2em		Top&bottom=1, l&r = 2	(trbl wrapping)
+margin: 1em 2em 3em 4em	top,right,bottom,left
+
+Clockwise, but mirrorw if you leave something out.  STarting at top;
+this is apparently relevant in many contextx.
+
+Vertical margins collapse   
+
+*** Display
+
+Values: inline, block (there are others, but we're not talking about
+them). 
+
+inline boxes flow left to right.  <a><span><img><input> inline by default.
+block boxes flow top to bottom.   <h1><p><ul><li><div>
+
+inline display context ignores height and width.  
+
+none: Don't display it, and take it out of the flow.
+
+*** Position 
+
+Values: static, relative, absolute, fixed
+
+relative: When you specify positions, it'll be relative to where it
+was sitting.
+
+absolute: Sets where it is on the browser frame.  In a new, unique
+layer.
+
+fixed: Relative to the window. (Doesn't scroll.)
+
+** Questions
+
+?? How is XML used these days for representation within web pages
+   (e.g. as a substitute for HTML)?  
+
+?? What's the paragraph description of HTML5 versus HTML?
+
+?? Is there way to do your structure in XML and use CSS for
+   transformation? 
+
+?? Understand fieldset.
+
+?? Comments in html
+
+?? What is <div>?  Also <span>?
+
+?? Understand <button> tag.
