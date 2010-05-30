@@ -107,21 +107,21 @@ read_if_exists ()
     return 0;
 }
 
+# Source $1/all.bf and put $1/Bin on the path.  No error if anything
+# ($1, $1/all.br, $1/Bin) doesn't exist, but if they exist they must be
+# a directory/readable/searchable as appropriate.
 function init_from ()
 {
     if [ $# -ne 1 ]; then
-        echo "incorporate_for_initialization called with wrong number of args: $*" 1>&2;
+        echo "init_from called with more than one arg: $*" 1>&2;
 	return 1;
     fi
     
     local file_root=$1;
     
-    # If a file (with .bf), read it.  If a directory, read
-    # <dir>/all.bf if exists, and put <dir>/Bin on path if it exists.
-    if [ -r ${file_root}.bf ]; then
-	if [ "$INIT_FROM_LOG" = "yes" ]; then echo "IFing file ${file_root}.bf"; fi
-        . ${file_root}.bf;
-    elif [ -e ${file_root} ]; then
+     if [ -e ${file_root} ]; then
+         # Confirm a directory, then read <dir>/all.bf if exists, and
+	 # put <dir>/Bin on path if it exists.
         if [ ! -d ${file_root} ]; then
 	    echo "File ${file_root} isn't a directory!" 2>&1;
 	    return 1;
