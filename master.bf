@@ -33,22 +33,30 @@ else
     fi
 fi
 
-hostname=`echo $fqhname | awk -F. '{print $1}' | tr '[A-Z]' '[a-z]'`
-domainname=`echo $fqhname | sed 's/^[^\.]*\.//' | tr '[A-Z]' '[a-z]'`
+config_host=`echo $fqhname | awk -F. '{print $1}' | tr '[A-Z]' '[a-z]'`
+config_domain=`echo $fqhname | sed 's/^[^\.]*\.//' | tr '[A-Z]' '[a-z]'`
 
-if [ "$domainname" = "" ]; then
-    domainname=NODOMAIN
+if [ "$config_domain" = "" ]; then
+    config_domain=NODOMAIN
 fi
 
 # Get the system type and machine type. 
 # Protect against systypes with "/"s (BSD/OS, specifically)
-systype=`uname | sed 's;/;_;'`
-archtype=`uname -m | sed -e 's;/;_;' -e 's; ;_;' `
+config_os=`uname | sed 's;/;_;'`
+config_arch=`uname -m | sed -e 's;/;_;' -e 's; ;_;' `
 
 # Do any overriding of the above configuration variables (e.g. for laptops
 # using DHCP; generally you want those to have a fixed environment no matter
 # where they're hooked up).
 . $config_files_directory/config-override.bf
+
+# Setup environment variables for other tools (e.g. emacs) that want to 
+# do setups like the above.
+export config_files_directory;
+export config_host;
+export config_domain;
+export config_os;
+export config_arch;
 
 # Do a reasonable default for the various paths.  They will get
 # modified by the various files read in below, using
@@ -92,10 +100,3 @@ fi
 # Get my personal stuff that needs to come in after machine specific files
 . $config_files_directory/post-system.bf
 
-# Setup environment variables for other tools (e.g. emacs) that want to 
-# do setups like the above.
-export config_files_directory=$config_files_directory;
-export config_host=$hostname;
-export config_domain=$domainname;
-export config_os=$systype;
-export config_arch=$archtype;

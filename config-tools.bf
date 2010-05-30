@@ -166,13 +166,13 @@ init_from_recurse ()
     
      if [ -e ${file_root} ]; then
         init_from ${file_root}	# Do the actual work in this directory
-	init_from_recurse ${file_root}/OS/$systype
-	init_from_recurse ${file_root}/OS/$systype/$archtype
+	init_from_recurse ${file_root}/OS/$config_os
+	init_from_recurse ${file_root}/OS/$config_os/$config_arch
 
-	tmp_domainname=$domainname
+	tmp_domainname=$config_domain
 	while [ X"$tmp_domainname" != X"" ] ; do
 	    init_from_recurse $file_root/$tmp_domainname
-	    init_from_recurse $file_root/$tmp_domainname/$hostname
+	    init_from_recurse $file_root/$tmp_domainname/$config_host
 
 	    tmp_domainname=`echo $tmp_domainname | sed 's/^[^.]*\.*//'`
 	done
