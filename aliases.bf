@@ -1,15 +1,7 @@
-# Testing change.
-function worldmail () {
-    date
-    finger randy@world.std.com | tr -d '\013' | awk '/^randy[ 	]/,/new mail/'
-}
-
 # Setenv was done in tools.
 function unsetenv () {
     export -n "$@"
 }
-
-alias world="telnet -l randy world.std.com"
 
 # Search for files matching the pattern in $1 in all the directories listed
 # in the path in $2.  We assume for the moment that there are no spaces 
@@ -34,12 +26,6 @@ function searchman() {
 function searchexe() {
     searchpath $1 $PATH
 }
-
-# Check the mailq
-function mailq() {
-    /usr/lib/sendmail -bp | more
-}
-
 
 canonicalize_directory () {
     local sd=$PWD;
