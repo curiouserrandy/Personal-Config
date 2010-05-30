@@ -11,11 +11,10 @@ esac
 
 if test "$USER" != "" ; then
     LOGNAME=$USER;
-    export LOGNAME USER
 elif test "$LOGNAME" != "" ; then
     USER=$LOGNAME;
-    export LOGNAME USER
 fi
+export LOGNAME USER
 
 # Clean up DISPLAY, if not fully qualified (can cause problems)
 # So can cleaning it up; nuking this for now.
