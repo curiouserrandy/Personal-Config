@@ -1,7 +1,7 @@
 # Directory below which all configuration files live.
 # Default the best you can; otherwise use in environment (for su root)
-if [ "$configuration_files_directory" == "" ]; then
-    export configuration_files_directory=~/Config
+if [ "$config_files_directory" == "" ]; then
+    export config_files_directory=~/Config
 fi
 
 # Don't execute this file is the shell running is not bash.
@@ -10,6 +10,6 @@ fi
 # shell executed is a bourne shell variant, it will pick that up.
 
 if [ "$BASH" != "" ]; then
-    . $configuration_files_directory/all.bf;
+    . $config_files_directory/master.bf;
 fi
 

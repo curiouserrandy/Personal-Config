@@ -141,6 +141,44 @@ function init_from ()
     fi
 }
 
+# Execute init_from on the first argument, then recurse into standard 
+# subdirectories.  The standard subdirectories are:
+#	OS/$systype
+#	OS/$systype/$archtype
+#	<hostname-no-domain>
+#	Each contiguous domain suffix (e.g. edut, mit.edu,
+#	    bcs.mit.edu, glab.bcs.mit.edu)
+# Note that this relies on the variables $systype, $archtype,
+# and $domainname being set.
+#
+# Given an infnite directory structure this could lead to infinite recursion. 
+# Given a non-infnite directory structure, a directory's lack of existence 
+# will cause the function to return without recursing.  Assuming a
+# non-infinite directory structure seems safe :-}.
+init_from_recurse () 
+{
+    if [ $# -ne 1 ]; then
+        echo "init_from called with more than one arg: $*" 1>&2;
+	return 1;
+    fi
+    
+    local file_root=$1;
+    
+     if [ -e ${file_root} ]; then
+        init_from ${file_root}	# Do the actual work in this directory
+	init_from_recurse ${file_root}/OS/$systype
+	init_from_recurse ${file_root}/OS/$systype/$archtype
+
+	tmp_domainname=$domainname
+	while [ X"$tmp_domainname" != X"" ] ; do
+	    init_from_recurse $file_root/$tmp_domainname
+	    init_from_recurse $file_root/$tmp_domainname/$hostname
+
+	    tmp_domainname=`echo $tmp_domainname | sed 's/^[^.]*\.*//'`
+	done
+    fi
+}
+
 # A little sad to make this a basic tool, but it allows me to have 
 # files that can be read by either bourne or C shell variants.
 function setenv ()
