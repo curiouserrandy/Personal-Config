@@ -155,6 +155,14 @@ function init_from ()
 # Given a non-infnite directory structure, a directory's lack of existence 
 # will cause the function to return without recursing.  Assuming a
 # non-infinite directory structure seems safe :-}.
+# 
+# Additional hack: If the directory does not exist, but the file ${1}.lnk 
+# does, the contents of that file will be used an (absolute) path to 
+# a directory to be used instead of the specified one.  This is to 
+# support splitting out configuration files proprietary to a given company 
+# into a location from which they can be managed with appropriate 
+# confidentiality, and still be supported on systems (e.g. cygwin) that
+# do not support symbolic links.  This resolution will only be done once.
 init_from_recurse () 
 {
     if [ $# -ne 1 ]; then
@@ -163,6 +171,10 @@ init_from_recurse ()
     fi
     
     local file_root=$1;
+
+    if [ ! -e ${file_root} -a -e ${file_root}.lnk ]; then
+        file_root=`cat ${file_root}.lnk`
+    fi
     
      if [ -e ${file_root} ]; then
         init_from ${file_root}	# Do the actual work in this directory
