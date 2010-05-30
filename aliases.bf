@@ -139,5 +139,5 @@ remacs () {
 alias which="type -path"
 
 # X windows stuff.
-. $configuration_files_directory/xaliases.bf
+. $config_files_directory/xaliases.bf
 

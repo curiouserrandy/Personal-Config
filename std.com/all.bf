@@ -9,6 +9,6 @@ else
     if [ "`hostname | sed 's/\..*$//'`" = "tigana" ]; then
 	/bin/true;	# Will be taken care of at top level.
     else
-	. $configuration_files_directory/std.com/tigana.bf
+	. $config_files_directory/std.com/tigana.bf
     fi
 fi

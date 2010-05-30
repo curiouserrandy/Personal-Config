@@ -57,4 +57,4 @@ function world () {
 }    
 
 # Other bash packages to pull in.
-init_from $configuration_files_directory/Tools/mh
+init_from $config_files_directory/Tools/mh

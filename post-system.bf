@@ -94,7 +94,7 @@ if [ "$PS1" != "" ]; then
 fi
     
 # Read in my aliases
-. $configuration_files_directory/aliases.bf
+. $config_files_directory/aliases.bf
 
 # Attempt to get non-interactive shells to pull in aliases also
 export ENV=$HOME/.bashrc

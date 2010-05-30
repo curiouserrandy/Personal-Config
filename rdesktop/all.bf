@@ -56,7 +56,7 @@ function world () {
 }    
 
 # Other bash packages to pull in.
-init_from $configuration_files_directory/Tools/mh
-init_from $configuration_files_directory/Tools/perl
-init_from $configuration_files_directory/Tools/perforce
-init_from $configuration_files_directory/Tools/sn
+init_from $config_files_directory/Tools/mh
+init_from $config_files_directory/Tools/perl
+init_from $config_files_directory/Tools/perforce
+init_from $config_files_directory/Tools/sn
