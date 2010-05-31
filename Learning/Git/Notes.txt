@@ -10,31 +10,104 @@
 -- Alterantive book: http://www-cs-students.stanford.edu/~blynn/gitmagic/   
 -- Ref man (man git): http://www.kernel.org/pub/software/scm/git/docs/   
 
+* Definitions
+
+	* bare repository (I think this is one without any source
+   	  checked out, or a place for it; i.e. just .git by itself)
+	* Working tree
+	* tag
+	* branch
+	* object: ?
+	* blob: blob object name
+	* tree: tree object name
+	* commit: commit object name
+	* tree-ish: tree, commit, or tag object name.  Tag/commit will
+   	  be derferences to point at tree.
+	* commit-ish: commit or tag object name.  Tag will be
+   	  dereferenced to point at commit.
+	* type: One of blob, tree, commit, or tag.
+	* file: Filename, almost always relative to root of the tree
+   	  structure GIT_INDEX_FILE (usually $GIT_DIR/index) describes.
+   
+
+* Answered questions
+
+Information here should be elsewhere in the doc, or basic enough in
+your head that you won't need to look here again.  
+
+X?? How can I either nuke a portion of a repository, or clone the
+   repository without a particular set of files?
+
+   My sense is that this is, in a basic way, not possible.  You can
+   only checkout a particular set of files, but if you have a commit,
+   you have the tree that it points to and all the blobs that it
+   points to, and playing with that pointer chain means violating
+   git's basic consistency model.
+
+   What use case prompted this question?  I think it was that I wanted
+   to clone my Config directory minus the NetApp stuff.  General case:
+   Exporting a subset of a project for working on with larger group of
+   people.  I think that's gotta lose the revision history.
+
+X?? How do I in general avoid piping git output into a pager?  I think
+   I've solved this problem before; may want to look around personal
+   laptop. 
+
+   Yeah, there's a series of things controlling this.  I should write
+   it up in a cheat sheet.
+
+
+
+X!! It looks as if git-clone "just" copies a repository and refreshes
+   the index!  When I grok why that works ok, I'll be a much happier
+   camper.  Ok, let's work it through.  If we ignore refs, all we have
+   is a DAG with many heads, and each object is uniquely identified
+   globally.  So if we try and do a merge between two objects, we'll
+   always be able to figure out how to do it, no matter where the
+   objects came from.  So that explains what "git fetch" does; it
+   creates the new chain in the repository and points FETCH_HEAD
+   (sic?) at it, and nothing more.  If it does something funky, it's
+   with symbolic refs, and effectively is a fast-forward merge (i.e. a
+   head retarget).  I think I'm beginning to get this.
+
+   Note that index files are tricky; they don't necessarily copy well,
+   because they include information on file stat times and mods.  So
+   they need to be rebuilt on a copy.
+
+   Take home: It's fine to juts copy a repository.  But it's looking
+   like it's going to be hell to peel off all references to a file in
+   a repository.  Pity.
+
 * Git command list, with 1-line annotations
 
 ** Porcelain   
 
 ## Understand and use
 -- git-add
--- git-checkout
 -- git-clone
 -- git-commit
 -- git-init
--- git-log
 -- git-status
 -- git-help
 
 ## Use, but would like to understand better   
 -- git-rev-parse: Pick out and massage parameters.
    
--- git-diff
--- git-merge
+?? Solidly grok and take notes on the format of a revision list.    
 
-?? What formats can I get diff output in?
-?? How do I specify diffs for each of the three areas I'd like to diff
-   between?
-?? What's the syntax for a merge specification?
- 
+-- git-checkout
+   
+?? What happens to changes in the index on a git checkout?
+?? What happens to files modified but not yet in the index in a git
+   checkout? 
+?? Does git checkout delete files?
+?? What does checkout do to modified files in the directory?  I think
+   it leaves them alone (though obviously the diff will change)?
+
+?? What does checkout do to modifications saved in the index?  Do they
+   survive a checkout and a check-back?
+
+
 -- git-svn: Bidirectional operation between a single Subversion branch and git.
 
 ?? What exactly am I doing with the git svn bridge I setup for chrome?  
@@ -57,6 +130,33 @@
 ?? How is the merge implied by a git pull specified
 ?? How does git fetch/pull integrate with git svn.
 
+?? Different between remotes and origin?
+?? How can origin refer to a repository?  That's not an object type
+   (as I so far understand it).  Maybe "origin" is a subdir of refs? 
+
+?? IF you assign a name with "git remote" and do a git fetch with
+   that, the tutorial implies it just updates <remote>/master, but
+   what if work's been done on aother branches in the repository?  My
+   guess is that git fetch only fetchs a single branch; should be
+   confirmed.  
+
+?? Tutorial is a little confusing; what's teh difference between git
+   merge bob/master and git pull . remotes/bob/master??  Gotta read
+   git-pull and such in more detail.
+
+-- git-log
+
+?? Would like to grok "git log --graph" and understand how I'd like to
+   incorporate it into my work flow.
+
+-- git-diff
+-- git-merge
+
+?? What formats can I get diff output in?
+?? How do I specify diffs for each of the three areas I'd like to diff
+   between?
+?? What's the syntax for a merge specification?
+ 
 -- git-grep
 
 ?? Range of options for use
@@ -219,94 +319,6 @@
 
 * Git proper
 
-?? How can I either nuke a portion of a repository, or clone the
-   repository without a particular set of files?
-
-   My sense is that this is, in a basic way, not possible.  You can
-   only checkout a particular set of files, but if you have a commit,
-   you have the tree that it points to and all the blobs that it
-   points to, and playing with that pointer chain means violating
-   git's basic consistency model.  
-
-?? What is the format of a revision list
-
-?? How do I in general avoid piping git output into a pager?  I think
-   I've solved this problem before; may want to look around personal
-   laptop. 
-
-?? Definitions:
-	* bare repository (I think this is one without any source
-   	  checked out, or a place for it; i.e. just .git by itself)
-	* Working tree
-	* tag
-	* branch
-	* object: ?
-	* blob: blob object name
-	* tree: tree object name
-	* commit: commit object name
-	* tree-ish: tree, commit, or tag object name.  Tag/commit will
-   	  be derferences to point at tree.
-	* commit-ish: commit or tag object name.  Tag will be
-   	  dereferenced to point at commit.
-	* type: One of blob, tree, commit, or tag.
-	* file: Filename, almost always relative to root of the tree
-   	  structure GIT_INDEX_FILE (usually $GIT_DIR/index) describes.
-
-?? Replacing objects (git-replace).  No such thing.  Huh?  
-
-?? To read:
-	gitworkflows
-	gitrepository-layout
-	gitglossary
-
--- Top level git commands:
-	* add
-	* mv
-	* rm
-	* merge
-	* commit
-	* revert
-
-	* status
-	* describe
-	* log
-	* shortlog
-	* diff
-	* grep (?)
-	* show
- 
-	* archive (?)
-	* branch
-	* bundle (?)
-	* clean (?)
-	* format-patch
-	* gc (?)
-	* init
-	* notes
-   	  
-	* clone (?)
-	* fetch
-	* pull
-	* push
-	* checkout
-
-	* rebase (?)
-	* reset (?)
-
-	* stash
-	* tag
-	
-	* prune
-	* remote
-	* replace
-	* blame
-	* instaweb (?)
-	* rev-parse
-	* git-svn
-
-	* git-update-index
-	* git-read-tree
-
 An object is the unit of storage in git.  It it uniquely identified
 (named) by the SHA1 of its contents, and cannot be changed.  Objects
 may be blobs, trees, commits, or tags.  These are:
@@ -342,11 +354,6 @@ New branches are created with git branch, and are switched to
 checkout).  git branch -d can delete branches (which confirms that
 everything's safely moved in).  -D nukes it (without checking).
 
-?? What happens to changes in the index on a git checkout?
-?? What happens to files modified but not yet in the index in a git
-   checkout? 
-?? Does git checkout delete files?
-
 Pulling a branch means fetching it from a remote repository (updating
 origin/<branchname> or possibly some other non-default local branch)
 and merging that branch.  Pushing a branch means getting the branch's
@@ -368,8 +375,8 @@ A tag is an object containing a ref pointing to another object.  It
 can contain a message (like a commit object) or PGP signature (in
 which case it's a signed tag object").
 
-The index is the stored version of the working tree (possible with
-multiple versions which will be used when merging.  Things are added
+The index is the stored version of the working tree (possibly with
+multiple versions which will be used when merging).  Things are added
 ot the index with "git add"; changes made in the working directory are
 not included in the index until git add is used.  Note that changes
 made after git add are also not included in the index until the next
@@ -378,37 +385,30 @@ can add those files to the index before commit.  git commit -a gets
 all modified (but not new) files.
 
 A merge is bringing changes from on branch into another; if they share
-a common ancestor, the merge will be done.  
+a common ancestor, the merge will be done.  If there are no conflicts,
+a merge will also do a commit.  If there are conflicts, the conflicts
+will need to be resolved by hand, "git add" used to put them into the
+index, and "git commit" used to commit them.  
 
-?? There's text in the git tutorial that implies that if there are no
-   conflicts, doing a merge also does a commit; that the case?
+?? I have this vague memory that there are special things you can do
+   in the time between conflict and resolution through git add?
 
 A fast-forward merge is a type of merge where a the changings being
 merged are a descendant of the commits already present (presumbly of
-the head commit).  In this case all that happens is an update.
+the head commit).  In this case all that happens is an update of the
+branch pointer.
 
 Grafts are for merging two different lines of development by recording
 fake ancestry information.
 
-
-?? Different between remotes and origin?
-
-?? How can origin refer to a repository?  That's not an object type
-   (as I so far understand it).  Maybe "origin" is a subdir of refs? 
-
 -- git-log --graph: Graphical display of commits and merges in a
    repository. 
 
-git remote add <name> <repository ref>
-
-Defines shorthand for referring to a remote repository.  If a fetch is
-done with this, it's stored in a remote tracking branch using the
-short name (?? The tutorial claims <short-name>/master; what happens
-if works been done on other branches in the remote?).
-
-?? Tutorial is a little confusing; what's teh difference between git
-   merge bob/master and git pull . remotes/bob/master??  Gotta read
-   git-pull and such in more detail.
+Note that git fetch just gets the objects, and points FETCH_HEAD at
+them; to do something with that you need to do a git merge.  If git
+fetch is executed with a remote name setup with "git remote", then it
+updates the local tracking branch for the remote (but presumably also
+points FETCH_HEAD at it.)  
 
 == Notation
 
@@ -466,31 +466,16 @@ X?? If adding a new file, does it store a new tree?  It doesn't look
    interesting.  git write-tree (done as part of git-commit) creates
    the tree object.  Hmmm.
 
+?? Are trees nested in a commit?
+?? Does a commit refer to all directories in the repository, just the
+   ancestors of files in the commit, or just the directories containing
+   files in the commit?
+
 ?? index is binary; what's it's format?
 
 -- The index file doesn't change because of a commit.  Just the list
    of files that git currently knows about?  path mapping to object
    (blob) reference?
-
-!! It looks as if git-clone "just" copies a repository and refreshes
-   the index!  When I grok why that works ok, I'll be a much happier
-   camper.  Ok, let's work it through.  If we ignore refs, all we have
-   is a DAG with many heads, and each object is uniquely identified
-   globally.  So if we try and do a merge between two objects, we'll
-   always be able to figure out how to do it, no matter where the
-   objects came from.  So that explains what "git fetch" does; it
-   creates the new chain in the repository and points FETCH_HEAD
-   (sic?) at it, and nothing more.  If it does something funky, it's
-   with symbolic refs, and effectively is a fast-forward merge (i.e. a
-   head retarget).  I think I'm beginning to get this.
-
-   Note that index files are tricky; they don't necessarily copy well,
-   because they include information on file stat times and mods.  So
-   they need to be rebuilt on a copy.
-
-   Take home: It's fine to juts copy a repository.  But it's looking
-   like it's going to be hell to peel off all references to a file in
-   a repository.  Pity.
 
 ?? What manipulations of symbolic references are done in the process
    of cloning a repository, creating a remote branch, and pushing and
@@ -521,14 +506,27 @@ Remote urls are stores in the config file.
 ?? What is a basis?  (The thing that needs to be specified when using
    git bundle)
 
-?? What does checkout do to modified files in the directory?  I think
-   it leaves them alone (though obviously the diff will change)?
+?? Can I create my own git commands by putting git-<cmd> on my path?   
 
-?? What does checkout do to modifications saved in the index?  Do they
-   survive a checkout and a check-back?
-
-?? How can I get a list of all git commands?
-
-?? Can I create my own git comments by putting git-<cmd> on my path?   
+   I don't think I'm going to be able to answer this theoretically
+   :-J.  Try it and see.
 
 * Git subversion bridges
+
+* Cheat sheet writeup tood
+
+-- Git pager cascade
+-- Revision control list spec (general arg spec, I think).
+-- Ways to specify things commits; there are an amazing number.
+
+
+
+* Todo
+
+-- To read:
+	gitworkflows
+	gitrepository-layout
+	gitglossary
+	git top level page
+
+
