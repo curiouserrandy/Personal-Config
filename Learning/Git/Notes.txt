@@ -2,14 +2,231 @@
 
 * Web docs
 
-http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
-http://git-scm.com/documentation
-http://www-cs-students.stanford.edu/~blynn/gitmagic/   
+-- Main page: git-scm.org
+-- Git community book: http://book.git-scm.com/
+-- Git User's Manual:
+   http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
+-- Git for CS: http://eagain.net/articles/git-for-computer-scientists/
+-- Alterantive book: http://www-cs-students.stanford.edu/~blynn/gitmagic/   
+-- Ref man (man git): http://www.kernel.org/pub/software/scm/git/docs/   
+
+* Git command list, with 1-line annotations
+
+** Porcelain   
+
+## Understand and use
+-- git-add
+-- git-checkout
+-- git-clone
+-- git-commit
+-- git-init
+-- git-log
+-- git-status
+-- git-help
+
+## Use, but would like to understand better   
+-- git-rev-parse: Pick out and massage parameters.
+   
+-- git-diff
+-- git-merge
+
+?? What formats can I get diff output in?
+?? How do I specify diffs for each of the three areas I'd like to diff
+   between?
+?? What's the syntax for a merge specification?
+ 
+-- git-svn: Bidirectional operation between a single Subversion branch and git.
+
+?? What exactly am I doing with the git svn bridge I setup for chrome?  
+?? At what point does the git/svn tranformation occur?
+
+   (I'm guessing the local copy looks like git, and the remote like
+   SVN, and thus that it's only "git fetch" that is different.
+   Further guess: For the remote svn branch, you need to do a git svn
+   fetch, and git pull automatically does that when it's trying to do
+   a fetch on a svn tracking branch.  Worth confirming all these
+   guesses :-}.)   
+
+-- git-branch
+-- git-pull
+-- git-push
+-- git-fetch
+-- git-remote: manage set of tracked repositories.
+
+?? What precisely happens on a git fetch
+?? How is the merge implied by a git pull specified
+?? How does git fetch/pull integrate with git svn.
+
+-- git-grep
+
+?? Range of options for use
+
+-- git-config: Get and set repository or global options.
+   
+?? Range of options for use
+
+-- git-cherry-pick: Apply the change introduced by an existing commit.
+   
+-- git-blame
+-- git-annotate
+   
+-- git-revert: Revert an existing commit.
+
+## Want to learn more   
+-- git-citool: Graphical alternative to git-commit.  ?? Rel to gui
+-- git-gui: A portable graphical interface to Git.
+-- gitk: The git repository browser.
+
+?? Range of options for use, relationship between commands
+
+-- git-clean: Remove untracked files from the working tree.  ?? Rel to gc
+-- git-gc: Cleanup unnecessary files and optimize the local repository.
+-- git-pack-refs: Pack heads and tags for efficient repository access.
+-- git-prune: Prune all unreachable objects from the object database.
+-- git-repack: Pack unpacked objects in a repository.
+-- git-count-objects: Count unpacked number of objects and their disk consumption.
+-- git-fsck: Verifies the connectivity and validity of database.
+
+?? Relationship between commands, what do I want as part of normal
+   workflow. 
+
+-- git-mv: Move or rename a file, a directory, or a symlink.
+-- git-rm: Remove files from the working tree and from the index.
+   
+?? Effects?  How are these different from doing rm or mv followed by
+   usual add commands; any difference?  I'm guessing no.
+
+-- git-rebase: Forward-port local commits to the updated upstream head.
+   
+?? Workflow?
+   
+-- git-shortlog: Summarize git-log output.
+   
+?? Workflow?
+   
+-- git-reset: Reset current HEAD to the specified state.
+   
+-- git-mergetool: Run external mergetool to resolve conflicts.
+
+-- git-cherry: Find commits not merged upstream.   
+
+-- git-rerere: Reuse recorded resolution of conflicted merges.
+
+-- git-show-branch: Show branches and their commits.
+
+?? Relationship to git branch?  This is graphical, I think.  Way to
+   get output showing only divergences and convergence (maybe with
+   relative commit descriptions?)
+   
+-- git-whatchanged: Show logs with difference each commit introduces.
+
+-- git-request-pull: Generates a summary of pending changes.
+
+## Have basic idea, and that's good enough
+-- git-am: Apply a patch
+-- git-archive: Create an archive of files from a named tree.
+-- git-get-tar-commit-id: Extract commit ID from an git-archive archive
+-- git-bundle: Move objects and refs by archive.
+-- git-format-patch: Prepare patches for e-mail submission.
+-- git-show: Show various types of objects.
+-- git-stash: Stash the changes in a dirty working directory away.
+-- git-relink: Hardlink common objects in local repositories.
+
+## Don't understand, that's ok for now   
+-- git-describe: Show the most recent tag that is reachable from a commit.
+-- git-submodule: Initialize, update or inspect submodules.
+-- git-tag: Create, list, delete or verify a tag object signed with GPG.
+-- git-fast-export: Git data exporter.
+-- git-fast-import: Backend for fast Git data importers.
+-- git-filter-branch: Rewrite branches.
+-- git-reflog: Manage reflog information.
+-- git-instaweb: Instantly browse your working repository in gitweb.
+-- git-merge-tree: Show three-way merge without touching index.
+-- git-verify-tag: Check the GPG signature of tags.
+-- git-archimport: Import an Arch repository into git.
+-- git-cvsexportcommit: Export a single commit to a CVS checkout.
+-- git-cvsimport: Salvage your data out of another SCM people love to hate.
+-- git-cvsserver: A CVS server emulator for git.
+-- git-imap-send: Send a collection of patches from stdin to an IMAP folder.
+-- git-quiltimport: Applies a quilt patchset onto the current branch.
+-- git-send-email: Send a collection of patches as emails.
+
+** Plumbing
+## Manipulation commands
+-- git-apply: Apply a patch on a git index file and a working tree.
+-- git-checkout-index: Copy files from the index to the working tree.
+-- git-commit-tree: Create a new commit object.
+-- git-hash-object: Compute object ID and optionally creates a blob from a file.
+-- git-index-pack: Build pack index file for an existing packed archive.
+-- git-merge-file: Run a three-way file merge.
+-- git-merge-index: Run a merge for files needing merging.
+-- git-mktag: Creates a tag object.
+-- git-mktree: Build a tree-object from ls-tree formatted text.
+-- git-pack-objects: Create a packed archive of objects.
+-- git-prune-packed: Remove extra objects that are already in pack files.
+-- git-read-tree: Reads tree information into the index.
+-- git-symbolic-ref: Read and modify symbolic refs.
+-- git-unpack-objects: Unpack objects from a packed archive.
+-- git-update-index: Register file contents in the working tree to the index.
+-- git-update-ref: Update the object name stored in a ref safely.
+-- git-write-tree: Create a tree object from the current index.
+   
+## Interrogation commands
+-- git-cat-file: Provide content or type/size information for repository objects.
+-- git-diff-files: Compares files in the working tree and the index.
+-- git-diff-index: Compares content and mode of blobs between the index and repository.
+-- git-diff-tree: Compares the content and mode of blobs found via two tree objects.
+-- git-for-each-ref: Output information on each ref.
+-- git-ls-files: Show information about files in the index and the working tree.
+-- git-ls-remote: List references in a remote repository.
+-- git-ls-tree: List the contents of a tree object.
+-- git-merge-base: Find as good common ancestors as possible for a merge.
+-- git-name-rev: Find symbolic names for given revs.
+-- git-pack-redundant: Find redundant pack files.
+-- git-rev-list: Lists commit objects in reverse chronological order.
+-- git-show-index: Show packed archive index.
+-- git-show-ref: List references in a local repository.
+-- git-unpack-file: Creates a temporary file with a blob's contents.
+-- git-var: Show a git logical variable.
+-- git-verify-pack: Validate packed git archive files.
+
+## Synching repositories
+-- git-daemon: A really simple server for git repositories.
+-- git-fetch-pack: Receive missing objects from another repository.
+-- git-send-pack: Push objects over git protocol to another repository.
+-- git-update-server-info: Update auxiliary info file to help dumb servers.
+
+## Internal commands
+-- git-http-fetch: Download from a remote git repository via HTTP.
+-- git-http-push: Push objects over HTTP/DAV to another repository.
+-- git-parse-remote: Routines to help parsing remote repository access parameters.
+-- git-receive-pack: Receive what is pushed into the repository.
+-- git-shell: Restricted login shell for GIT-only SSH access.
+-- git-upload-archive: Send archive back to git-archive.
+-- git-upload-pack: Send objects packed back to git-fetch-pack.
+-- git-check-attr: Display gitattributes information.
+-- git-check-ref-format: Make sure ref name is well formed.
+-- git-fmt-merge-msg: Produce a merge commit message.
+-- git-mailinfo: Extracts patch and authorship from a single e-mail message.
+-- git-mailsplit: Simple UNIX mbox splitter program.
+-- git-merge-one-file: The standard helper program to use with git-merge-index.
+-- git-patch-id: Compute unique ID for a patch.
+-- git-peek-remote: (deprecated) List the references in a remote repository.
+-- git-sh-setup: Common git shell script setup code.
+-- git-stripspace: Filter out empty lines.
+
+   
 
 * Git proper
 
 ?? How can I either nuke a portion of a repository, or clone the
    repository without a particular set of files?
+
+   My sense is that this is, in a basic way, not possible.  You can
+   only checkout a particular set of files, but if you have a commit,
+   you have the tree that it points to and all the blobs that it
+   points to, and playing with that pointer chain means violating
+   git's basic consistency model.  
 
 ?? What is the format of a revision list
 
@@ -35,7 +252,7 @@ http://www-cs-students.stanford.edu/~blynn/gitmagic/
 	* file: Filename, almost always relative to root of the tree
    	  structure GIT_INDEX_FILE (usually $GIT_DIR/index) describes.
 
-?? Replacing objects (git-replace)
+?? Replacing objects (git-replace).  No such thing.  Huh?  
 
 ?? To read:
 	gitworkflows
