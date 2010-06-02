@@ -10,6 +10,8 @@
 (defvar fsfile-history nil "History variable for fsfile runs.")
 (defvar rgrep-history nil "History variable for rgrep runs.")
 
+;; Translation: tag surrounded by ' OR tag surrounded by " OR non-whitespace 
+;; contiguous tag at end of line.
 (defconst grep-like-command-tag-regexp
   "\\(\'[^\']*\'\\|\"[^\"]*\"\\|[^\\s ]*\\)\\s *$"
   "Regular expression to use for finding tag match in previous calls to
@@ -49,8 +51,6 @@ grep-like-command-tag-regexp."
 				nil nil history))
     (grep editted-command)))
 
-			    
-
 (defconst rgrep-command-format-string "rgrep"
   "String to use as base for recursive egrep runs.")
 
@@ -72,7 +72,6 @@ grep-like-command-tag-regexp."
   "Default command to use for running glimpse.")
 
 (defvar glimpse-baes-directory nil "Directory at which to target glimpse")
-
 
 (defun randy-run-glimpse ()
   (interactive)
