@@ -79,7 +79,6 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
    a repository.  Pity.
 
 * Git command list, with 1-line annotations
-
 ** Porcelain   
 
 ## Understand and use
@@ -143,6 +142,9 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 ?? Tutorial is a little confusing; what's teh difference between git
    merge bob/master and git pull . remotes/bob/master??  Gotta read
    git-pull and such in more detail.
+
+?? If I have a tracking branch associated with a branch, how do I find
+   out what it is?   
 
 -- git-log
 
