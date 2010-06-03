@@ -25,3 +25,6 @@ ISSUES is a list of integer values."
 
 (defun chrome-visit-issue (issue)
   (browse-url (format "http://crbug.com/%d" issue)))
+
+;; Setup git bindings
+(randy-init-from "Tools/git")
