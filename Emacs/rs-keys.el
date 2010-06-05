@@ -36,7 +36,10 @@
 (define-key mode-specific-map "f" 'randy-alternative-find-file-under-point)
 (define-key mode-specific-map "g" 'grep)
 (define-key mode-specific-map "h" 'shell)
-(define-key mode-specific-map "i" 'randy-run-glimpse)
+(if (featurep 'rs-tools-git)
+    ;; Git overrides; better functionality.
+    (define-key mode-specific-map "i" 'randy-run-git-grep)
+  (define-key mode-specific-map "i" 'randy-run-glimpse))
 (define-key mode-specific-map "j" 'randy-run-egrep-recursively)
 (add-hook 'comint-mode-hook
 	  '(lambda ()

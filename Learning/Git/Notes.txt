@@ -88,6 +88,52 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
    a repository.  Pity.
 
 * Git command list, with 1-line annotations
+** Arg notes
+
+-- Naming a commit object:
+	* SHA1 or prefix
+	* ?? Output from git describe
+	* Symbolic ref name (e.g. heads/bname).  Can usually be
+   	  shortened to bname, but short names are searched under
+   	  $GIT_DIR via:
+   	  .:refs:refs/tags:refs/heads:refs/remotes:refs/remotes/<name>/HEAD. 
+	  Special names: HEAD, FETCH_HEAD, ORIG_HEAD, MERGE_HEAD.
+
+?? What's the different between refs/remotes/<name> and
+   refs/remotes/<name>/HEAD? 
+
+	* <ref>@{date}
+	* <ref>@{n}: nth removed in the log for ref.  <ref> defaults
+   	  to the current branch if empty.
+	* @-n: Nth branched checked out before the current one
+	* <ref>@{upstream}: Branch the ref is set to build on top off
+   	  (?? Tracking?)
+	* <ref>^n: Nth parent (for merges)
+	* <ref>~n: Nth ancester, following first parents.  <ref>^0
+   	  means the commit itselt; ref is dereferenced until it
+   	  reaches a commit object.
+	* <ref>^{<type>}: Dereference object recursively until you get
+   	  to that type.
+	* <ref>^{}: Dereference to non-tag.
+	* :/<text>: Commit whose message starts with the specified
+   	  text.  (Youngest commit reachable from any ref.)  Initial !
+   	  must be repeated.
+	* <ref>:path: Blob or tree at the path in the referenced
+   	  thing.
+	* :n:<path>: Blob object in the index at the given path.
+   	  :<path> names a stage zero entry.  Merge: 1 is common
+   	  ancester, 2 is target branch's version, 3 is merged branches
+   	  version. 
+   
+-- Ranges
+	* Single specification as above: All commits reachable from
+   	  that one.
+   	* ^ref excludes commits reachable from a commit.
+	* Shorthand: r1..r2 == ^r1 r2
+	* r1...r2 == r1 r2 --not $(git merge-base --all r1 r2).  Set
+   	  of commits reachable from either r1 or r2, but not both.
+	* r1^@: All parents of r1
+	* r1^!: r1, but not any of its parents
 
 ** Porcelain   
 
@@ -152,6 +198,9 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 ?? Tutorial is a little confusing; what's teh difference between git
    merge bob/master and git pull . remotes/bob/master??  Gotta read
    git-pull and such in more detail.
+
+?? If I have a tracking branch associated with a branch, how do I find
+   out what it is?   
 
 -- git-log
 
