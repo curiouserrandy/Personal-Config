@@ -1,5 +1,14 @@
 ## -*-mode: Outline; fill-prefix: "   ";-*-
 
+* Notes
+
+-- Ways to name a commit:
+	* Full or unique prefix of SHA1 object name
+	* Output from git-describe (closest tag, -#commits-g?)
+	* Symbolic ref name.  If ambiguous between heads & tags, can
+   	  specify heads/<tag> or tags/<tag>
+	* 
+
 * Web docs
 
 -- Main page: git-scm.org
