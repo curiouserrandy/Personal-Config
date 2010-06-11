@@ -2,6 +2,14 @@
 
 * Class: HTML, CSS, and JavaScript from the ground up
 
+** Links
+
+-- http://www.htmldog.com/reference/htmltags/ - HTML tag reference
+-- http://www.w3schools.com - Great resource for HTML, CSS, JavaScript, the DOM, XML, etc.
+-- http://www.csszengarden.com - Awesome example of how 1 HTML document can be drastically altered by CSS alone.
+-- http://www.w3.org - The WWW Consortium. The spec people.
+-- http://www.alistapart.com - Excellent blog with guidelines, how-tos, resources and tips.   
+   
 ** In order, random choice class notes
 
 ux-webdev@google.com: Good address for asking questions.
