@@ -5,3 +5,11 @@ if [ "`uname`" = "Linux" -a "`uname -a | grep x86_64`" = "x86_64" ]; then
 fi
 
 suffix_path_with_dirlist PATH ~/Sandboxen/depot-tools
+
+# Location of patches repository
+
+if [ "$config_os" = "cygwin" ]; then
+    chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
+else
+    chrome_patches=/home/rdsmith/Repositories/ChromePatches.git
+fi
