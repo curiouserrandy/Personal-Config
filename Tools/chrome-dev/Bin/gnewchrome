@@ -155,6 +155,11 @@ $ECHO cd src
 $ECHO git svn init --prefix=origin/ -T trunk/src svn://svn.chromium.org/chrome
 $ECHO git svn fetch
 $ECHO git cl config http://src.chromium.org/svn
+# Include .mm
+
+# Considering alternative:
+#	git ls-tree -r --name-only HEAD | egrep '(\.h$|\.cc$)' | etags -
+
 if [ "$ECHO" = "" ]; then
     find . \( -name '*.[ch]' -o -name '*.cc' \) -print | etags -
 else
