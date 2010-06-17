@@ -366,6 +366,69 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 
    
 
+* Workflows
+** Patches
+
+Issues I've run into:
+	+ git pull doesn't always seem to do what I want; what's up
+   	  with this?   It's probably as simple as it's always pulling
+   	  into the current branch.
+	* git fetch requires target to be fast-forwardable; removes
+   	  some of the point of doing this in a SCM.  It's ok working
+   	  within my current branch, though, as long as I'm fast
+   	  forwarding (well, ok, this was as part of a pull).  Git pull
+   	  gets confused when I'm working on my current branch, though.
+	* When I transfer patches between sandboxen I usually bring
+   	  along a different backing commit.  That makes actually
+   	  getting a diff of what I'm working on noticeably harder.  I
+   	  need to work out a workflow to be able to track diffs
+   	  easily.
+
+I think the key things to remember are that 
+	* fetch must be fast-forward
+	* pull must be into current branch
+
+So I think my workflow is:
+	* Pull: In target branch:
+		git pull $chrome_patches <bname>:
+	  That'll pull the remove patch into FETCH_HEAD, and then
+   	  merge it into the current branch.  IF I write a script, it
+   	  should automatically make sure I'm in the right branch.
+	* Push:
+		git push $chrome_patches <bname>:<bname>
+	  Note that this can be done whatever branch you're on.
+   	  Specifically, remember that this can be done if you're
+   	  actively compiling on another branch.
+
+** Tracking branch
+
+What do I want to use for a tracking branch?  Trunk is easiest, but if
+branches get out of sync, that's tricky.  I could always have a
+separate tracking branch for each working branch?
+
+Note that moving patches around will get branches out of sync with
+their backing branch.  I see a couple of options here:
+	* Move backing branch around with patch.  This requires honest
+	  to goodness updates/pulls to update the tracking branch as
+	  well.  Commands that will then require specialized variants:
+	  git push, git pull (x2: patches and tree sync)
+	* Whenever I do a checkout, check relationship with the
+	  tracking branch and auto-merge.  Commands requiring
+	  specialized variants: git push, git pull, git checkout,
+	  updates from the backing tree.
+
+Hmmm.  
+
+** Reverting a change to a single file
+
+I think this is:	  
+
+	git reset trunk -- <filename>
+	git commit
+	git reset --hard 	  
+
+Yep.  This seems to work.
+
 * Git proper
 
 An object is the unit of storage in git.  It it uniquely identified
