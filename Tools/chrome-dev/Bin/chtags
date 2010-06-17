@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Create correct tags file for a chrome sandbox.  The first argument is the 
+# sandbox; defaults to .
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname creates or recreates the tags file for a chrome sandbox.  
+The first argument is the sandbox directory; it defaults to .
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [<sandbox_dir>]";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ $# -ne 1 ]; then
+    sandbox_dir=.
+else
+    sandbox_dir=$1
+fi
+
+if [ ! -d $sandbox_dir/.git ]; then
+    echo "$sandbox_dir not a git repository." 1>&2;
+    exit 1;
+fi
+
+cd $sandbox_dir
+rm -f TAGS
+git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|mm|inc|inl)$' | etags -
