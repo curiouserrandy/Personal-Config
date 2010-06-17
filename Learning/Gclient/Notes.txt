@@ -1,0 +1,12 @@
+## -*-mode: rstodo; fill-prefix: "   ";-*-
+
+* Questions
+
+?? What is the authentication probing that gclient does during it's
+   normal sync?  It seems like it prompts for different things at
+   different times in an annoying fashion.  The goal here is to allow
+   gnewchrome to work properly whatever the state of my cached
+   credentials. 
+
+
+
