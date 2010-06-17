@@ -19,6 +19,8 @@ of the environment variable SANDBOXEN_DIR if set, otherwise ~/Sandboxen).
 	-u <username>		Username to use for authentication.
 				Defaults to "$USER@google.com".
 	-p 			Prompt for and use password as needed.
+	-O			Make this a CROS sandbox
+				(not completely implemented)
 	<sandbox name>
 EOF
 helpString="`cat $tf`" ;
@@ -29,6 +31,7 @@ usageString="$progname [-b <branchname>]* <sandbox name>";
 branches="";
 password="";
 username="${USER}@google.com";
+cros=no;
 ECHO=
 while [ $# -ne 0 ]; do
     case $1 in
@@ -59,6 +62,9 @@ while [ $# -ne 0 ]; do
 	fi
 	username="$2";
 	shift;
+	;;
+    -O)
+    	cros=yes;
 	;;
     # Repeat as needed.
     -E)
@@ -150,18 +156,21 @@ a
 w
 q
 EOF
+if [ "$cros" = "yes" ]; then
+    $ECHO ed .gclient <<'EOF'
+/name.*src-internal
+.-1a
+  { "name"        : "cros_deps",
+    "url"         : "http://src.chromium.org/svn/trunk/cros_deps",
+  },
+.
+w
+q
+EOF
+fi
 $ECHO gclient sync
 $ECHO cd src
 $ECHO git svn init --prefix=origin/ -T trunk/src svn://svn.chromium.org/chrome
 $ECHO git svn fetch
 $ECHO git cl config http://src.chromium.org/svn
-# Include .mm
-
-# Considering alternative:
-#	git ls-tree -r --name-only HEAD | egrep '(\.h$|\.cc$)' | etags -
-
-if [ "$ECHO" = "" ]; then
-    find . \( -name '*.[ch]' -o -name '*.cc' \) -print | etags -
-else
-    $ECHO find . \( -name '*.[ch]' -o -name '*.cc' \) -print \| etags -
-fi
+$ECHO chtags
