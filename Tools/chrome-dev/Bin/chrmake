@@ -1,11 +1,65 @@
 #!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program to build chrome, using distcc and ccache as useful.
+Flags:
+	-O		Build the Chrome/OS version of chrome (linux only)
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-O] <make args>";
+
+# Parse all arguments.
+cros=no
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -O) 
+	cros=yes
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	{RETURN} 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	{RETURN} 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+#!/bin/bash
 if [ $# -eq 0 ]; then
     set chrome 		# Target
 fi
 
-if [ "$DISTCC_HOSTS" != "" ]; then
-    CCACHE_PREFIX=distcc CC="ccache gcc" CXX="ccache g++" make -j20 "$@"
-else
-    make -j4 "$@"
+# Set the LD flags to make it possible to link with shared library
+# builds.  This presumes we're in src
+SOLIB_OUTPUT_DIR=`pwd`/out/Debug/obj.target
+
+## Note that all envdefines obviously won't apply outside this file, 
+## so they're pretty safe to do here.
+export LDFLAGS=-L${SOLIB_OUTPUT_DIR}
+if [ "$cros" = "yes" ]; then
+    export GYP_DEFINES="chromeos=1"
 fi
 
+if [ "$DISTCC_HOSTS" != "" ]; then
+    export CCACHE_PREFIX=distcc
+    export CC="ccache gcc"
+    export CXX="ccache g++"
+    pm=20
+else
+    pm=4
+fi
+
+make -j${pm} "$@"
