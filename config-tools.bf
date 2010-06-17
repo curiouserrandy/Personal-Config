@@ -181,7 +181,7 @@ init_from_recurse ()
 	init_from_recurse ${file_root}/OS/$config_os
 	init_from_recurse ${file_root}/OS/$config_os/$config_arch
 
-	tmp_domainname=$config_domain
+	local tmp_domainname=$config_domain
 	while [ X"$tmp_domainname" != X"" ] ; do
 	    init_from_recurse $file_root/$tmp_domainname
 	    init_from_recurse $file_root/$tmp_domainname/$config_host
