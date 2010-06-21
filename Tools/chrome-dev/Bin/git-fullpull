@@ -1,0 +1,35 @@
+#!/bin/bash
+
+current_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
+if [ "$current_branch" = "origin/trunk" -o
+     "$current_branch" = "trunk" -o
+     "$current_branch" = "master" ]; then
+    echo "Not on a development branch: $current_branch" 1>&2
+    exit 1
+fi
+
+if ! git-treeclean ; then
+    exit 1				# Error message output by treedirty
+fi
+
+# Relying on general branch config
+git fetch origin/trunk
+git checkout trunk
+
+if ! git pull -ff-only ; then
+    echo "Trunk not purely tracking origin/trunk; exiting." 1>&2
+    exit 1;
+fi
+git checkout $current_branch
+git merge trunk
+if git-treeclean ; then
+    gclient sync
+else
+    echo "*** Gclient sync not done because tree dirty."
+fi
+
+    
+
+     
+     

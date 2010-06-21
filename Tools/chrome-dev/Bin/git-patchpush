@@ -1,0 +1,18 @@
+#!/bin/bash
+
+current_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
+if [ "$current_branch" = "origin/trunk" -o
+     "$current_branch" = "trunk" -o
+     "$current_branch" = "master" ]; then
+    echo "Not on a development branch: $current_branch" 1>&2
+    exit 1
+fi
+
+if ! git-treeclean ; then 
+    exit 1				# Error message already output
+fi
+
+git push $chrome_patches $current_branch:$current_branch
+     
+     

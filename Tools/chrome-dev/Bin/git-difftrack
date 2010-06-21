@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Give a diff against the tracking branch.  Specifically allows dirty trees,
+# and diffs the working tree against the upstream branch
+git diff "$@" HEAD@{u}

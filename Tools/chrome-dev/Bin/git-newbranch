@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ $# -gt 1 ]; then
+    echo "Unrecognized args to $0: $*" 1>&2
+    exit 1
+fi
+
+if ! git-treeclean ; then
+    exit 1;				# Error message already printed
+fi
+
+git checkout trunk
+git checkout -b $1 --track 
+

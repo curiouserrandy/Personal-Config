@@ -1,0 +1,9 @@
+#!/bin/bash
+
+dirt=`git status -s | egrep -v '^\?\?' `
+
+if [ ! -z "$dirt" ]; then
+    echo "The tree is dirty:"
+    git status -s | egrep -v '^\?\?' | sed 's/^/	/'
+    exit 1
+fi
