@@ -8,7 +8,7 @@ fi
 # Just show the last two elements of the directory path in the prompt.
 # If you are under the home directory, show it as "~" and count it as 
 # one element.
-reset_working_directory () {
+reset_shell_prompt () {
   hd=~
   end_pwd=`echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'`
   PS1="\h:$end_pwd $pchar "
@@ -67,21 +67,21 @@ if [ "$PS1" != "" ]; then
         cd $massage_path_result;
       else
         builtin cd "$@";
-        reset_working_directory
+        reset_shell_prompt
       fi
     }
     
     function pushd () {
       builtin pushd $*
-      reset_working_directory
+      reset_shell_prompt
     }
     
     function popd () {
       builtin popd $*
-      reset_working_directory
+      reset_shell_prompt
     }
     
-    reset_working_directory
+    reset_shell_prompt
     
     # Terminal setup.
     if [ "$TERM" = "dialup" -o "$TERM" = "network" ]; then
