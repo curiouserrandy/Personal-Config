@@ -8,10 +8,29 @@ fi
 # Just show the last two elements of the directory path in the prompt.
 # If you are under the home directory, show it as "~" and count it as 
 # one element.
+
+# Data driven based off of "shell_prompt_commands".  These are a list of
+# (single word) commands that are executed in order and their output
+# concatenated to make the shell prompt.
+
+last_two_elements_of_pwd () {
+    hd=~
+    echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'
+}
+
+short_host () {
+    echo $config_host:
+}
+	
+shell_prompt_commands="short_host last_two_elements_of_pwd $shell_prompt_commands"
+
+				 
 reset_shell_prompt () {
-  hd=~
-  end_pwd=`echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'`
-  PS1="\h:$end_pwd $pchar "
+    res=""
+    for f in $shell_prompt_commands; do
+        res="${res}`$f`"
+    done
+    PS1="$res $pchar "
 }
 
 # Replace an element of the path with a different element.
