@@ -13,3 +13,7 @@ if [ "$config_os" = "cygwin" ]; then
 else
     chrome_patches=/home/rdsmith/Repositories/ChromePatches.git
 fi
+
+# Email for trybots (git try doesn't quite do the same thing as git for email.)
+export TRYBOT_RESULTS_EMAIL_ADDRESS=$EMAIL
+
