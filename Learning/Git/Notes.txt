@@ -429,6 +429,12 @@ I think this is:
 
 Yep.  This seems to work.
 
+** Looking at a commit
+
+	git log -1 <commit>
+	git diff --stat <commit>^1 commit
+	git diff <commit>^1 commit
+   
 * Git proper
 
 An object is the unit of storage in git.  It it uniquely identified
