@@ -63,15 +63,21 @@ With prefix arg, find it in the other window."
 	(goto-char (match-end 0))
       ;; Else will just go to beginning of file and stop, which may be right
       )
+    (if (looking-at "(")
+	(forward-char 1))
     (cond
+     ;; URL of some sort
      ((looking-at "\\(https?\\|ftp\\|file\\):[^\] 	
 ]*")
       (let ((urlname (buffer-substring (match-beginning 0) (match-end 0))))
 	
 	(if (string-match "\\.$" urlname)
 	    (setq urlname (substring urlname 0 -1)))
+	(if (string-match ")$" urlname)
+	    (setq urlname (substring urlname 0 -1)))
 	(message "Opening URL: %s" urlname)
 	(browse-url urlname)))
+     ;; Generic file on local file system
      ((looking-at "\\([-a-zA-Z0-9._+/~]+\\)\\(:\\([0-9]+\\)\\)?")
       (let ((filename (buffer-substring (match-beginning 1) (match-end 1)))
 	    (line (and (not (equal (match-beginning 3) (match-end 3)))
