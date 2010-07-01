@@ -1,0 +1,181 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import re
+import sys
+import operator
+from optparse import OptionParser
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s is a program that parses the output of Google performance tests 
+and summarizes them.  For each file on the command line it collapses 
+all perf output for the same test and the same output of that test into
+a mean +/- stddev format.  It then outputs a matrix, with the files 
+given to it as the columns and the tests as rows, to allow easy comparison.
+"""
+
+usage_string = "perftest <file1> ..."
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+
+## Line state descriptors
+## A dict mapping state_name -> (re, parse_func, (following state, ...))
+## Following states may be a string if singular.
+## parse_func, if non-null, is called with the groups from the regexp as a list.
+## "Start" is a special state with null re & parse_func and only following
+## state.
+## A following state of None means that eof is ok at that point.
+
+class BadState(Exception):
+    pass
+
+class BadLineForState(Exception):
+    pass
+
+## The error checking in this routine is pretty darn close to abyssmal.
+def parse_file(filename, state_table):
+    """Parse a file according to the passed state table."""
+    f = open(filename, "r")
+    last_state = None
+    state = "Start"
+    lineno = 0
+    for l in f:
+        lineno += 1
+        if state not in state_table:
+            raise BadState("Invalid state %s found from state %s"
+                           % (state, last_state))
+        next_states = state_table[state][2]
+        if not isinstance(next_states, tuple):
+            next_states = (next_states,)
+        found_matching_state = False
+        for next_state in next_states:
+            if not next_state: continue # EOF is handled below
+            if next_state not in state_table:
+                raise BadState("Invalid state %s found from state %s"
+                               % (next_state, state))
+            mo = re.match(state_table[next_state][0], l)
+            if mo:
+                found_matching_state = True
+                if state_table[next_state][1]:
+                    state_table[next_state][1](mo.groups())
+                last_state = state
+                state = next_state
+                break
+        if not found_matching_state:
+            raise BadLineForState("At state '%s'; no following state matched line at %s:%d:\n%s"
+                                  % (state, filename, lineno, l))
+    if state_table[state][2] is not None and None not in state_table[state][2]:
+        raise BadLineForState("Invalid EOF found following state %s" % state)
+        
+current_test = None
+current_file = None
+
+fileinfo = {}
+
+def set_test(t):
+    global current_test
+    global current_file
+    current_test = t[0]
+    fileinfo[current_file].setdefault(current_test, {})
+
+def perf_output(t):
+    global current_test
+    global current_file
+    fileinfo[current_file][current_test].setdefault(t[0], []).append(t[1])
+
+# This really should be implemented as a class that constructs from a dict
+# or sequence
+gperf_state_table = {
+    "Start" : (None, None, "Filter"),
+    "Filter" : (r"Note: Google Test filter = ", None, "Header"),
+    "Header" : (r"\[==========\] Running \d+ tests from \d+ test case.",
+                None, "Global"),
+    "Global" : (r"\[----------\] Global test environment set-up.", None,
+                 "Supertest"),
+    "Supertest" : (r"\[----------\] \d+ tests from \w+", None, "Test Header"),
+    "Test Header" : (r"\[ RUN      \] (\w+\.\w+)", set_test, "Perf Output"),
+    "Perf Output" : (r"(\w+)\s+(\d+(?:\.\d+)?)\s+ms", perf_output,
+                      ("Perf Output", "Test Trailer")),
+    "Test Trailer" : (r"\[       OK \] (\w+\.\w+)\s+\((\d+) ms\)", None,
+                       ("Test Header", "Supertest end")),
+    "Supertest end" : (r"\[----------\] \d+ tests from \w+ \(\d+ ms total\)",
+                        None, ("Supertest", "Null")),
+    "Null" : (r"\s*$", None, "Global teardown"),
+    "Global teardown" : (r"\[----------\] Global test environment tear-down",
+                          None, "Test summary"),
+    "Test summary" : (r"\[==========\] \d+ tests from \d+ test case ran. \(\d+ ms total\)",
+                       None, "Test results"),
+    "Test results" : (r"\[  PASSED  \] \d+ tests\.", None,
+                       ("Filter", None))}
+
+## Get the information
+for f in args:
+    fileinfo[f] = {}
+    current_file = f
+    parse_file(f, gperf_state_table)
+
+## Figure out the rows (test names and perf output names)
+test_names_dict = {}
+for f in args:
+    for t in fileinfo[f]:
+        test_names_dict.setdefault(t, {})
+        for p in fileinfo[f][t]:
+            test_names_dict[t][p] = 1
+            
+## Turn it into an array
+def stats(f, t, p):
+    """Turn a sequence of numbers into a string of the form MEAN +/- STDERR."""
+    # Exceptional enough to be worth calling attention to
+    if t not in fileinfo[f]:
+        return "NONE"
+    if p not in fileinfo[f][t]:
+        return "NONE"
+    points = map(float, fileinfo[f][t][p])
+    				
+    s = sum(points)
+    ssq = sum([p * p for p in points])
+    mean = s / len(points)
+    stddev = pow(ssq / (len(points) - 1) - mean*mean, 0.5)
+    stderr = stddev / len(points)
+    return "%.4g +/- %.2g" % (mean, stderr)
+
+output_array = []
+output_array.append(["",] + [f for f in args]) # Header row
+for t in sorted(test_names_dict.keys()):
+    output_array.append([t,] + ["",] * len(args)) # Test sub-header
+    for p in sorted(test_names_dict[t].keys()):
+        output_array.append(["  " + p,] + [stats(f, t, p) for f in args])
+
+## Print the array
+col_sizes = [max([len(output_array[i][j])
+                  for i in range(len(output_array))]) + 1
+             for j in range(len(args) + 1)]
+
+for i in range(len(output_array)):
+    # First column special; left adjusted
+    print output_array[i][0],
+    print " " * (col_sizes[0] - len(output_array[i][0])),
+    for j in range(1, len(args) + 1):
+        print " " * (col_sizes[j] - len(output_array[i][j])),
+        print output_array[i][j],
+    print
+
+
+
