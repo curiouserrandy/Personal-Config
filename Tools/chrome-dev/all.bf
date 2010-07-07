@@ -10,6 +10,8 @@ suffix_path_with_dirlist PATH ~/Sandboxen/depot-tools
 
 if [ "$config_os" = "cygwin" ]; then
     chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
+elif [ "$config_host" = "rdsmith-macbookpro" ]; then
+    chrome_patches=ssh://rdsmith@astibar.cam.corp.google.com/Repositories/ChromePatches.git
 else
     chrome_patches=/home/rdsmith/Repositories/ChromePatches.git
 fi
