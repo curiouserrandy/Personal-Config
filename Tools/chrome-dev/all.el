@@ -20,7 +20,9 @@ ISSUES is a list of integer values."
 			     issue-list)
 		     "+OR+")))
 
-(defun chrome-visit-issue-list (issue-list)
+(defun chrome-visit-issue-list (&rest issue-list)
+  (if (equal (length issue-list) 1)
+      (setq issue-list (car issue-list))) ; List as the first arg
   (browse-url (chrome-issue-list-url issue-list)))
 
 (defun chrome-visit-issue (issue)
