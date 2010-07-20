@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if ! git-treeclean ; then
-    exit 1				# Error message output by treedirty
+    exit 1				# Error message output by git-treeclean
 fi
 
 if [ $# -gt 0 ]; then
