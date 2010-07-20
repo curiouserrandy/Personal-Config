@@ -10,6 +10,19 @@ if [ X"$host_path" = X"/usr/local/bin/host" ]; then
     host_path=
 fi
 
+# Try and come up with something useful
+if [ "$host_path" = "" ]; then
+    nslookup_path=`type -p nslookup`
+    case `uname` in
+        CYGWIN*)
+	    nslookup_path=/cygdrive/c/*/System32/nslookup.exe
+	    ;;
+	*)
+            nslookup_path=`type -p nslookup`
+	    ;;
+    esac
+fi
+
 # Create a path that we intend will, for all machines, have the 
 # following executables on it:
 # 	uname, hostname, host, awk, sed
@@ -26,7 +39,7 @@ else
     if [ X"$host_path" != X"" ]; then
 	fqhname=`$host_path $hostname | awk '{print $1}' | sed 's/\.$//'`
     else
-	fqhname=`nslookup $hostname | awk '/^Name:/ {print $2}'`;
+	fqhname=`$nslookup_path $hostname 2>/dev/null | awk '/^Name:/ {print $2}'`;
     fi
     if [ "$fqhname" = "" ]; then
 	fqhname=$hostname;
