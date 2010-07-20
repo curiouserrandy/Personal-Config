@@ -55,7 +55,7 @@ fi
 
 # Get the system type and machine type. 
 # Protect against systypes with "/"s (BSD/OS, specifically)
-config_os=`uname | sed 's;/;_;'`
+config_os=`uname | sed -e 's;/;_;' -e 's;_; ;' | awk '{print $1;}'`
 config_arch=`uname -m | sed -e 's;/;_;' -e 's; ;_;' `
 
 # Do any overriding of the above configuration variables (e.g. for laptops
