@@ -13,6 +13,6 @@ if ! git-treeclean ; then
     exit 1				# Error message already output
 fi
 
-git push ssh://astibar.cam.corp.google.com/$chrome_patches $current_branch:$current_branch
+git push $chrome_patches $current_branch:$current_branch
      
      

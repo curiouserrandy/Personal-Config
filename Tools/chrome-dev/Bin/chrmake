@@ -1,18 +1,4 @@
 #!/bin/bash
-
-# Setup the help and usage messages
-progname=`basename $0`
-tf=/tmp/$$.helpfile
-cat > $tf <<EOF
-$progname is a program to build chrome, using distcc and ccache as useful.
-All flags are passed straight through to make.
-EOF
-helpString="`cat $tf`" ;
-rm -f $tf;
-usageString="$progname <make args>";
-
-# Parse all arguments.
-#!/bin/bash
 if [ $# -eq 0 ]; then
     set chrome 		# Target
 fi
@@ -34,4 +20,5 @@ else
     pm=4
 fi
 
+## All argument go to make.
 make -j${pm} "$@"
