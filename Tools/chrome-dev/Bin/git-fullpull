@@ -14,10 +14,9 @@ if ! git-treeclean ; then
 fi
 
 # Relying on general branch config
-git fetch origin/trunk
 git checkout trunk
 
-if ! git pull -ff-only ; then
+if ! git pull --ff-only ; then
     echo "Trunk not purely tracking origin/trunk; exiting." 1>&2
     exit 1;
 fi
