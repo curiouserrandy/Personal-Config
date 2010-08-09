@@ -1,0 +1,45 @@
+
+
+<f5>		rstodo-move-todo-piece-to-mark
+<f6>		rstodo-next-active-todo-item
+<f7>		rstodo-move-item-up
+<f8>		rstodo-move-item-down
+
+C-c C-j		rstodo-goto-outline-section-by-hotkey
+C-c C-k		rstodo-kill-todo-piece
+C-c C-x		rstodo-move-deleted-to-top
+C-c z		rstodo-insert-prioritize
+C-c C-SPC	rstodo-set-todo-mark
+
+C-c <down>	rstodo-last-active-todo-item
+C-c <left>	rstodo-prev-active-todo-item
+C-c <right>	rstodo-next-active-todo-item
+C-c <up>	rstodo-first-active-todo-item
+
+C-c C-b		outline-backward-same-level
+C-c C-f		outline-forward-same-level
+C-c C-p		outline-previous-visible-heading
+C-c C-n		outline-next-visible-heading
+C-c C-u		outline-up-heading
+
+C-c C-a		show-all
+C-c C-c		hide-entry
+C-c C-e		show-entry
+C-c C-d		hide-subtree
+C-c C-s		show-subtree
+C-c C-l		hide-leaves
+C-c C-k		show-branches		(hidden binding)
+C-c TAB		show-children
+
+C-c RET		outline-insert-heading
+
+C-c C-o		hide-other
+C-c C-q		hide-sublevels
+C-c C-t		hide-body
+
+C-c C-v		outline-move-subtree-down
+C-c C-^		outline-move-subtree-up
+C-c @		outline-mark-subtree
+C-c C-<		outline-promote
+C-c C->		outline-demote
+
