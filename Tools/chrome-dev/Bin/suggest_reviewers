@@ -1,0 +1,60 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import sys
+from optparse import OptionParser
+import re
+import subprocess
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s is a program to suggest reviewers for one or more files in a git 
+repository.  Paths to these files should be passed on the command line. 
+This program must be run from wihtin the git repository.
+""" % (program_name)
+
+## FUTURE WORK:
+## 	* Run outside of repository
+##	* Specify a branch to diff against to get a list of files
+
+usage_string = "%s <file1> ..." % program_name
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+class InvalidLineError(Exception): pass
+
+blameline_re = re.compile("^[0-9a-f]{8} (?:[\w/\.]+\s+)?\((.*?)\s+\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4}\s+\d+\)")
+for f in args:
+    pr = subprocess.Popen(["git", "blame", f], stdout=subprocess.PIPE)
+    file_committers = {}
+    for l in pr.stdout:
+        mo = blameline_re.match(l)
+        if not mo:
+            raise InvalidLineError("Found line in blame output that doesn't match:\n\t%s" % l)
+        file_committers.setdefault(mo.group(1), 0)
+        file_committers[mo.group(1)] += 1
+    cl = file_committers.items()
+    cl.sort(cmp = lambda x,y: cmp(x[1], y[1]), reverse=True) # Sort by lines
+    if len(cl) > 3:
+        cl = cl[:3]
+    print "File %s: %s" % (f, ", ".join(["%s(%d)" % (c[0], c[1]) for c in cl]))
+    
+    
+    
+
+
