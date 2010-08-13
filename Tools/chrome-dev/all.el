@@ -3,6 +3,16 @@
 (require 'google-c-style)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
+;; Also make sure that when we save a C style file, we eliminate trailing 
+;; spaces.
+(add-hook 'c-mode-common-hook
+	  '(lambda () 
+	     (add-hook 'before-save-hook
+		       '(lambda ()
+			  (save-excursion
+			    (goto-char (point-min))
+			    (replace-regexp "[ 	][ 	]*$" ""))))))
+
 (setq large-file-warning-threshold
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
 
