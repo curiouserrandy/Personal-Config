@@ -1,0 +1,59 @@
+#!/bin/bash 
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program to bring the trunk branch of the current git 
+chrome repository to last known good status.  
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if ! git-treeclean; then
+    exit 1;  # git-treeclean will have output error message.
+fi   
+set -e					# Shouldn't be needed, but better safe..
+lkgr=`curl http://chromium-status.appspot.com/lkgr`
+git checkout trunk
+git pull 
+git svn fetch
+lkgr_git_commit=`git svn find-rev r$lkgr`
+if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
+    echo "Bad return from git svn find: $lkgr_git_commit" 1>&2 
+    exit 1
+fi
+git reset --hard $lkgr_git_commit
+gclient sync
+echo Trunk branch reset to SVN revision $lkgr
+
+## Todo: Merge trunk into all branches tracking trunk.
+
