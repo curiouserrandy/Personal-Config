@@ -1,0 +1,89 @@
+#!/bin/bash
+
+default_geometry=-0+0
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname executes an command in the backgroud, with output going to a file.  
+The command (and command options) start by default at the first
+non-flag argument.  The command executed and the process group are output
+to the file, and the process group is also outputted to the controlling
+terminal before $progname returns.  When the command completes, a completion
+notification and exit status
+will also be output into the file.
+Options:
+	-o <file>	Output file.  This defauls to <command>.log.  If the
+			specified or defaulted output file would result in
+			overwriting an already existing file, a ~<n> is
+			appended to avoid this happening.
+	-x<geometry>	Says that an xterm should be spawned to follow the
+			command output as it occurs.  The option <geometry>
+			specifies where this window will appear; <geometry>
+			defaults to -0+0.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-o <file>] [-x<geometry>] [--] <command> <options>";
+
+# Parse all arguments.
+outfile=""
+geometry=""
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -x*) 
+	geometry=`echo $1 | dd size=1 skip=2`
+	if [ X"$geometry" = X"" ]; then
+	    geometry=$default_geometry
+	fi
+	;;
+    -o) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	outfile=$2;
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ X"$outfile" = X"" ]; then
+    outfile=$1.log
+fi
+
+# Figure out output
+if [ -r $outfile ]; then
+    count=1;
+    while [ -r ${outfile}~$count ]; do
+        count=`expr $count + 1`
+    done
+    outfile=${outfile}~$count
+fi
+    
+# Execute command in background
+echo "Executing command: $@" > $outfile
+(perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
+
+perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""
+
+# Invoke xfollower if wanted
+if [ X"$geometry" != X"" ]; then
+    xterm -geometry $geometry -e tail -f $outfile &
+fi
