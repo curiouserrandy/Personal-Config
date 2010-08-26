@@ -33,7 +33,7 @@ geometry=""
 while [ $# -ne 0 ]; do
     case $1 in 
     -x*) 
-	geometry=`echo $1 | dd size=1 skip=2`
+	geometry=`echo $1 | dd bs=1 skip=2`
 	if [ X"$geometry" = X"" ]; then
 	    geometry=$default_geometry
 	fi
