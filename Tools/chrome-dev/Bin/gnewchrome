@@ -113,8 +113,10 @@ fi
 # There shouldn't be any problems, but if there are, I want to bail
 set -e
 
+# Note that on windows the right place to create is in D:\src
 $ECHO mkdir $sbd;			# No -p; error if no Sandboxen directory
 $ECHO cd $sbd
+# Note that the below won't work in an emacs shell buffer on windows; dunno why.
 $ECHO git clone http://src.chromium.org/git/chromium.git src
 $ECHO gclient config svn://svn.chromium.org/chrome/trunk/src
 # Try and get the authentication info cached, quickly.
