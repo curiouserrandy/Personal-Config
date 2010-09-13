@@ -2,7 +2,7 @@
 
 # A simple list of commands that I regularly want to do.
 
-# Todo: Must be made platform specific; currently only linux.
+platform=`uname`
 
 # Setup the help and usage messages
 progname=`basename $0`
@@ -47,17 +47,50 @@ if [ $# -ne 1 ]; then
 fi
 
 case $1 in
-	test)
-		echo 'chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*'
-		chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*
-		;;
-	perf)
+    test)   case $platform in
+        Linux)
+	    echo 'chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*'
+	    chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*
+	    ;;
+	Darwin)
+	    echo 'xcodebuild -project net/net.xcodeproj -target net_unittests -configuration Debug -parallelizeTargets && xcodebuild/Debug/net_unittests --gtest_filter=CookieMonsterTest.*'
+	    xcodebuild -project net/net.xcodeproj -target net_unittests -configuration Debug -parallelizeTargets && xcodebuild/Debug/net_unittests --gtest_filter=CookieMonsterTest.*
+	    ;;
+	CYGWIN*)
+	    echo 'Command Unknown' 1>&2
+	    exit 1
+	    ;;
+	esac
+	;;
+    perf)   case $platform in
+        Linux)
 		echo 'chrmake BUILDTYPE=Release net_perftests && out/Release/net_perftests --gtest_filter=CookieMonstertest.* --gtest_repeat=10'
 		chrmake BUILDTYPE=Release net_perftests && out/Release/net_perftests --gtest_filter=CookieMonstertest.* --gtest_repeat=10
 		;;
-	full)
+	Darwin)
+	    echo 'xcodebuild -project net/net.xcodeproj -target net_perftests -configuration Release -parallelizeTargets && xcodebuild/Release/net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10'
+	    xcodebuild -project net/net.xcodeproj -target net_perftests -configuration Release -parallelizeTargets && xcodebuild/Release/net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10
+	    ;;
+	CYGWIN*)
+	    echo 'Command Unknown' 1>&2
+	    exit 1
+	    ;;
+	esac
+	;;
+    full)   case $platform in
+        Linux)
 		echo 'chrmake net_unittests browser_tests unit_tests && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove'
 		chrmake net_unittests browser_tests unit_tests && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove
 		;;
+	Darwin)
+	    echo 'Command Unknown' 1>&2
+	    exit 1
+	    ;;
+	CYGWIN*)
+	    echo 'Command Unknown' 1>&2
+	    exit 1
+	    ;;
+    esac
+    ;;
 esac
 
