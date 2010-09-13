@@ -50,11 +50,12 @@ class BadLineForState(Exception):
 ## The error checking in this routine is pretty darn close to abyssmal.
 def parse_file(f, state_table):
     """Parse a file according to the passed state table."""
-    all_lines = "".join(f.readlines()) # Slurp
+    line_buffer = f.read(4192)  # Reaonble sized buffer
+    eof_hit = not line_buffer      # Generally false, but might be true
     last_state = None
     state = "Start"
     starting_lineno = lineno = 1
-    while all_lines:
+    while not eof_hit:
         if state not in state_table:
             raise BadState("Invalid state %s found from state %s"
                            % (state, last_state))
@@ -70,7 +71,7 @@ def parse_file(f, state_table):
                 raise BadState("Invalid state %s found from state %s"
                                % (next_state, state))
             try:
-                mo = re.match(state_table[next_state][0], all_lines)
+                mo = re.match(state_table[next_state][0], line_buffer)
             except:
                 print "While matching regexp: ", state_table[next_state][0]
                 raise
@@ -83,14 +84,16 @@ def parse_file(f, state_table):
 
                 # Reset line_accum and starting_lineno to the beginning of it.
                 starting_lineno += mo.group().count("\n")
-                all_lines = all_lines[len(mo.group()):]
+                line_buffer = line_buffer[len(mo.group()):]
                 break
-#            elif state == "Header" and next_state == "Line":
-#                print "DEBUG:\n|%s| -- |%s...\n" % (state_table[next_state][0], all_lines[:100])
+            elif state == "Line" and next_state == "Line" and starting_lineno ==21:
+                print >> sys.stderr, "DEBUG:\n|%s| -- |%s...\n" % (state_table[next_state][0], line_buffer[:100])
         if not found_matching_state:
             raise BadState("Couldn't match from state %s on multiple lines starting at line %d.  Current lines: %s..." %
-                           (state, starting_lineno, all_lines[:100]))
-    
+                           (state, starting_lineno, line_buffer[:100]))
+        buf = f.read(4192 - len(line_buffer))
+        eof_hit = not buf
+        line_buffer += buf
 
     if state_table[state][2] is not None and None not in state_table[state][2]:
         raise BadLineForState("Invalid EOF found following state %s" % state)
@@ -119,7 +122,7 @@ net_internals_state_table = {
 (\w+) \(id=(\d+)\)
 ------------------------------
 """, parse_header, "Line"),
-    "Line" : (r"""(?s)(?:\(P\) )?t=(\d+)(.*?\n)(?=(\(P\)|\n|$))""", parse_line, ("Header", "Line", "CacheStats", None)),
+    "Line" : (r"""(?s)(?:\(P\) )?\s*t=(\d+)(.*?\n)(?=((?:\(P\) )?\s*t=|\n|$))""", parse_line, ("Header", "Line", "CacheStats", None)),
     "CacheStats" : (r"""
 
 ----------------------------------------------
