@@ -5,6 +5,34 @@
 
 ;;; ???: Should I be doing anything with defaulting visibility, iconification, or similar?
 ;;; ???: Ditto on letting width/height overright fullscreen . ?
+
+;;; Use case: I want to have a couple of configurations that I can
+;;; reach with keystrokes.  In an ideal world, I'd have configs that
+;;; defaulted based on screen size.  Specifically, when I had a config
+;;; I was happy with, I'd do something to save it, and it would be
+;;; available for that screen size (only).  The pieces of this are:
+;;;	* Way to get current configuration
+;;;	* Persisted variable in which to save it.  That variable would
+;;;	  be first indexed by screen size, and then by name.  First
+;;; 	  element in the screen size list would be the default.
+;;;	* Keystroke bound to "set frame config" that would prompt the 
+;;;	  user for the config wanted, and force it.  
+
+;;; A frame config looks like a list of alists of frame properties.  
+
+(defconst randy-interesting-frame-properties '(top left width height)
+  "Properties to include in auto-generated frame configs.")
+
+(defun randy-get-frame-config ()
+  "Return the current configuration of the emacs frames as a frame config.
+Only include in it frame properties in randy-interesting-frame-properties."
+  (mapcar 
+   '(lambda (fc) 
+      (mapcar '(lambda (prop) (assoc prop fc))
+	      randy-interesting-frame-properties))
+   (mapcar 'frame-parameters (frame-list))))
+  
+
 (defun randy-force-frame-config (frames-properties-list)
   "Force the current configuration of frames to look like FRAME-LIST.
 FRAME-LIST is a list of alists of frame propreties.  Frames will be deleted or
