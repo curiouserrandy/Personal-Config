@@ -7,7 +7,6 @@ fi
 suffix_path_with_dirlist PATH ~/Sandboxen/depot-tools
 
 # Location of patches repository
-
 if [ "$config_os" = "cygwin" ]; then
     chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
 elif [ "$config_host" = "rdsmith-macbookpro" ]; then
