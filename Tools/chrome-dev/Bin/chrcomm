@@ -4,6 +4,48 @@
 
 platform=`uname`
 
+# Command strings for targets are in variable ${${platform}_${target}}
+
+## Linux
+
+function linux_build () {
+    config=$1
+    target=$2
+    echo chrmake BUILDTYPE=$1 $2
+}
+
+function linux_build_and_run () {
+    config=shift;
+    target=shift;
+    args="$*";			# Not ideal, as doesn't preserve tokenization.
+
+    echo "chrmake BUILDTYPE=$1 $2 && out/$config/$exec_name $args"
+}
+
+
+Linux_test="`linux_build_and_run Debug net_unittests --gtest_filter=CookieMonsterTest.*`"
+Linux_perf="`linux_build_and_run Release net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10`"
+Linux_perfdbg="`linux_build_and_run Debug net_perftests --gtest_filter=CookieMonsterTest.*`"
+Linux_full="`linux_build Debug 'net_unittests browser_tests unit_tests'` && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove"
+Linux_chrome="`linux_build Debug chrome`"
+Linux_chrome_rel="`linux_build Release chrome`"
+
+function darwin_build_and_run_net () {
+    echo "xcodebuild -project net/net.xcodeproj -target $2 -configuration $1 -parallelizeTargets && xcodebuild/Debug/$2 $3"
+}
+
+function darwin_build_browser () {
+    echo xcodebuild -project chrome/chrome.xcodeproj -target chrome -configuration $1 -parallelizeTargets
+}
+
+Darwin_test="`darwin_build_and_run_net Debug net_unittests --gtest_filter=CookieMonsterTest.*`"
+Darwin_perf="`darwin_build_and_run_net Release net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10`"
+Darwin_perfdbg="`darwin_build_and_run_net Debug net_perftests --gtest_filter=CookieMonsterTest.*`"
+Darwin_chrome="`darwin_build_browser Debug`"
+Darwin_chrome_rel="`darwin_build_browser Release`"
+# Complex; work out when you need it.
+# Darwin_full="`linux_build Debug 'net_unittests browser_tests unit_tests'` && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove"
+
 # Setup the help and usage messages
 progname=`basename $0`
 tf=/tmp/$$.helpfile
@@ -13,7 +55,10 @@ run in developing chrome.  List:
 	test		Run the cookie monster unit tests in debug mode
 	perf		Run the cookie monster perf tests in release mode
 			with repeat 10
+	perfdbg		Single debug run of perf test.
 	full		Run all tests known (debug) for cookies.
+	chrome		Build chrome browser.
+	chrome_rel	Build chrome browser release version.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -46,51 +91,11 @@ if [ $# -ne 1 ]; then
     exit 1;
 fi
 
-case $1 in
-    test)   case $platform in
-        Linux)
-	    echo 'chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*'
-	    chrmake net_unittests && out/Debug/net_unittests --gtest_filter=CookieMonstertest.*
-	    ;;
-	Darwin)
-	    echo 'xcodebuild -project net/net.xcodeproj -target net_unittests -configuration Debug -parallelizeTargets && xcodebuild/Debug/net_unittests --gtest_filter=CookieMonsterTest.*'
-	    xcodebuild -project net/net.xcodeproj -target net_unittests -configuration Debug -parallelizeTargets && xcodebuild/Debug/net_unittests --gtest_filter=CookieMonsterTest.*
-	    ;;
-	CYGWIN*)
-	    echo 'Command Unknown' 1>&2
-	    exit 1
-	    ;;
-	esac
-	;;
-    perf)   case $platform in
-        Linux)
-		echo 'chrmake BUILDTYPE=Release net_perftests && out/Release/net_perftests --gtest_filter=CookieMonstertest.* --gtest_repeat=10'
-		chrmake BUILDTYPE=Release net_perftests && out/Release/net_perftests --gtest_filter=CookieMonstertest.* --gtest_repeat=10
-		;;
-	Darwin)
-	    echo 'xcodebuild -project net/net.xcodeproj -target net_perftests -configuration Release -parallelizeTargets && xcodebuild/Release/net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10'
-	    xcodebuild -project net/net.xcodeproj -target net_perftests -configuration Release -parallelizeTargets && xcodebuild/Release/net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10
-	    ;;
-	CYGWIN*)
-	    echo 'Command Unknown' 1>&2
-	    exit 1
-	    ;;
-	esac
-	;;
-    full)   case $platform in
-        Linux)
-		echo 'chrmake net_unittests browser_tests unit_tests && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove'
-		chrmake net_unittests browser_tests unit_tests && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove
-		;;
-	Darwin)
-	    echo 'Command Unknown' 1>&2
-	    exit 1
-	    ;;
-	CYGWIN*)
-	    echo 'Command Unknown' 1>&2
-	    exit 1
-	    ;;
-    esac
-    ;;
-esac
+cmd_var=${${platform}_{$1}}
+if [ X"$cmd_var" = X"" ]; then
+    echo "Don''t know how to build $1 for platform $platform" 1>&2
+    exit 1
+fi
 
+echo $cmd_var
+$cmd_var    
