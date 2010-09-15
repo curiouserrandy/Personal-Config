@@ -84,5 +84,9 @@ for rev in range(first_rev, last_rev+1):
         
     # Figure out which platform we're on and where the output directory is
     # and move it.
-    XXX
+    outdirs = [ 'darwin' : 'xcodebuild',
+                'linux' : 'out',
+                'windows' : 'build' ]
+    rename("%s/%s" % (outdirs[sys.platform], config),
+           "%s/%s-r%d" % (outdirs[sys.platform], config, rev))
 
