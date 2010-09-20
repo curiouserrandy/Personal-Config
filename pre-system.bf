@@ -29,3 +29,6 @@ export LOGNAME USER
 # fi
 #
 # unset dhost dd
+
+# See post-system.bf for use.
+shell_prompt_commands=""

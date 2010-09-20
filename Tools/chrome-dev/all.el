@@ -3,6 +3,16 @@
 (require 'google-c-style)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
+;; Also make sure that when we save a C style file, we eliminate trailing
+;; spaces.
+(add-hook 'c-mode-common-hook
+	  '(lambda ()
+	     (add-hook (make-local-variable 'before-save-hook)
+		       '(lambda ()
+			  (save-excursion
+			    (goto-char (point-min))
+			    (replace-regexp "[ 	][ 	]*$" ""))))))
+
 (setq large-file-warning-threshold
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
 
@@ -14,13 +24,15 @@
   "Return the URL to use for displaying the list of ISSUES passed in.
 ISSUES is a list of integer values."
   (format chrome-issue-list-url-format-string
-	  (mapconcat 'identity 
+	  (mapconcat 'identity
 		     (mapcar '(lambda (issue) (concat "id:"
 						      (number-to-string issue)))
 			     issue-list)
 		     "+OR+")))
 
-(defun chrome-visit-issue-list (issue-list)
+(defun chrome-visit-issue-list (&rest issue-list)
+  (if (equal (length issue-list) 1)
+      (setq issue-list (car issue-list))) ; List as the first arg
   (browse-url (chrome-issue-list-url issue-list)))
 
 (defun chrome-visit-issue (issue)

@@ -1,5 +1,5 @@
 if [ X"$config_os" = X"Darwin" ]; then
-    sernum=`system_profiler SPHardwareDataType | grep -i "serial number" | sed 's/^.*: //'`;
+    sernum=`system_profiler SPHardwareDataType | grep -i "serial number" | head -1 | sed 's/^.*: //'`;
     case $sernum in
         W851305TSQ5)
             # We're on blueboat, my personal laptop.
@@ -11,9 +11,14 @@ if [ X"$config_os" = X"Darwin" ]; then
 	        config_domain=tigana.org
 	    fi
 	    ;;
-	W80141BG66H)
-	    # We're on my google supplied laptop
+	W80141BG66H|W80201SXAGY)
+	    # We're on (one of) my google supplied laptop(s)
 	    config_host=rdsmith-macbookpro;
+	    config_domain=cam.corp.google.com;
+	    ;;
+        H00180H620H)
+	    # Mac desktop at Google
+	    config_host=rdsmith-macpro;
 	    config_domain=cam.corp.google.com;
 	    ;;
     esac

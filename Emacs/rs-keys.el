@@ -66,9 +66,9 @@
 ;;; x
 ;;; y
 ;;; z
-(add-hook 'outline-mode-hook
+(add-hook 'rstodo-mode-hook
 	  '(lambda ()
-	     (define-key outline-mode-map "\C-cz" 'randy-todo-insert-prioritize)))
+	     (define-key outline-mode-map "\C-cz" 'rstodo-insert-prioritize)))
 
 ;;; Other non-control keys following \C-c
 (define-key mode-specific-map ">" '(lambda () (interactive) (randy-shift-font 1)))

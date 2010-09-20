@@ -530,6 +530,10 @@ An outline topic is marked with a hotkey if it matches the regexp
     [outline-2 outline-1 outline-3 outline-4
 	       outline-5 outline-6 outline-7 outline-8]))
 
+(fset 'rstodo-insert-prioritize
+   [return ?\C-p ?> ?> ?\S-  ?P ?r ?i ?o ?t ?i backspace backspace ?r ?i ?t ?i ?z ?e return return ?< ?< return ?\C-p ?\C-p return return ?\C-p])
+
+
 ;;; Binding to C-c <blank>.  Outline stuff:
 ;;;	C-a make all text visible
 ;;;	C-b backward same level

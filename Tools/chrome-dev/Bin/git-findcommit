@@ -1,0 +1,78 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import sys
+from optparse import OptionParser
+import popen2
+import re
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s finds any git commits matching a specified regesp.  With the -r argument, 
+it instead uses an internal regexp to find the git commit matching a 
+specified svn vers.
+""" % (program_name,)
+
+usage_string = "%s [-r <svn revision>|<regexp>]" % (program_name,)
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+parser.add_option("-r", "--svn-revision", help="Find an svn revision",
+                  type="int", dest="svnrev", metavar="SVN_REV")
+parser.add_option("-a", "--all", help="Find all matches",
+                  action="store_true", dest="all")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+# Process any non-flag arguments
+if len(args) > 1 or len(args) != 1 and options.svnrev is None:
+    print >> sys.stderr,  "Expected usage: %s" % usage_string
+    sys.exit(2)
+
+if options.svnrev is None:
+    scan_re = re.compile(args[0])
+else:
+    scan_re = re.compile("^\s+git-svn-id:\ssvn:[^@]+@%d\s+" % options.svnrev)
+
+(gstdout, gstderr) = popen2.popen2("git log trunk")
+commit_re = re.compile("commit\s+(\S+)\s*$")
+
+commit = None
+current_commit_msg = None
+found = False
+for line in gstdout:
+    mo = commit_re.match(line)
+    if mo:
+        if found:
+            print current_commit_msg
+            found = False
+            if not options.all:
+                sys.exit(0)
+        commit = mo.group(1)
+        current_commit_msg = line
+        continue
+
+    current_commit_msg += line
+
+    mo = scan_re.search(line)
+    if mo:
+        found = True            # Will print when have full commit
+
+if found:
+    print current_commit_msg
+    sys.exit(0)
+sys.exit(1)
+
+        

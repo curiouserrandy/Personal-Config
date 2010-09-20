@@ -1,11 +1,33 @@
 #!/bin/bash
+
+cros=no
+
+#!/bin/bash
 if [ $# -eq 0 ]; then
     set chrome 		# Target
 fi
 
-if [ "$DISTCC_HOSTS" != "" ]; then
-    CCACHE_PREFIX=distcc CC="ccache gcc" CXX="ccache g++" make -j20 "$@"
-else
-    make -j4 "$@"
+# Set the LD flags to make it possible to link with shared library
+# builds.  This presumes we're in src
+SOLIB_OUTPUT_DIR=`pwd`/out/Debug/obj.target
+
+## Note that all envdefines obviously won't apply outside this file, 
+## so they're pretty safe to do here.
+export LDFLAGS=-L${SOLIB_OUTPUT_DIR}
+if [ "$cros" = "yes" ]; then
+    ## Note that currently cros is always no; I want to figure out a way
+    ## to have this completely dependent on the sandbox.
+    export GYP_DEFINES="chromeos=1"
 fi
 
+if [ "$DISTCC_HOSTS" != "" ]; then
+    export CCACHE_PREFIX=distcc
+    export CC="ccache gcc"
+    export CXX="ccache g++"
+    pm=20
+else
+    pm=4
+fi
+
+## All argument go to make.
+make -j${pm} "$@"
