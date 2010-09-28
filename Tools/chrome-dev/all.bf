@@ -15,6 +15,11 @@ else
     chrome_patches=/home/rdsmith/Repositories/ChromePatches.git
 fi
 
+# Useful shell variables
+if [ "$config_os" = "cygwin" ]; then
+    devenv='/cygdrive/c/Program Files (x86)/Microsoft Visual Studio 9.0/Common7/IDE/devenv.com'
+fi
+
 # Email for trybots (git try doesn't quite do the same thing as git for email.)
 export TRYBOT_RESULTS_EMAIL_ADDRESS=$EMAIL
 
