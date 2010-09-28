@@ -1,0 +1,156 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import re
+import sys
+import operator
+from optparse import OptionParser
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s is a program that interprets a net-internals Requests dump
+"""
+
+usage_string = "perftest <file1> ..."
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+if len(args) > 1:
+    raise Exception("Too many arguments.")
+
+## Line state descriptors
+## A dict mapping state_name -> (re, parse_func, (following state, ...))
+## Following states may be a string if singular.
+## parse_func, if non-null, is called with the groups from the regexp as a list.
+## "Start" is a special state with null re & parse_func and only following
+## state.
+## A following state of None means that eof is ok at that point.
+
+class BadState(Exception):
+    pass
+
+class BadLineForState(Exception):
+    pass
+
+## The error checking in this routine is pretty darn close to abyssmal.
+def parse_file(f, state_table):
+    """Parse a file according to the passed state table."""
+    line_buffer = f.read(4192)  # Reaonble sized buffer
+    eof_hit = not line_buffer      # Generally false, but might be true
+    last_state = None
+    state = "Start"
+    starting_lineno = lineno = 1
+    while not eof_hit:
+        if state not in state_table:
+            raise BadState("Invalid state %s found from state %s"
+                           % (state, last_state))
+        next_states = state_table[state][2]
+        if not isinstance(next_states, tuple):
+            next_states = (next_states,)
+
+        found_matching_state = False
+
+        for next_state in next_states:
+            if not next_state: continue # EOF is handled below
+            if next_state not in state_table:
+                raise BadState("Invalid state %s found from state %s"
+                               % (next_state, state))
+            try:
+                mo = re.match(state_table[next_state][0], line_buffer)
+            except:
+                print "While matching regexp: ", state_table[next_state][0]
+                raise
+            if mo:
+                found_matching_state = True
+                if state_table[next_state][1]:
+                    state_table[next_state][1](mo.groups())
+                last_state = state
+                state = next_state
+
+                # Reset line_accum and starting_lineno to the beginning of it.
+                starting_lineno += mo.group().count("\n")
+                line_buffer = line_buffer[len(mo.group()):]
+                break
+            elif state == "Line" and next_state == "Line" and starting_lineno ==21:
+                print >> sys.stderr, "DEBUG:\n|%s| -- |%s...\n" % (state_table[next_state][0], line_buffer[:100])
+        if not found_matching_state:
+            raise BadState("Couldn't match from state %s on multiple lines starting at line %d.  Current lines: %s..." %
+                           (state, starting_lineno, line_buffer[:100]))
+        buf = f.read(4192 - len(line_buffer))
+        eof_hit = not buf
+        line_buffer += buf
+
+    if state_table[state][2] is not None and None not in state_table[state][2]:
+        raise BadLineForState("Invalid EOF found following state %s" % state)
+
+headers = {}
+
+def parse_header(t):
+    global current_header, current_id
+    current_id = t[1]
+    current_header = headers[current_id] = t[0]
+
+lines = []
+
+def parse_line(t):
+    lines.append((current_header, current_id, t[0], t[1]))
+
+requests_re = r"""----------------------------------------------
+ Requests
+----------------------------------------------
+"""
+net_internals_state_table = {
+    "Start" : (None, None, "Requests"),
+    "Requests" : (requests_re, None, "Header"),
+    "Header" : (r"""
+------------------------------
+(\w+) \(id=(\d+)\)
+------------------------------
+""", parse_header, "Line"),
+    "Line" : (r"""(?s)(?:\(P\) )?\s*t=(\d+)(.*?\n)(?=((?:\(P\) )?\s*t=|\n|$))""", parse_line, ("Header", "Line", "CacheStats", None)),
+    "CacheStats" : (r"""
+
+----------------------------------------------
+ Http cache stats
+----------------------------------------------
+""", None, ("Munch", None)),
+    "Munch" : (r""".*
+""", None, ("Munch", None))
+    }
+
+f = open(args[0], "r")
+
+# Lazy bum, reading the file twice
+all_lines = "".join(f.readlines())
+rmo = re.search(requests_re, all_lines)
+if not rmo:
+    raise InputError("Couldn't find request section in file %s" % args[0])
+## Reset the file to the beginning of the requests section.
+f.seek(rmo.start())
+parse_file(f, net_internals_state_table)
+
+headers_printed = {}
+
+lines.sort(cmp=lambda x,y: cmp(x[2], y[2]))
+for l in lines:
+    if l[1] not in headers_printed:
+        headers_printed[l[1]] = 1
+        print "\n[%03d %s]" % (int(l[1]), headers[l[1]])
+    print "[%03d] " % int(l[1]), l[3],
+
+

@@ -1,0 +1,27 @@
+Cheatsheet for C++ std::string class
+------------------------------------
+
+begin(), end(), rbegin(), rend()
+size(), length()
+resize()			
+capacity(), reserve()		Return or reserve capacity to grow into
+clear()
+empty()				Test if string is empty
+operator[], at()
++=, append
+push_back
+assign
+insert
+erase
+replace
+copy
+swap
+
+c_str()
+data()
+find(), rfind()
+find_{first,last}_{not_,}of(
+substr(pos=0, n=npos)
+compare(pos1 = 0, n1=npos, str, pos2 = 0, n2=npos)
+	     			(this[pos1:n1] == str[pos2, n2])
+

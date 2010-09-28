@@ -103,27 +103,31 @@ def perf_output(t):
 # This really should be implemented as a class that constructs from a dict
 # or sequence
 gperf_state_table = {
-    "Start" : (None, None, "Filter"),
+    "Start" : (None, None, ("Filter", "Repeat_B1")),
+    "Repeat_B1" : (r"\s*$", None, "Repeat"),
+    "Repeat" : (r"Repeating all tests \(iteration \d+\) \. \. \.", None,
+                "Repeat_B2"),
+    "Repeat_B2" : (r"\s*$", None, "Filter"),
     "Filter" : (r"Note: Google Test filter = ", None, "Header"),
-    "Header" : (r"\[==========\] Running \d+ tests from \d+ test case.",
+    "Header" : (r"\[==========\] Running \d+ tests? from \d+ test case.",
                 None, "Global"),
     "Global" : (r"\[----------\] Global test environment set-up.", None,
                  "Supertest"),
-    "Supertest" : (r"\[----------\] \d+ tests from \w+", None, "Test Header"),
+    "Supertest" : (r"\[----------\] \d+ tests? from \w+", None, "Test Header"),
     "Test Header" : (r"\[ RUN      \] (\w+\.\w+)", set_test, "Perf Output"),
     "Perf Output" : (r"(\w+)\s+(\d+(?:\.\d+)?)\s+ms", perf_output,
                       ("Perf Output", "Test Trailer")),
     "Test Trailer" : (r"\[       OK \] (\w+\.\w+)\s+\((\d+) ms\)", None,
                        ("Test Header", "Supertest end")),
-    "Supertest end" : (r"\[----------\] \d+ tests from \w+ \(\d+ ms total\)",
+    "Supertest end" : (r"\[----------\] \d+ tests? from \w+ \(\d+ ms total\)",
                         None, ("Supertest", "Null")),
     "Null" : (r"\s*$", None, "Global teardown"),
     "Global teardown" : (r"\[----------\] Global test environment tear-down",
                           None, "Test summary"),
-    "Test summary" : (r"\[==========\] \d+ tests from \d+ test case ran. \(\d+ ms total\)",
+    "Test summary" : (r"\[==========\] \d+ tests? from \d+ test case ran. \(\d+ ms total\)",
                        None, "Test results"),
-    "Test results" : (r"\[  PASSED  \] \d+ tests\.", None,
-                       ("Filter", None))}
+    "Test results" : (r"\[  PASSED  \] \d+ tests?\.", None,
+                       ("Filter", "Repeat_B1", None))}
 
 ## Get the information
 for f in args:
