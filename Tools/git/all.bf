@@ -13,7 +13,9 @@ git_branch () {
     fi
 }
 
-shell_prompt_commands="$shell_prompt_commands git_branch"
+if ! echo $shell_prompt_commands | tr ' ' '\012' | grep git_branch > /dev/null; then
+    shell_prompt_commands="$shell_prompt_commands git_branch"
+fi
 
 git() {
     $git_binary_location "$@"
