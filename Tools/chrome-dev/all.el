@@ -1,6 +1,7 @@
 
 ;; Try and setup C++ bindings properly for chrome
 (require 'google-c-style)
+(require 'rs-underpoint)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
 ;; Also make sure that when we save a C style file, we eliminate trailing
@@ -36,7 +37,12 @@ ISSUES is a list of integer values."
   (browse-url (chrome-issue-list-url issue-list)))
 
 (defun chrome-visit-issue (issue)
+  (interactive
+   (list (string-to-number (randy-word-under-point))))
   (browse-url (format "http://crbug.com/%d" issue)))
+
 
 ;; Setup git bindings
 (randy-init-from "Tools/git")
+
+(provide 'chrome-dev)

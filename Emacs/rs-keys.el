@@ -27,6 +27,8 @@
 ;;; The "official" user customization keys; \C-c[a-z]
 ;;; a
 ;;; b
+(if (featurep 'chrome-dev)
+    (define-key mode-specific-map "b" 'chrome-visit-issue))
 (define-key mode-specific-map "c" 'compile)
 (add-hook 'shell-mode-hook
 	  '(lambda () (define-key shell-mode-map "\C-cd"
