@@ -91,9 +91,11 @@ if [ $# -ne 1 ]; then
     exit 1;
 fi
 
-cmd_var=${${platform}_{$1}}
+target=$1
+varname=${platform}_$target
+cmd_var=${!varname}
 if [ X"$cmd_var" = X"" ]; then
-    echo "Don''t know how to build $1 for platform $platform" 1>&2
+    echo "Don't know how to build $1 for platform $platform" 1>&2
     exit 1
 fi
 
