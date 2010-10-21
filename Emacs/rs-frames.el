@@ -36,6 +36,9 @@
 
 ;;; XXX: REgularize names and make distinctionb etween saving and restoring. 
 
+;;; You know, this would all be simpler if you had just made the name "default" 
+;;; special and not worried about the order :-J.
+
 (defconst randy-interesting-frame-properties '(top left width height)
   "Properties to include in auto-generated frame configs.")
 
@@ -50,15 +53,15 @@
   "List of configurations associated with current display."
    (cdr (assoc (randy-current-display-config) randy-frame-configs-list)))
 
-
 (defun randy-get-frame-config ()
   "Return the current configuration of the emacs frames as a frame config.
 Only include in it frame properties in randy-interesting-frame-properties."
-  (mapcar 
-   '(lambda (fc) 
-      (mapcar '(lambda (prop) (assoc prop fc))
-	      randy-interesting-frame-properties))
-   (mapcar 'frame-parameters (frame-list))))
+  ;; For each set of parameters
+  (mapcar '(lambda (fc) 
+	     ;; Pull out just the interesting values
+	     (mapcar '(lambda (prop) (assoc prop fc))
+		     randy-interesting-frame-properties))
+	  (mapcar 'frame-parameters (frame-list))))
   
 (defun randy-force-frame-config (frames-properties-list)
   "Force the current configuration of frames to look like FRAME-LIST.
@@ -83,102 +86,75 @@ look like one of the alists."
 	(setq aframe nextframe)
 	))))
 
-;;; Organizing and renaming after this line.
+(defun randy-save-frame-config (name config &optional display-id)
+  "Save the passed config in name NAME under display id DISPLAY-ID 
+ (defaults to current).  This will overwrite any
+configuration previously saved under that name."
+  ;; Default display id
+  (if (not display-id)
+      (setq display-id (randy-current-display-config)))
+  ;; Put configs for display-id in known state
+  (if (not (assoc display-id randy-frame-configs-list))
+      (setq randy-frame-configs-list
+	    (append randy-frame-configs-list (list (list display-id)))))
+  (let ((display-entry (assoc display-id randy-frame-configs-list)))
+    ;; Make sure there's an entry for the name
+    (if (not (assoc name (cdr display-entry)))
+	(setcdr display-entry
+		(append (cdr display-entry) (list (list name)))))
+    ;; Overwrite whatever was there before
+    (setcdr (assoc name (cdr display-entry)) config)
+    (message "Config \"%s\" saved." name)))
 
-;;; XXX: Todo: put at end unless default is set, then at beginning.
-(defun randy-save-frame-config (name &optional default config)
-  "Save the current configuration in name NAME.
-Optional argument DEFAULT if non-nil indicates to make this the 
-default configuration (set interactively via prefix arg).  Optional
-argument CONFIG if non-nil means use the specified configuration rather
-than taking it from the current config."
-  ;; I want the name to be prompted for with symbol completions what's in the
-  ;; current alist.  default is just the prefix arg.
-  (interactive "MSave configuration name (default \"default\"): \nP\ni")
-  (let* ((display-id (list (display-pixel-width) (display-pixel-height)))
-	 (config-names
-	  (mapcar 'car 
-		  (cdr (assoc display-id randy-frame-configs-list)))))
-    (if (equal name "") (setq name "default"))
-    (if (not config)
-	(setq config (randy-get-frame-config)))
-    (if (or (not (called-interactively-p))
-	    (not (member name config-names))
-	    (y-or-n-p "Name %s will overwrite existing config; continue?"))
-	(if (assoc display-id randy-frame-configs-list)
-	    (let ((old-list (cdr (assoc display-id randy-frame-configs-list))))
-	      (setcdr (assoc display-id randy-frame-configs-list)
-		      (cons (cons name config) old-list)))
-	  (setq randy-frame-configs-list
-		(cons (list display-id (cons name config))
-		      randy-frame-configs-list)))))
-  name)
-
-(defun randy-set-saved-frame-config (name)
-  "Specify a saved frame configuration by name.  Default is first element
-in list."
-  (interactive
-   (list
-    (read-from-minibuffer
-     (if (randy-current-display-list)
-	 (concat "Configuration name (default "
-		 (caar (randy-current-display-list)) " ): ")
-       "Configuration name (no default): "))))
-  (if (not name)
-      (setq name (caadr (randy-current-display-list))))
-  (if (not name)
-      (error "No configs exist for display config "
-	     (randy-current-display-config)))
-  (let ((config (cdr (assoc name 
-			   (randy-current-display-list)))))
-    (if (not config)
-	(error "Couldn't find config for name \"%s\"" name))
-    (randy-force-frame-config config))
-  name)
-
-(defun randy-make-named-config-default (name)
+(defun randy-make-named-config-default (name &optional display-id)
   "Make the config of the given name default.  Illegal if it isn't in
 the current displays list of names."
+  (if (not display-id) (setq display-id (randy-current-display-config)))
   (let ((current-display-config-list
-	 (cdr (assoc (randy-current-display-config)
-		     randy-frame-configs-list))))
+	 (cdr (assoc config randy-frame-configs-list))))
     (if (not (assoc name (randy-current-display-list)))
 	(error "Couldn't find config for name " name))
     (sort (randy-current-display-list)
 	  ;; name is < everything; everything else is equal
 	  '(lambda (a b) (equal (car a) name)))))
 
-(defun randy-make-current-config-default ()
-  (interactive)
-  ;;; Figure out if the current config is in the list.
-  ;;; If it's not, create it.  
-  ;;; Regardless, move it to the front
-  (let* ((current-display (randy-current-display-config))
-	 (frame-config (randy-get-frame-config))
-	 (display-context (assoc current-display randy-frame-configs-list))
-	 (frame-config-name (car (rassoc frame-config (cdr display-context)))))
-    (if (not frame-config-name)
-	(setq frame-config-name
-	      (call-interactively 'randy-save-frame-config)))
-    (if (not frame-config-name)
-	(error "\"Can't happen\": frame-config-name not specified after randy-set-saved-frame-config"))
-    (randy-make-named-config-default frame-config-name)))
+;; UI Functions 
+(defun randy-save-current-config (non-default)
+  "Save the current configuration.  Without a prefix argument, save it as the
+default configuration with a name of \"default\".  With a prefix arg, 
+prompt for the name of the configuration and save using that name.
+The results of saving with a name of \"default\" are undefined."
+  (interactive "P")
+  (let ((name "default") (config (randy-get-frame-config)))
+    (if non-default
+	(setq name (completing-read "Configuration name: "
+		     (mapcar 'car (randy-current-display-list)))))
+    (randy-save-frame-config name config)
+    (if (not non-default)
+	(randy-make-named-config-default name))))
 
-;;; After this line not part of generic samed config stuff.
+(defun randy-restore-config (name)
+  "Restore the default config for this display.  With prefix arg, prompt
+for a named config."
+  (interactive
+   (list
+    (if current-prefix-arg 
+	(completing-read "Configuration to restore: "
+			 (mapcar 'car (randy-current-display-list)) nil t)
+      (car (car (randy-current-display-list))))))
+   (randy-force-frame-config (cdr (assoc name (randy-current-display-list)))))
 
-(defun randy-set-frame-name (&optional tagline)
-  "Set the name for the current emacs frame"
-  (interactive)
-  (if (not tagline)
-      (setq tagline "misc"))
-  (let* ((sysname (system-name))
-	 (first-period (progn
-		  	 (and (string-match "^\\([^\\.]*\\)\\." (system-name))
-			      (match-end 1))))
-	 (hostname (if first-period (substring sysname 0 first-period) sysname)))
-    (set-frame-name
-     (concat (user-login-name) "@"
-	     hostname "(" tagline ")"))))
+(defun randy-delete-named-config (name &optional display-id)
+  "Delete a previous saved config."
+  (interactive
+   (list 
+    (completing-read "Configuration to restore: "
+		     (mapcar 'car (randy-current-display-list)) nil t)))
+  (if (not display-id) (setq display-id (randy-current-display-config)))
+  (let* ((display-entry (assoc display-id randy-frame-configs-list))
+	 (key (car (assoc name (cdr display-entry)))))
+    (if key				;Handle non-existence name
+	(setcdr display-entry (assq-delete-all key (cdr display-entry))))))
+
 
 (provide 'rs-frames)
-
