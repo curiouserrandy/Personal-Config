@@ -1,49 +1,13 @@
-;;; Notes:
-;;;	* Not using fullscreen . because it removes the resize thumbnail,
-;;;	  and automatically and incorrectly takes into account the menu bar
-;;;	
+;;; Easy configuration of emacs windows on a per-screen, per-display basis.
 
-;;; ???: Should I be doing anything with defaulting visibility, iconification, or similar?
-;;; ???: Ditto on letting width/height overright fullscreen . ?
-
-;;; Use case: I want to have a couple of configurations that I can
-;;; reach with keystrokes.  In an ideal world, I'd have configs that
-;;; defaulted based on screen size.  Specifically, when I had a config
-;;; I was happy with, I'd do something to save it, and it would be
-;;; available for that screen size (only).  The pieces of this are:
-;;;	* Way to get current configuration
-;;;	* Format for storing lists of configurations.
-;;;	* Persisted variable in which to save it.  That variable would
-;;;	  be first indexed by screen size, and then by name.  First
-;;; 	  element in the screen size list would be the default.
-;;;	* Keystroke bound to "set frame config" that would prompt the 
-;;;	  user for the config wanted, and force it.  
-
-;;; A frame config looks like a list of alists of frame properties.  
-;;; A frame config list looks like:
-;;;	((<display-size> ((<name> frame-config) ...)) ...)
-;;; The first element in a display size list is the default.
-;;; Function that sets emacs frame config:
-;;;	* interactive
-;;;	* Takes a name as argument
-;;;	* Completes based on names in list
-;;; Function that creates list:
-;;;	* Prompts for name; refuses to save without name
-;;;	* Checks for conflicts; prompts if overwrite
-;;; Separate function "randy-set-default-config":
-;;;	* Sets the current config as default
-;;;	* Prompts for a name if it isn't already in the list
-
-;;; XXX: REgularize names and make distinctionb etween saving and restoring. 
-
-;;; You know, this would all be simpler if you had just made the name "default" 
-;;; special and not worried about the order :-J.
+(require 'rs-persist)
 
 (defconst randy-interesting-frame-properties '(top left width height)
   "Properties to include in auto-generated frame configs.")
 
 (defvar randy-frame-configs-list nil
   "List of possible configs for emacs windows.")
+(rs-persist-variable 'randy-frame-configs-list)
 
 (defun randy-current-display-config ()
   "List identifying display."
@@ -111,14 +75,14 @@ configuration previously saved under that name."
 the current displays list of names."
   (if (not display-id) (setq display-id (randy-current-display-config)))
   (let ((current-display-config-list
-	 (cdr (assoc config randy-frame-configs-list))))
+	 (cdr (assoc display-id randy-frame-configs-list))))
     (if (not (assoc name (randy-current-display-list)))
-	(error "Couldn't find config for name " name))
+	(error "Couldn't find config for name %s" name))
     (sort (randy-current-display-list)
 	  ;; name is < everything; everything else is equal
 	  '(lambda (a b) (equal (car a) name)))))
 
-;; UI Functions 
+;;; UI Functions 
 (defun randy-save-current-config (non-default)
   "Save the current configuration.  Without a prefix argument, save it as the
 default configuration with a name of \"default\".  With a prefix arg, 
@@ -156,5 +120,13 @@ for a named config."
     (if key				;Handle non-existence name
 	(setcdr display-entry (assq-delete-all key (cdr display-entry))))))
 
+
+
+;;; Startup.  
+;;; If there's a default config for the current display, restore it
+(let ((display-entry
+       (assoc (randy-current-display-config) randy-frame-configs-list)))
+  (if (car (cdr display-entry))		;Checking for list of configs
+      (randy-restore-config (car (car (cdr display-entry))))))
 
 (provide 'rs-frames)
