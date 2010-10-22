@@ -43,7 +43,7 @@ parser.add_option("-D", "--debug", help="Enable script debugging",
 parser.add_option("-c", "--config",
                   help="Configuration (Debug/Release) to build; must match config or target.",
                   type="string", dest="config", default="Debug", metavar="CFG")
-parser.add_option("-t", "--config",
+parser.add_option("-t", "--target",
                   help="Target to build (argument to chrcomm).  Must match config argument.",
                   type="string", dest="target", default="chrome",
                   metavar="TARGET")
@@ -55,9 +55,10 @@ if len(args) > 1:
     print >> sys.stderr, "Expected usage: %s" % usage_string
     sys.exit(2)
 
-mo = re.search("^(\d+)(?:-(\d+))$", args[0])
+mo = re.search("^(\d+)(?:-(\d+))?$", args[0])
 if not mo:
     print >> sys.stderr, "Revrange %s not supported." % args[0]
+    sys.exit(1)
 
 first_rev = int(mo.group(1))
 last_rev = mo.group(2)
@@ -67,15 +68,24 @@ else:
     last_rev = first_rev
 assert last_rev >= first_rev
 
+def check_output(args, **kwargs):
+    """Intended to emulate subprocess.check_output"""
+    kwargs['stdout'] = subprocess.PIPE
+    po = subprocess.Popen(args, **kwargs)
+    output = po.communicate()
+    if po.returncode != 0:
+        print >> sys.stderr, "Subprocess [%s] failed with error code %d" % (", ".join(args), po.returncode)
+        sys.exit(1)
+    return output[0]
+
 def build_rev(revision, target, config):
-    subprocess.check_output(["git", "svn", "fetch-rev",  
-                             "r%d" % revision])
-    git_commit = subprocess.check_output(["git", "svn", "fetch-rev",  
-                                          "r%d" % revision])
-    subprocess.check_call(["git", "checkout", git_commit])
+    check_output(["git", "svn", "find-rev", "r%d" % revision])
+    git_commit = check_output(["git", "svn", "find-rev", "r%d" % revision])
+    git_commit = git_commit[:-1]
+    tmp = check_output(["git", "checkout", git_commit])
+    tmp = check_output(['gclient', 'sync'])
     outfile = open("chrbuildrevs-%s-r%d.log" % (target, revision), "w")
-    return subprocess.call(["chrcomm", "target"], stdout=outfile,
-                           stderr=outfile)
+    return subprocess.call(["chrcomm", target], stdout=outfile, stderr=outfile)
 
 for rev in range(first_rev, last_rev+1):
     rc = build_rev(rev, options.target, options.config)
@@ -84,9 +94,16 @@ for rev in range(first_rev, last_rev+1):
         
     # Figure out which platform we're on and where the output directory is
     # and move it.
-    outdirs = [ 'darwin' : 'xcodebuild',
+    outdirs = { 'darwin' : 'xcodebuild',
                 'linux' : 'out',
-                'windows' : 'build' ]
-    rename("%s/%s" % (outdirs[sys.platform], config),
-           "%s/%s-r%d" % (outdirs[sys.platform], config, rev))
+                'windows' : 'build' }
+
+    # I don't want rename, because I want repeated builds to go fast.
+    # So I copy, via tar.
+    (indir, outdir) = ("%s/%s" % (outdirs[sys.platform], options.config),
+                       "%s/%s-r%d" % (outdirs[sys.platform], options.config,
+                                      rev))
+    tmp = check_output(("mkdir %s &&(cd %s;tar cf - . )|(cd %s; tar xf -)"
+                        % ( outdir, indir, outdir)), shell = True)
+           
 
