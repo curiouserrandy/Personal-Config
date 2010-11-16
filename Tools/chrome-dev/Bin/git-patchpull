@@ -19,13 +19,4 @@ if [ "$current_branch" = "origin/trunk" -o \
 fi
 
 git pull $chrome_patches $current_branch:
-if git-treeclean ; then
-    gclient sync
-else
-    echo "*** Gclient sync not done because tree dirty."
-fi
-
-    
-
-     
-     
+echo "Not doing gclient sync; do manually if required."
