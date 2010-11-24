@@ -1,0 +1,29 @@
+
+X?? How do I set command line arguments?
+
+When you open an executble file, you can specify them in the dialog in
+which you specify the file.
+
+?? How do I shut down an executable after I connect to it?
+
+	.kill
+	q
+
+?? How do I figure out for what reason the debugger is stopping and
+   tell it not to?
+
+	.lastevent 
+produces some info.
+
+?? What are the basic commands for continuing/stepping, etc?
+
+	g		# Continue (go)
+	g <address>	# Go until address is hit (temp breakpoint)
+	gu		# Go to end of current function
+
+?? How do I restart execution?
+
+	.restart
+
+?? How do I set the focus to the command window from the keyboard?
+
