@@ -115,6 +115,7 @@ It's ok for this function to be called pointing into space."
       ))
 (randy-init-from "Emacs/rs-persist")
 (randy-init-from "Emacs/rs-frames")
+(randy-init-from "Emacs/rs-compile")
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
 
