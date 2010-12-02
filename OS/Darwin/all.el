@@ -8,7 +8,8 @@
  '(safe-local-variable-values
    (quote ((outline-explode . ".*day")
 	   (outline-explode . "\\(Todo, active\\|Todo\\) *$")
-	   (outline-explode . "\\(Todo, active\\|Todo\\|Todo, Categorized\\) *$")))))
+	   (outline-explode . "\\(Todo, active\\|Todo\\|Todo, Categorized\\) *$")
+	   (backup-by-copying . t)))))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.

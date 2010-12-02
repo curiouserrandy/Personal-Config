@@ -93,6 +93,9 @@ The results of saving with a name of \"default\" are undefined."
     (if non-default
 	(setq name (completing-read "Configuration name: "
 		     (mapcar 'car (randy-current-display-list)))))
+    (if (and (assoc name (randy-current-display-list))
+	     (not (y-or-n-p (format "Overwrite config \"%s\"? " name))))
+	(error "Config %s already exists." name))
     (randy-save-frame-config name config)
     (if (not non-default)
 	(randy-make-named-config-default name))))
