@@ -1,5 +1,6 @@
 (require 'rs-persist)
+(require 'compile)
 
-(rs-persist-var 'compile-commnad)
+(rs-persist-variable 'compile-history)
 
 (provide 'rs-compile)
