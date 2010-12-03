@@ -26,3 +26,26 @@
 	      (cd git-dir))))
 
 	(provide 'rs-tools-git)))
+
+(require 'dired)
+
+(defun git-tree-dirty-p ()
+  (let ((str (with-output-to-string
+               (with-current-buffer standard-output
+                 (call-process "git" nil '(t nil) nil "status" "-s")))))
+    (string-match "^\\([^?]\\|\\?[^?]\\)" str)))
+
+(make-variable-buffer-local 'randy-vc-set-with-hack)
+(setq-default randy-vc-set-with-hack nil)
+
+(add-hook 'dired-after-readin-hook
+	  (lambda ()
+	    (if (or (not vc-mode) randy-vc-set-with-hack)
+		(progn
+		  (setq vc-mode
+			(let ((branch (vc-git-workfile-version "."))
+			      (dirty (git-tree-dirty-p)))
+			  (concat "Git" (if dirty ":" "-") branch)))
+		  (setq randy-vc-set-with-hack t)
+		  (force-mode-line-update)))))
+
