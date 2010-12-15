@@ -33,8 +33,8 @@ while [ $# -ne 0 ]; do
 done
 
 # Check non-flag arguments.
-if [ $# -ne 0 ]; then
-    echo "Usage: $usageString" 1>&2;
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString <rev>" 1>&2;
     exit 1;
 fi
 
@@ -42,7 +42,11 @@ if ! git-treeclean; then
     exit 1;  # git-treeclean will have output error message.
 fi   
 set -e					# Shouldn't be needed, but better safe..
-lkgr=`curl http://chromium-status.appspot.com/lkgr`
+if [ $# -eq 1 ]; then
+    lkgr=$1
+else
+    lkgr=`curl http://chromium-status.appspot.com/lkgr`
+fi
 git checkout trunk
 git pull 
 git svn fetch
@@ -52,7 +56,7 @@ if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
     exit 1
 fi
 git reset --hard $lkgr_git_commit
-gclient sync
+gclient sync -j12
 echo Trunk branch reset to SVN revision $lkgr
 
 ## Todo: Merge trunk into all branches tracking trunk.
