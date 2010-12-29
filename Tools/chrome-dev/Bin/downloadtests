@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Run all the download tests.
+# TODO: Automatically avoid existing files.
+
+if [ `/bin/pwd | sed 's;^.*/;;'` != "src" -o ! -d .git ]; then
+    echo "Not in sandbox top level." 1>&2
+    /bin/pwd
+    /bin/pwd | sed 's;^.*/;;'
+    exit 1;
+fi
+
+(chrmake unit_tests browser_tests ui_tests && \
+ 	(out/Debug/unit_tests \
+		--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*;  \
+	out/Debug/browser_tests --gtest_also_run_disabled_tests --gtest_filter=SavePageBrowserTest.*:DownloadTest.* --v=20; \
+ 	out/Debug/ui_tests --gtest_also_run_disabled_tests --gtest_filter=DownloadTest.*:SavePageTest.* --v=20 ) ) > download_tests.log 2>&1 
+
+
