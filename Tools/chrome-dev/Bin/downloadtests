@@ -12,7 +12,7 @@ fi
 
 (chrmake unit_tests browser_tests ui_tests && \
  	(out/Debug/unit_tests \
-		--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*;  \
+		--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;  \
 	out/Debug/browser_tests --gtest_also_run_disabled_tests --gtest_filter=SavePageBrowserTest.*:DownloadTest.* --v=20; \
  	out/Debug/ui_tests --gtest_also_run_disabled_tests --gtest_filter=DownloadTest.*:SavePageTest.* --v=20 ) ) > download_tests.log 2>&1 
 
