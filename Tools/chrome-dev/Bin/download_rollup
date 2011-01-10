@@ -1,0 +1,167 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import sys
+from optparse import OptionParser
+import csv
+import urllib
+import re
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s is a program to automatically snarf bugs from the chromium issues 
+tracker and produce a spreadsheet grouping them by grouping issue.
+""" % program_name
+
+usage_string = "%s [-o <output_file_prefix>]"
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+parser.add_option("-o", dest="outfile", help="Output file Prefix",
+                  default="rollup")
+
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+# Process any non-flag arguments
+if len(args) > 0:
+    print >> sys.stderr, "Expected usage: %s" % usage_string
+    sys.exit(2)
+
+# TDOD: CSV mods
+url_template = ("http://code.google.com/p/chromium/issues/csv?" +
+                "can=2&q=%s&sort=%s&colspec=%s")
+
+cols=('ID', 'Stars', 'Pri', 'Type', 'Status', 'Summary', 
+      'Owner', 'Mstone', 'OS', 'BlockedOn', 'Blocking')
+sort_cols=('Blocking', 'BlockedOn', 'ID')
+query="Feature=Downloads"
+
+url = url_template % (query, "+".join(sort_cols), "+".join(cols))
+
+issue_dict = {}
+grouping_issues = []
+nongrouping_issues = []
+starred_issues = []
+pri1_issues = []
+grouping_stars = {}
+grouping_bugs = {}
+# Using reader rather than DictReader because of a bug in DictReader;
+# I was getting keys with the name "OwnerMstone", which was bogus.
+in_first_row = True
+line_count = 0
+for l in csv.reader(urllib.urlopen(url)):
+    line_count += 1
+    if in_first_row:
+        header_fields = l
+        in_first_row = False
+        continue
+    if not l: continue                  # Blank line
+
+    ldict = dict(zip(header_fields, l))
+
+    ## Convert appropriate to integer
+    for key in ('ID', 'Stars'):
+        ldict[key] = int(ldict[key])
+    for key in ('BlockedOn', 'Blocking'):
+        ldict[key] = [int(y) for y in ldict[key].split(",") if y]
+
+    id = ldict['ID']
+    ## Enter into full issue dict
+    issue_dict[id] = ldict
+
+    if re.search("grouping issue", ldict['Summary']):
+        grouping_issues.append(id)
+    else:
+        nongrouping_issues.append(id)
+        if ldict['Stars'] > 10:
+            starred_issues.append(id)
+        for i in ldict['Blocking']:
+            grouping_stars[i] = grouping_stars.get(i, 0) + ldict['Stars']
+            grouping_bugs[i] = grouping_bugs.get(i,0) + 1
+        if ldict['Pri'] == '1':
+            pri1_issues.append(id)
+
+grouping_issues.sort()
+
+## Figure out the uncategorized bugs
+uncategorized_issues = [id for id in nongrouping_issues
+                        if not set(issue_dict[id]['Blocking']).intersection(grouping_issues)]
+
+## Figure out the non-top items grouping_issue stars
+grouping_topissue_stars = {}
+grouping_topissue_bugs = {}
+for id in starred_issues:
+    for bid in issue_dict[id]['Blocking']:
+        grouping_topissue_stars[bid] = (grouping_topissue_stars.get(bid,0) +
+                                      issue_dict[id]['Stars'])
+        grouping_topissue_bugs[bid] = grouping_topissue_bugs.get(bid,0) + 1
+
+## Write it all out
+outfile = open(options.outfile + ".csv", 'w')
+csvwriter = csv.writer(outfile)
+
+## Issues that aren't blocking a grouping issue.
+output_cols = ("ID", "Summary", "Owner", "BlockedOn", "Blocking")
+csvwriter.writerow(("Orphaned issues",))
+csvwriter.writerow(output_cols)
+for id in uncategorized_issues:
+    idict = issue_dict[id]
+    csvwriter.writerow([idict[c] for c in output_cols])
+csvwriter.writerow(("",))
+
+## Grouping issues, with stats
+csvwriter.writerow(("Grouping issues",))
+csvwriter.writerow(("","","Total", "", "Exclusive of top issues"))
+csvwriter.writerow(("ID", "Summary", "Issues", "Stars", "Issues", "Stars"))
+grouping_issues.sort(
+    cmp=lambda x,y:cmp(grouping_stars[x] - grouping_topissue_stars.get(x,0),
+                       grouping_stars[y] - grouping_topissue_stars.get(y,0)),
+    reverse=True)
+for i in grouping_issues:
+    csvwriter.writerow((i, issue_dict[i]['Summary'],
+                        grouping_bugs[i], grouping_stars[i],
+                        grouping_bugs[i] - grouping_topissue_bugs.get(i,0),
+                        grouping_stars[i] - grouping_topissue_stars.get(i,0)))
+csvwriter.writerow(("",))
+
+## Priority 1 issues
+pri1_issues.sort(
+    cmp=lambda x,y:cmp(issue_dict[x]['Stars'], issue_dict[y]['Stars']),
+    reverse=True)
+output_cols = ("ID", "Summary", "Stars", "Blocking")
+csvwriter.writerow(("Pri 1 issues",))
+csvwriter.writerow(output_cols[:-1] + ("","","") + (output_cols[-1],))
+for id in pri1_issues:
+    # Special handling for blocking to make it human readable.
+    csvwriter.writerow([issue_dict[id][col] for col in output_cols[:-1]] +
+                       ["","",""] +     # For separate column to widen.
+                       [[issue_dict[i]['Summary']
+                         for i in issue_dict[id]['Blocking']],])
+csvwriter.writerow(("",))
+
+## Top bugs
+starred_issues.sort(
+    cmp=lambda x,y:cmp(issue_dict[x]['Stars'], issue_dict[y]['Stars']),
+    reverse=True)
+output_cols = ("ID", "Summary", "Stars", "Blocking")
+csvwriter.writerow(("Top Individual Issues",))
+csvwriter.writerow(output_cols[:-1] + ("","","") + (output_cols[-1],))
+for id in starred_issues:
+    # Special handling for blocking to make it human readable.
+    csvwriter.writerow([issue_dict[id][col] for col in output_cols[:-1]] +
+                       ["","",""] +     # For separate column to widen.
+                       [[issue_dict[i]['Summary']
+                         for i in issue_dict[id]['Blocking']],])
