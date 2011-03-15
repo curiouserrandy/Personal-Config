@@ -17,20 +17,19 @@ of the environment variable SANDBOXEN_DIR if set, otherwise ~/Sandboxen).
 	-b <branchname>		Extra branche to be created
 				(may be repeated) (UNIMPLEMENTED).
 	-u <username>		Username to use for authentication.
-				Defaults to "$USER@google.com".
+				Defaults to "$USER@chromium.org".
 	-p 			Prompt for and use password as needed.
 	-O			Make this a CROS sandbox
-				(not completely implemented)
 	<sandbox name>
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname [-b <branchname>]* <sandbox name>";
+usageString="$progname [-b <branchname>]* [-s <sandboxendir>] [-u <username>] [-p [ -O ] <sandbox name>";
 
 # Parse all arguments.
 branches="";
 password="";
-username="${USER}@google.com";
+username="${USER}@chromium.org";
 cros=no;
 ECHO=
 while [ $# -ne 0 ]; do
@@ -110,6 +109,10 @@ if ! type gclient > /dev/null; then
     exit 1;
 fi
 
+if [ "$cros" = "yes" ]; then
+    $ECHO export GYP_DEFINES="chromeos=1 target_arch=ia32"
+fi
+
 # There shouldn't be any problems, but if there are, I want to bail
 set -e
 
@@ -117,7 +120,7 @@ set -e
 $ECHO mkdir $sbd;			# No -p; error if no Sandboxen directory
 $ECHO cd $sbd
 # Note that the below won't work in an emacs shell buffer on windows; dunno why.
-$ECHO git clone http://src.chromium.org/git/chromium.git src
+$ECHO git clone http://git.chromium.org/git/chromium.git src
 $ECHO gclient config svn://svn.chromium.org/chrome/trunk/src
 # Try and get the authentication info cached, quickly.
 if [ "$password" != "" ]; then
