@@ -1,18 +1,69 @@
 #!/bin/bash
 
-current_branch=`git branch | awk '$1 == "*" {print $2;}'`
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname pushes the specified patch (or the current branch if none
+specified on the command line) from the central patch repository.  Flags:
+	-d 		Delete the central copy of the branch before push.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-d] [<branch name>]";
 
-if [ "$current_branch" = "origin/trunk" -o \
-     "$current_branch" = "trunk" -o \
-     "$current_branch" = "master" ]; then
-    echo "Not on a development branch: $current_branch" 1>&2
-    exit 1
+delete_local_patch=no
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -d) 
+	delete_local_patch=yes;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
 fi
 
 if ! git-treeclean ; then 
     exit 1				# Error message already output
 fi
 
-git push $chrome_patches $current_branch:$current_branch
+target_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
+if [ $# -gt 0 ]; then
+    target_branch=$1
+fi
+
+if [ "$target_branch" = "origin/trunk" -o \
+     "$target_branch" = "trunk" -o \
+     "$target_branch" = "master" ]; then
+    echo "Not on a development branch: $target_branch" 1>&2
+    exit 1
+fi
+
+## TODO: Check to see if target branch exists locally
+
+## TODO: Delete remotely if requested.
+
+git push $chrome_patches $target_branch:$target_branch
      
      
