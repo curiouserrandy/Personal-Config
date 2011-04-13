@@ -56,7 +56,7 @@ if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
     exit 1
 fi
 git reset --hard $lkgr_git_commit
-gclient sync -j12
+gclient sync -j12 -D
 echo Trunk branch reset to SVN revision $lkgr
 
 ## Todo: Merge trunk into all branches tracking trunk.
