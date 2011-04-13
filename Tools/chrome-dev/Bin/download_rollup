@@ -114,13 +114,14 @@ outfile = open(options.outfile + ".csv", 'w')
 csvwriter = csv.writer(outfile)
 
 ## Issues that aren't blocking a grouping issue.
-output_cols = ("ID", "Summary", "Owner", "BlockedOn", "Blocking")
-csvwriter.writerow(("Orphaned issues",))
-csvwriter.writerow(output_cols)
-for id in uncategorized_issues:
-    idict = issue_dict[id]
-    csvwriter.writerow([idict[c] for c in output_cols])
-csvwriter.writerow(("",))
+if uncategorized_issues:
+    output_cols = ("ID", "Summary", "Owner", "BlockedOn", "Blocking")
+    csvwriter.writerow(("Orphaned issues",))
+    csvwriter.writerow(output_cols)
+    for id in uncategorized_issues:
+        idict = issue_dict[id]
+        csvwriter.writerow([idict[c] for c in output_cols])
+    csvwriter.writerow(("",))
 
 ## Grouping issues, with stats
 csvwriter.writerow(("Grouping issues",))
