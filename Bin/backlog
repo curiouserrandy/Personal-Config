@@ -23,6 +23,8 @@ Options:
 			command output as it occurs.  The option <geometry>
 			specifies where this window will appear; <geometry>
 			defaults to -0+0.
+	-a 		Append to output file if it exists rather that
+			creating a new backup file.			
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -31,6 +33,7 @@ usageString="$progname [-o <file>] [-x<geometry>] [--] <command> <options>";
 # Parse all arguments.
 outfile=""
 geometry=""
+append="no"
 while [ $# -ne 0 ]; do
     case $1 in 
     -x*) 
@@ -46,6 +49,9 @@ while [ $# -ne 0 ]; do
 	fi
 	outfile=$2;
 	shift;
+	;;
+    -a)
+    	append=yes;
 	;;
     # Repeat as needed.
     -h|-\?)
@@ -79,7 +85,11 @@ if [ -r $outfile ]; then
 fi
     
 # Execute command in background
-echo "Executing command: $@" > $outfile
+if [ "$append" = "no" ]; then
+    echo -n "" > $outfile
+fi
+
+echo "Executing command: $@" >> $outfile
 (perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
 
 perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""
