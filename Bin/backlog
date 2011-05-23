@@ -16,8 +16,9 @@ will also be output into the file.
 Options:
 	-o <file>	Output file.  This defauls to <command>.log.  If the
 			specified or defaulted output file would result in
-			overwriting an already existing file, a ~<n> is
-			appended to avoid this happening.
+			overwriting an already existing file, that file
+			is moved to the first to the first available backup
+			file (<name>.~<n>~)
 	-x<geometry>	Says that an xterm should be spawned to follow the
 			command output as it occurs.  The option <geometry>
 			specifies where this window will appear; <geometry>
@@ -68,13 +69,13 @@ if [ X"$outfile" = X"" ]; then
     outfile=$1.log
 fi
 
-# Figure out output
+# Move output file over.
 if [ -r $outfile ]; then
     count=1;
-    while [ -r ${outfile}~$count ]; do
+    while [ -r ${outfile}.~${count}~ ]; do
         count=`expr $count + 1`
     done
-    outfile=${outfile}~$count
+    mv $outfile ${outfile}.~${count}~
 fi
     
 # Execute command in background
