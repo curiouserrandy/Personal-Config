@@ -15,15 +15,20 @@ function linux_build () {
 }
 
 function linux_build_and_run () {
-    config=shift;
-    target=shift;
+    config=$1;
+    target=$2;
+    shift 2;
     args="$*";			# Not ideal, as doesn't preserve tokenization.
 
-    echo "chrmake BUILDTYPE=$1 $2 && out/$config/$exec_name $args"
+    echo "chrmake BUILDTYPE=$config $target && out/$config/$target $args"
 }
 
 
-Linux_test="`linux_build_and_run Debug net_unittests --gtest_filter=CookieMonsterTest.*`"
+Linux_nettest="`linux_build_and_run Debug net_unittests --gtest_filter=CookieMonsterTest.*`"
+Linux_downunit="`linux_build_and_run Debug unit_tests --gtest_filter=BaseFileTest.*:DownloadManagerTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadTest.*:DownloadUtilTest.*:SavePackageTest.*:SavePageTest.*`"
+Linux_downui="`linux_build_and_run Debug ui_tests --gtest_filter=DownloadTest.*`"
+Linux_downui1="`linux_build_and_run Debug ui_tests --gtest_filter=DownloadTest.DownloadMimeType`"
+Linux_test="$Linux_nettest"
 Linux_perf="`linux_build_and_run Release net_perftests --gtest_filter=CookieMonsterTest.* --gtest_repeat=10`"
 Linux_perfdbg="`linux_build_and_run Debug net_perftests --gtest_filter=CookieMonsterTest.*`"
 Linux_full="`linux_build Debug 'net_unittests browser_tests unit_tests'` && out/Debug/net_unittests --gtest_filter=CookieMonsterTest.* && out/Debug/browser_tests --gtest_filter=ExtensionApiTest.Cookies && out/Debug/unit_tests --gtest_filter=CookiesTreeModelTest.OriginOrdering:CookiesViewTest.FilterRemove"
@@ -86,18 +91,25 @@ while [ $# -ne 0 ]; do
 done
 
 # Check non-flag arguments.
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
     echo "Usage: $usageString" 1>&2;
     exit 1;
 fi
 
-target=$1
-varname=${platform}_$target
-cmd_var=${!varname}
-if [ X"$cmd_var" = X"" ]; then
-    echo "Don't know how to build $1 for platform $platform" 1>&2
-    exit 1
-fi
+while [ $# -ne 0 ]; do
+    target=$1;
+    shift;
+    varname=${platform}_$target
+    cmd_var=${!varname}
+    if [ X"$cmd_var" = X"" ]; then
+	echo "Don't know how to build $1 for platform $platform" 1>&2
+	exit 1
+    fi
 
-echo $cmd_var
-$cmd_var    
+    echo $cmd_var
+    sh -c "$cmd_var"
+    if [ $? -ne 0 ]; then
+	echo "Command exitted with non-zero exit status " $? "; bailing." 1>&2
+	exit 1;
+    fi
+done
