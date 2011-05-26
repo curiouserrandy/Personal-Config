@@ -96,13 +96,18 @@ for l in csv.reader(urllib.urlopen(url)):
 
 grouping_issues.sort()
 
+## Make sure grouping_{stars,bugs} has entries for all grouping issues.
+for i in grouping_issues:
+    grouping_stars.setdefault(i,0)
+    grouping_bugs.setdefault(i,0)
+
 ## Figure out the uncategorized bugs
 uncategorized_issues = [id for id in nongrouping_issues
                         if not set(issue_dict[id]['Blocking']).intersection(grouping_issues)]
 
 ## Figure out the non-top items grouping_issue stars
-grouping_topissue_stars = {}
-grouping_topissue_bugs = {}
+grouping_topissue_stars = dict.fromkeys(grouping_issues, 0)
+grouping_topissue_bugs = dict.fromkeys(grouping_issues, 0)
 for id in starred_issues:
     for bid in issue_dict[id]['Blocking']:
         grouping_topissue_stars[bid] = (grouping_topissue_stars.get(bid,0) +
@@ -128,14 +133,14 @@ csvwriter.writerow(("Grouping issues",))
 csvwriter.writerow(("","","Total", "", "Exclusive of top issues"))
 csvwriter.writerow(("ID", "Summary", "Issues", "Stars", "Issues", "Stars"))
 grouping_issues.sort(
-    cmp=lambda x,y:cmp(grouping_stars[x] - grouping_topissue_stars.get(x,0),
-                       grouping_stars[y] - grouping_topissue_stars.get(y,0)),
+    cmp=lambda x,y:cmp(grouping_stars[x] - grouping_topissue_stars[x],
+                       grouping_stars[y] - grouping_topissue_stars[y]),
     reverse=True)
 for i in grouping_issues:
     csvwriter.writerow((i, issue_dict[i]['Summary'],
                         grouping_bugs[i], grouping_stars[i],
-                        grouping_bugs[i] - grouping_topissue_bugs.get(i,0),
-                        grouping_stars[i] - grouping_topissue_stars.get(i,0)))
+                        grouping_bugs[i] - grouping_topissue_bugs[i],
+                        grouping_stars[i] - grouping_topissue_stars[i]))
 csvwriter.writerow(("",))
 
 ## Priority 1 issues
@@ -150,7 +155,8 @@ for id in pri1_issues:
     csvwriter.writerow([issue_dict[id][col] for col in output_cols[:-1]] +
                        ["","",""] +     # For separate column to widen.
                        [[issue_dict[i]['Summary']
-                         for i in issue_dict[id]['Blocking']],])
+                         for i in issue_dict[id]['Blocking']
+                         if i in issue_dict],])
 csvwriter.writerow(("",))
 
 ## Top bugs
