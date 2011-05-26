@@ -14,7 +14,7 @@ Should always have a trailing '/' (emacs canonical directory)")
   (interactive "DNew sandbox directory: ")
   (setq randy-sandbox-directory
 	(file-name-as-directory (expand-file-name sandboxdir)))
-  (setq glimpse-base-directory randy-sandbox-directory)
+  ;;; (setq glimpse-base-directory randy-sandbox-directory)
   ;;; Null out histories; they don't really apply between sandboxes.
   (setq glimpse-history nil)
   (setq egrep-history nil)
@@ -27,14 +27,13 @@ Should always have a trailing '/' (emacs canonical directory)")
   (randy-set-frame-name (substring sandboxdir
 				   (match-beginning 3)
 				   (match-end 3)))
+  (find-file sandboxdir)
+  (delete-other-windows)
   (if (not dontstartshell)
       (progn
-	(find-file sandboxdir)
-	(delete-other-windows)
-	(split-window-vertically)
+	(split-window-horizontally)
 	(other-window 1)
 	(shell))))
-
 
 (defun randy-greplist-sandbox-file (filename)
   "Grep through the list of files included in this sandbox for ones
