@@ -8,6 +8,10 @@ from optparse import OptionParser
 import csv
 import urllib
 import re
+from lpod.document import odf_new_document
+from lpod.table import odf_create_table 
+from lpod.table import odf_create_column
+from lpod.table import odf_create_row
 
 enable_debugging = 0
 
@@ -25,6 +29,8 @@ parser.add_option("-D", "--debug", help="Enable script debugging",
                   type="int", dest="debug", default=0, metavar="DBGLVL")
 parser.add_option("-o", dest="outfile", help="Output file Prefix",
                   default="rollup")
+parser.add_option("-S", "--ods", dest="ods", default=False,
+                  action="store_true")
 
 ## Further options here; template follows.  
 ## All args are optional; if action is store_true/false, no extra
@@ -83,11 +89,20 @@ grouping_issues = frozenset(
      if issue_dict[id]['Summary'] .find('(grouping issue)') != -1])
 
 ## Write it all out
-outfile = open(options.outfile + ".csv", 'w')
-csvwriter = csv.writer(outfile)
-csvwriter.writerow(("", "Warning: This spreadsheet is periodically overwritten.",))
-csvwriter.writerow(("","If you need permanent access to the data here, please make a copy.",))
-csvwriter.writerow(("",))
+if options.ods:
+    document = odf_new_document('spreadsheet')
+    body = document.get_body()
+    ods_table = odf_create_table(u"Download Issues Rollup")
+    body.append(ods_table)
+    ods_table.insert_row(0, odf_create_row())
+    ods_table.get_cell((0,1)).set_text("Warning: This spreadsheet is periodically overwritten.")
+    ods_table.get_cell((1,1)).set_text("If you need permanent access to the data here, please make a copy.")
+else:
+    outfile = open(options.outfile + ".csv", 'w')
+    csvwriter = csv.writer(outfile)
+    csvwriter.writerow(("", "Warning: This spreadsheet is periodically overwritten.",))
+    csvwriter.writerow(("","If you need permanent access to the data here, please make a copy.",))
+    csvwriter.writerow(("",))
 
 def format_cell(col, contents):
     if col == 'ID':
@@ -102,45 +117,62 @@ def format_cell(col, contents):
     else:
         return contents
 
-def output_issues(csvwriter, title, output_cols, from_dict, issues):
-    if len(issues) == 0: return
-    csvwriter.writerow((title,))
-    csvwriter.writerow(output_cols)
-    for id in issues:
-        idict = issue_dict[id]
-        csvwriter.writerow([format_cell(c, idict[c]) if fd else ""
-                            for (c,fd) in zip(output_cols,from_dict)])
-    csvwriter.writerow(("",))
-
-
-def output_issues_from_dict(csvwriter, title, output_cols, from_dict,
-                           issue_filter, sort_fn = lambda a,b: cmp(a,b)):
-
+def output_issues(title, output_cols, from_dict,
+                  issue_filter, sort_fn = lambda a,b: cmp(a,b),
+                  limit = None):
     issues = [id for id in issue_dict if issue_filter(issue_dict[id])]
-    issues.sort(sort_fn)
-    output_issues(csvwriter, title, output_cols, from_dict, issues)
+    issues.sort(lambda a,b: sort_fn(issue_dict[a], issue_dict[b]))
+    if limit:
+        issues = issues[:limit]
+    if len(issues) == 0: return
+    if options.ods:
+        coldiff = len(output_cols) - ods_table.get_width()
+        while coldiff > 0:
+            ods_table.insert_column(-1, odf_create_column())
+            coldiff -= 1
+
+        for id in issues:
+            idict = issue_dict[id]
+            ods_table.insert_row(-1, odf_create_row())
+            for (i, c, fd) in zip (range(len(output_cols)),
+                                   output_cols,
+                                   from_dict):
+                cell = ods_table.get_cell((-1, i))
+                cell_val = format_cell(c, idict[c]) if fd else ""
+                if (cell_val and isinstance(cell_val, str)
+                    and cell_val[0] == "="):
+                    cell.set_formula(cell_val[1:])
+                else:
+                    cell.set_value(cell_val)
+    else:
+        csvwriter.writerow((title,))
+        csvwriter.writerow(output_cols)
+        for id in issues:
+            idict = issue_dict[id]
+            csvwriter.writerow([format_cell(c, idict[c]) if fd else ""
+                            for (c,fd) in zip(output_cols,from_dict)])
+        csvwriter.writerow(("",))
 
 global_output_cols = ("ID", "Summary", "Blocking", "Status", "Mstone", "Stars",
                       "Randy Rec", "Jeff Rec", "Notes")
 global_from_dict = (True, True, True, True, True, True, False, False, False)
 
 ## Issues that aren't blocking a grouping issue.
-output_issues_from_dict(csvwriter, "Orphaned issues", global_output_cols,
-                        global_from_dict,
-                        lambda a: not (a['ID'] in grouping_issues or
-                                       grouping_issues.intersection(a['Blocking'])))
+output_issues("Orphaned issues", global_output_cols,
+              global_from_dict,
+              lambda a: not (a['ID'] in grouping_issues or
+                             grouping_issues.intersection(a['Blocking'])))
 
 ## Untriaged issues
-output_issues_from_dict(csvwriter, "Untriaged Issues", global_output_cols,
-                        global_from_dict,
-                        lambda a: a['Status'] == "Untriaged")
+output_issues("Untriaged Issues", global_output_cols,
+              global_from_dict,
+              lambda a: a['Status'] == "Untriaged")
 
 ## High star issues
-output_issues(csvwriter, "High Star Issues", global_output_cols,
-              global_from_dict,
-              
-              sorted(issue_dict.keys(),
-                     lambda a,b: cmp(issue_dict[a]["Stars"],
-                                     issue_dict[b]["Stars"]),
-                     None,
-                     True)[:10])
+output_issues("High Star Issues", global_output_cols,
+              global_from_dict, lambda a: a['ID'] not in grouping_issues,
+              lambda a,b: -cmp(a["Stars"], b["Stars"]),
+              10)
+
+if options.ods:
+    document.save('rollup.ods')
