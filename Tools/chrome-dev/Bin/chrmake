@@ -3,6 +3,12 @@ if [ $# -eq 0 ]; then
     set chrome 		# Target
 fi
 
+## Bail to proprietary version if we've got one.
+if [ -x ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake ]; then
+    echo "Redirecting to proprietary chrmake."
+    exec ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake "$@"
+fi
+
 # Set the LD flags to make it possible to link with shared library
 # builds.  This presumes we're in src
 SOLIB_OUTPUT_DIR=`pwd`/out/Debug/obj.target
