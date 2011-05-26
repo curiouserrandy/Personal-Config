@@ -247,8 +247,8 @@ is nil, (point-min) or (point-max) will be used instead."
 	   (rstodo-outline-info-start myoutl)
 	   (rstodo-outline-info-end myoutl))))
     (if (not first-active)
-	(error "Couldn't find active todo item in this section."))
-    (goto-char (rstodo-piece-info-start first-active))))
+	(message "Couldn't find active todo item in this section.")
+      (goto-char (rstodo-piece-info-start first-active)))))
 
 (defun rstodo-last-active-todo-item ()
   (interactive)
