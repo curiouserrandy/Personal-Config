@@ -124,7 +124,7 @@ def output_issues(title, output_cols, from_dict,
     issues.sort(lambda a,b: sort_fn(issue_dict[a], issue_dict[b]))
     if limit:
         issues = issues[:limit]
-    if len(issues) == 0: return
+    if len(issues) == 0: return []
     if options.ods:
         coldiff = len(output_cols) - ods_table.get_width()
         while coldiff > 0:
@@ -152,6 +152,7 @@ def output_issues(title, output_cols, from_dict,
             csvwriter.writerow([format_cell(c, idict[c]) if fd else ""
                             for (c,fd) in zip(output_cols,from_dict)])
         csvwriter.writerow(("",))
+    return issues
 
 global_output_cols = ("ID", "Summary", "Blocking", "Status", "Mstone", "Stars",
                       "Randy Rec", "Jeff Rec", "Notes")
@@ -164,9 +165,11 @@ output_issues("Orphaned issues", global_output_cols,
                              grouping_issues.intersection(a['Blocking'])))
 
 ## Untriaged issues
-output_issues("Untriaged Issues", global_output_cols,
+output_issues("Untriaged Issues Not Listed Above", global_output_cols,
               global_from_dict,
-              lambda a: a['Status'] == "Untriaged")
+              lambda a: (a['Status'] == "Untriaged" and
+                         (a['ID'] in grouping_issues or
+                          grouping_issues.intersection(a['Blocking']))))
 
 ## High star issues
 output_issues("High Star Issues", global_output_cols,
