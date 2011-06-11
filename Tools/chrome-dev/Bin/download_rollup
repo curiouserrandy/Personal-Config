@@ -158,22 +158,28 @@ global_output_cols = ("ID", "Summary", "Blocking", "Status", "Mstone", "Stars",
                       "Randy Rec", "Jeff Rec", "Notes")
 global_from_dict = (True, True, True, True, True, True, False, False, False)
 
+exclude_issues = frozenset(grouping_issues)
+
 ## Issues that aren't blocking a grouping issue.
+
+exclude_issues +=
 output_issues("Orphaned issues", global_output_cols,
               global_from_dict,
-              lambda a: not (a['ID'] in grouping_issues or
-                             grouping_issues.intersection(a['Blocking'])))
+              lambda a:
+                  not (a['ID'] in exclude_issues or
+                       grouping_issues.intersection(a['Blocking'])))
 
 ## Untriaged issues
+exclude_issuse += 
 output_issues("Untriaged Issues Not Listed Above", global_output_cols,
               global_from_dict,
               lambda a: (a['Status'] == "Untriaged" and
-                         (a['ID'] in grouping_issues or
-                          grouping_issues.intersection(a['Blocking']))))
+                         a['ID'] not in exclude_issues))
 
 ## High star issues
+exclude_issues += 
 output_issues("High Star Issues", global_output_cols,
-              global_from_dict, lambda a: a['ID'] not in grouping_issues,
+              global_from_dict, lambda a: a['ID'] not in exclude_issues,
               lambda a,b: -cmp(a["Stars"], b["Stars"]),
               10)
 
