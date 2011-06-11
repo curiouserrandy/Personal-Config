@@ -117,6 +117,15 @@ def format_cell(col, contents):
     else:
         return contents
 
+issue_list_url_template = "http://code.google.com/p/chromium/issues/list?can=1&q=%s&colspec=ID+Stars+Pri+Area+Feature+Type+Status+Summary+Modified+Owner+Mstone+OS&x=mstone&y=area&cells=tiles"
+
+def issue_list_url(issues):
+    return issue_list_url_template % (
+        map(lambda a: "id:" + str(a),issues).join("+OR+"))
+
+## TODO(rdsmith): Write a javascript url that will bring up each issue
+## in a separate tab.
+
 def output_issues(title, output_cols, from_dict,
                   issue_filter, sort_fn = lambda a,b: cmp(a,b),
                   limit = None):
@@ -145,7 +154,9 @@ def output_issues(title, output_cols, from_dict,
                 else:
                     cell.set_value(cell_val)
     else:
-        csvwriter.writerow((title,))
+        csvwriter.writerow((title,
+                            '=hyperlinnk(%s, "Issue List")'
+                            % issue_list_url(issues)))
         csvwriter.writerow(output_cols)
         for id in issues:
             idict = issue_dict[id]
