@@ -123,6 +123,11 @@ def issue_list_url(issues):
     return issue_list_url_template % (
         map(lambda a: "id:" + str(a),issues).join("+OR+"))
 
+all_issues_template = "javascript:var buglist=[%s]; for (var i=0; i <buglist.length; i++) { window.open(\"http://crbug.com/\" + buglist[i]); }"
+
+def all_issue_url(issues):
+    return all_issues_template % issues.join(", ")
+
 ## TODO(rdsmith): Write a javascript url that will bring up each issue
 ## in a separate tab.
 
@@ -154,9 +159,10 @@ def output_issues(title, output_cols, from_dict,
                 else:
                     cell.set_value(cell_val)
     else:
-        csvwriter.writerow((title,
-                            '=hyperlinnk(%s, "Issue List")'
-                            % issue_list_url(issues)))
+        csvwriter.writerow(
+            (title,
+             '=hyperlink(%s, "Issue List")' % issue_list_url(issues),
+             '=hyperlink(%s, "All Issues")' % all_issue_url(issues)))
         csvwriter.writerow(output_cols)
         for id in issues:
             idict = issue_dict[id]
