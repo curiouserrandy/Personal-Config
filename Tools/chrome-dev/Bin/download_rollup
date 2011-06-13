@@ -121,12 +121,12 @@ issue_list_url_template = "http://code.google.com/p/chromium/issues/list?can=1&q
 
 def issue_list_url(issues):
     return issue_list_url_template % (
-        map(lambda a: "id:" + str(a),issues).join("+OR+"))
+        "+OR+".join(map(lambda a: "id:" + str(a),issues)))
 
 all_issues_template = "javascript:var buglist=[%s]; for (var i=0; i <buglist.length; i++) { window.open(\"http://crbug.com/\" + buglist[i]); }"
 
 def all_issue_url(issues):
-    return all_issues_template % issues.join(", ")
+    return all_issues_template % ", ".join(map(str,issues))
 
 ## TODO(rdsmith): Write a javascript url that will bring up each issue
 ## in a separate tab.
@@ -179,26 +179,26 @@ exclude_issues = frozenset(grouping_issues)
 
 ## Issues that aren't blocking a grouping issue.
 
-exclude_issues +=
-output_issues("Orphaned issues", global_output_cols,
-              global_from_dict,
-              lambda a:
-                  not (a['ID'] in exclude_issues or
-                       grouping_issues.intersection(a['Blocking'])))
+exclude_issues = exclude_issues.union(
+    output_issues("Orphaned issues", global_output_cols,
+                  global_from_dict,
+                  lambda a:
+                      not (a['ID'] in exclude_issues or
+                           grouping_issues.intersection(a['Blocking']))))
 
 ## Untriaged issues
-exclude_issuse += 
-output_issues("Untriaged Issues Not Listed Above", global_output_cols,
-              global_from_dict,
-              lambda a: (a['Status'] == "Untriaged" and
-                         a['ID'] not in exclude_issues))
+exclude_issues = exclude_issues.union(
+    output_issues("Untriaged Issues Not Listed Above", global_output_cols,
+                  global_from_dict,
+                  lambda a: (a['Status'] == "Untriaged" and
+                             a['ID'] not in exclude_issues)))
 
 ## High star issues
-exclude_issues += 
-output_issues("High Star Issues", global_output_cols,
-              global_from_dict, lambda a: a['ID'] not in exclude_issues,
-              lambda a,b: -cmp(a["Stars"], b["Stars"]),
-              10)
+exclude_issues = exclude_issues.union(
+    output_issues("High Star Issues", global_output_cols,
+                  global_from_dict, lambda a: a['ID'] not in exclude_issues,
+                  lambda a,b: -cmp(a["Stars"], b["Stars"]),
+                  10))
 
 if options.ods:
     document.save('rollup.ods')
