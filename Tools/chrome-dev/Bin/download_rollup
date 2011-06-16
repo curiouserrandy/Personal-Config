@@ -35,6 +35,9 @@ parser.add_option("-S", "--ods", dest="ods", default=False,
 parser.add_option("-b", "--bugs", dest="buglist",
                   help="Specify a bug or list of bugs to include to start",
                   default="")
+parser.add_option("-m", "--milestone", dest="milestone", type="string",
+                  metavar="MILESTONE",
+                  help="Milestone targetted bugs to include.")
 
 ## Further options here; template follows.  
 ## All args are optional; if action is store_true/false, no extra
@@ -200,6 +203,12 @@ exclude_issues = exclude_issues.union(
                        ((not grouping_issues.intersection(a['Blocking']) and
                          a['Status'] != "Unconfirmed") or
                         a['Status'] == "Untriaged"))))
+
+## Milestone targetted issues (note not participating in excluded issues). 
+if options.milestone:
+    output_issues("MStone-%s Issues" % options.milestone, 
+                  global_output_cols, global_from_dict,
+                  lambda a: (a['Mstone'] == options.milestone))
 
 ## Untriaged issues
 exclude_issues = exclude_issues.union(
