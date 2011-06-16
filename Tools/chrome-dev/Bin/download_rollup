@@ -191,20 +191,23 @@ if options.buglist:
                       global_from_dict,
                       lambda a: a['ID'] in actual_list))
 
-## Issues that aren't blocking a grouping issue.
+## Untriaged issues that aren't blocking a grouping issue.
 exclude_issues = exclude_issues.union(
-    output_issues("Orphaned issues", global_output_cols,
-                  global_from_dict,
+    output_issues("Issues to Prioritize (Confirmed Orphaned + Untriaged)",
+                  global_output_cols, global_from_dict,
                   lambda a:
-                      not (a['ID'] in exclude_issues or
-                           grouping_issues.intersection(a['Blocking']))))
+                      (a['ID'] not in exclude_issues and 
+                       ((not grouping_issues.intersection(a['Blocking']) and
+                         a['Status'] != "Unconfirmed") or
+                        a['Status'] == "Untriaged"))))
 
 ## Untriaged issues
 exclude_issues = exclude_issues.union(
-    output_issues("Untriaged Issues Not Listed Above", global_output_cols,
+    output_issues("Unconfirmed Orphaned Issues", global_output_cols,
                   global_from_dict,
-                  lambda a: (a['Status'] == "Untriaged" and
-                             a['ID'] not in exclude_issues)))
+                  lambda a: (a['ID'] not in exclude_issues and
+                             a['Status'] == "Unconfirmed" and
+                             not grouping_issues.intersection(a['Blocking']))))
 
 ## High star issues
 exclude_issues = exclude_issues.union(
