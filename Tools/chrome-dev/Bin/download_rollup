@@ -93,7 +93,7 @@ for l in csv.reader(urllib.urlopen(url)):
 ## Get some important summary stats
 grouping_issues = frozenset(
     [id for id in issue_dict
-     if issue_dict[id]['Summary'] .find('(grouping issue)') != -1])
+     if issue_dict[id]['Summary'] .find('grouping issue)') != -1])
 
 ## Write it all out
 if options.ods:
@@ -142,7 +142,7 @@ def output_issues(title, output_cols, from_dict,
                   issue_filter, sort_fn = lambda a,b: cmp(a,b),
                   limit = None):
     issues = [id for id in issue_dict if issue_filter(issue_dict[id])]
-    issues.sort(lambda a,b: sort_fn(issue_dict[a], issue_dict[b]))
+    issues.sort()
     if limit:
         issues = issues[:limit]
     if len(issues) == 0: return []
