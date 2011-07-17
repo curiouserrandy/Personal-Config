@@ -1,0 +1,259 @@
+## -*-mode: Outline; fill-prefix: "   ";-*-
+
+* Musings
+
+There are long-term issues here, but I want to see if I can come up
+with something reasonably simple quickly.
+
+Portions of problem:
+	* Specifying backup set (dealing with changes in backup set)
+	* Mix of incremental and full backups, with deletes.
+	* How to quickly find the right copy of a file?
+	* How to quickly reproduce the state of the FS as of the last
+	  backup? 
+
+Full backups represent a snapshot of a system at that time; restoring
+from them (either fully or with a single file) is no problem.
+
+Incremental backups as they're done in tar represent a list of the
+files that exist in the current FS that have changed.  Deletions are
+not tracked.  
+
+Suggested way to store information on backup: Incremental backup +
+complete list of existing files (for space: Incremental backup + list
+of files not captured by incremental backup).  Note that this means
+you can treat incremental and full backups identically; a full backup
+is a special case of an incremental backup that doesn't have any files
+not captured.
+
+[Optional improvement here: It would be nice for each backup to be
+independent in the sense that if an intermediate backup got deleted,
+you could tell that you don't have a good copy of a file.  Would
+recording file mod times in the "not touched" list do this?  More
+thought needed.  ]
+
+Restoring full file system to incremental backup from previous
+checkpoint: Delete all files not in list, then unpack incremental.  
+
+Restoring individual file: Scan back from current time.  For each
+backup found:
+	* If file in backup (incremental or full), restore.
+	* If file in not touched list, continue searching.  Note that
+	  not touched list is null for full backup. 
+	* Otherwise, stop.
+
+Incremental backups need to be since the point at which the last
+backup *started*.  This may mean that an identical copy of the file is
+in two backups (if it's modified during the original backup before it
+is picked up), but I think that's fine.
+
+Note that a backups snapshot will be a tilted slice through
+time/space.  In terms of running later incremental backups,  we'll
+treat it as being at a point in time slice when the thing started. 
+
+How to deal with incrementals that cover several other incremental
+backups timescales?  I think this is fine; we'll be searching back
+through backups from the future, and if we're doing something more
+complex, we'll have the info to grab it.  This just allows us to
+delete other incrementals.
+
+All backups need to be marked with their time range.  All I need for
+the above is the time it was started, but the time it was from would
+be useful as well.
+
+Will want a text backup dump program that shows backups in columns,
+ordered by range.  Eventually (though this would be easy compared to
+doing it graphically).
+
+So the things I need first:
+	* Format for storing backups that holds the above info.
+	* Program to create a backup in that format
+	* Program to implement some backup algorithm, including full
+	  vs. incremental.  Should also implement some level of
+	  adaptive; if I ask for a backup, it should decide what level
+	  of incremental and do it.  
+	* Program to delete no longer needed backups (i.e. analyze
+	  time intervals).
+	* Program to restore particular files.  Interactivity would be
+	  a real help here.
+	* Program to restore a file system from a particular point in
+	  time backup (+ previous).  There needs to be a full backup
+	  underlying. 
+
+Suggested format:
++ Each backup a directory
++ Directory name simple, human readable: yy-mm-dd[if]{-Nd}, where "Nd"
+  is the only for incrementals and represents the approximate number
+  of days it covers.  Note that this is not a complete information
+  format; it's just to give humans an idea of what's going on.
++ Files in the directory:
+  	* ? started: Empty file timestamped with the start time of the
+  	  backup (for use with tar's "newer than" functionality).
+   	  ***Skipping this; figuring it out by hand.  I need to
+   	  generate the complete list of files that I'm backing up
+   	  outside of tar anyway, so I'm not using tars newer than
+   	  stuff. 
+	* untouched: Files existing at the time of the backup that
+  	  weren't included.
+	* touched: Files included in the backup.  Note that files that
+   	  are deleted between the initial directory listing and the
+   	  stat for modification time are treated as if they weren't
+	  found in the directory listing.
+	* context: Perl data structures (Data::Dumper is your friend)
+  	  containing:
+		* Timestamps for "backup since" (epoch for full
+  	  	  backups), backup start, and backup end, in both
+  	  	  seconds since epoch and human readable form.
+ 	* set: List of file names and negative file names that were
+	  the backup set used for this backup.
+	* expat: Patterns used for exclusion for this backup.
+	* backup.tgz: Actual backup contents.
+
+Specifying backup set:
+	* File names: Explicitly include subtree
+	* Negative file names: Explicitly exclude subtree.
+	* Patterns: Patterns to match; if file name matches, it is
+  	  excluded (along with its subdirs).
+
+File names and negative file names are specified in a list, with
+obvious layering (later overrides earlier).
+
+
+* BAckup creation script detail
+
+** Inputs
+
+-- Full or incremental
+-- If incremental, when from (by file w/ time, or by time as string?)
+-- Backup set.  Each line may begin with one of the following
+   characters: 
+	* "+", " ": This directory and its subtree are added to the
+   	  backup set.
+	* "-": This directory is removed from the backup set.
+	* "*": Any files matching the rest of this line is removed
+   	  from the backup set.
+	* ">": Any files following this line that are relative
+   	  pathnames are canonicalized as if the relative pathname had
+   	  occurred in this directory.  Relative pathnames are not
+   	  allowed if there has not been a ">".
+   Lines in the backup set file are processed in order.
+-- Destination meta-dir
+
+** Outputs
+
+-- New directory, name yyyy-mm-dd[if]{-Nd}.<num> (approximate),
+   containing:
+	* "untouched": Files in the backup set that weren't included
+   	  because they haven't been changed since the incremental
+   	  date.
+	* "context": Perl data structure containing:
+		* Timestamp for time "backup since" is from (epoch for
+   	  	  full backups).
+		* Timestamp for backup start (same as started file)
+		* Timestamp for backup end
+	  Both seconds since epoch and human readable form.  Dump as
+ 	  variable $created_backup_context pointing to a DS with the
+ 	  above ("backup_since", "backup_start", "backup_end") +
+ 	  ("_s", "_fmt").
+	* "backup_set": Description of backup set in format that the
+ 	  script uses (copied from input).
+ 	* "backup.tgz": Contents of backup
+
+** Pseudo-code
+
+-- If incremental, determine starting time (as seconds from the epoch)
+   and approximate # of days in the past.
+
+-- Create directory and "started" timestamp file; save directory in
+   variable. 
+
+-- Create empty file containing backup set list (temporary file in
+   output metadir).   	  
+
+-- For each backup set line:
+	* If ">" record anchor directory.  Error if relative.  Next.
+	* If "+", "-", or " ", canonicalize path/error if relative.
+	* If "+" or " ", concatenate results of a find to current
+   	  backup set list.
+	* If "-", filter file removing any files with that as prefix.
+	* If "*", filter file via regexp matching.
+
+-- Sort -u the backup set list.
+   
+?? Perl variable instead of file?
+
+-- If incremental: For each line in the backup set list:
+	* Check if newer than epoch date.  If not, remove from
+   	  backup set listand move to untouched list.
+
+-- Write untouched file.
+
+-- Write tar archive as:
+
+	cat <file> | tar -czf backup.tgz -T - 
+
+-- Create context hash; data dumper it into context file.
+
+
+* Automatic backup detail
+
+Conceptual arguments (may be combined/defaulted):
++ Directory to create subdirectories in; will also read subdirectories.
++ File describing schedule (need to specify format)
+
+Things the schedule file needs to be able to describe:
++ Type of backup: Incremental since last backup, incremental since
+  last-n incremental backup, incremental since full backup, full backup.
++ When that type of backup occurs: Every time invoked, if >n days
+  since last of type X.
+
+Types:
+	Full
+	Inc#	Incremental backup since # incremental backups ago
+  		(count ends at a full backup).  "F" means incremental
+		since last full.
+
+Time since:
+     n {d|w|m|y}
+
+A file will consist of a set of lines like:
+
+<time> <type1> -> <type2> (#)
+
+I.e. if a backup of type type1 or better has not been done in the
+specified span of time, a backup of type2 will be done.  An optional
+number in parenthesis may end the line; if so, it specified how many
+backups of type 2 will be kept when the backup pruning program is run.
+Note that it will be an error if this exists on multiple lines with
+the same type2.
+
+The first line found that matches will be executed and the rest
+ignored (i.e. you only a single backup action will be launched per
+invocation of this function.)
+
+A random backup file that aimed for having two incremental backups
+covering each file creation/modification, creating a full backup every
+three months, and an incremental back to that full every month:
+
+3m Full -> Full (1)
+1m IncF -> IncF (2)
+1w Inc -> Inc2 (5)
+
+Design:
++ Read in all existing backup info into an internal array (write this
+  as a separate function so that you can re-use it).
++ Process array to classify backups according to above scheme (and in
+  age, in days).
++ Input above schedule file, and translate initial times into days
+  (based on current date)
++ Go through those lines one at a time, and see if any conditions
+  apply.
++ Invoke rbk_backup with appropriate arguments.
+
+Questions: I'd sorta like to write in python since I'm thinking in it
+at the moment, but I'm saving the background information in Perl.
+Just write in perl?  Parse the perl?  Change the format?  Stay in
+perl.
+
+
+

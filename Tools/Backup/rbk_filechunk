@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+## Filler program; eventually will take arguments other than filename
+## (chunk size, specifically, block size probably also, though you should
+## be able to auto-choose that) and eventually will put output in unadorned
+## file name if only one chunk is needed.
+
+my ($limit_bytes) = 1024 * 1024 * 1024 * 4 - 1024; # 4 GB -1K limit default.
+my ($buffer_size) = 1024 * 1024 * 128;	    # 128MB buffer size
+
+my ($filename)=$ARGV[0];
+my ($incr)=0;
+
+my ($bytes_read, $total_bytes_read) = (0);
+
+WRITING: while (1) {
+    # Setup the file
+    my ($current_output_filename) = ("$filename.$incr");
+    open(OUT, ">$current_output_filename")
+	|| die "Couldn't open $current_output_filename: $!\n";
+    my ($file_bytes_written) = 0;
+    my ($bytes_read, $file_bytes_left);
+
+    # Write the entire file (to the end of the input or file size limit)
+    # Max chunk is $buffer_size
+    do {
+	$file_bytes_left = $limit_bytes - $file_bytes_written;
+	my ($bytes_to_read)
+	    = $file_bytes_left > $buffer_size ? $buffer_size : $file_bytes_left;
+
+	$bytes_read = sysread(STDIN, $buffer, $bytes_to_read);
+
+	# Done on EOF
+	last WRITING if (!$bytes_read); 
+
+	my ($bytes_written) = syswrite(OUT, $buffer);
+	die "Mismatch between bytes written ($bytes_written) and bytes read ($bytes_read)\n"
+	    if ($bytes_written != $bytes_read);
+	$file_bytes_written += $bytes_written;
+    } while ($file_bytes_left > $bytes_read);
+
+    # Cleanup on this file
+    close(OUT) || die "Couldn't close $current_output_filename: $!\n";
+    $incr++;
+}

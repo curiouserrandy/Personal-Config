@@ -1,0 +1,27 @@
+
+## Perl functions for parsing file formats for controlling backups
+
+## Currently only backup schedule files; eventually I'll move backup
+## set parsing in here as well.
+
+sub parse_line {
+    my ($line) = (@_);
+    ($line =~ /^\s* (\d+) \s* ([dwmy]) \s*
+	        (Full|Inc(:?[0-9]*|F?)) \s* \-\> \s*
+	        (Full|Inc(:?[0-9]*|F?)) \s*
+	        (?:\(([0-9]+)?\)\)? \s* $/x)
+	|| die "Couldn't parse input line in schedule file: $_\n";
+    my ($count, $count_type, $test_type, $retain) = ($1, $2, $3, $4);
+    my (@today) = 
+    
+
+
+sub parse_schedule_file() {
+    my ($filename) = @_;
+
+    open(SCHEDULE, "<$filename") || die "Couldn't open file $filename for reading\n";
+    while (<SCHEDULE>) {
+										      
+	   
+    
+    
