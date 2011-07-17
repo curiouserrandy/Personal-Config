@@ -5,16 +5,27 @@ progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
 $progname is a program to bring the trunk branch of the current git 
-chrome repository to last known good status.  
+chrome repository to last known good status.  If a number is provided 
+on the command line, that is the revision to sync to.  Options:
+	-m		Only valid if done on a branch other than trunk.
+			If done on a branch other than trunk, brings
+			trunk to the "git merge-base' of that branch
+			and the trunk line (i.e. it may move trunk
+			forward).
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname";
+usageString="$progname [-m | <revision number>]";
 
 # Parse all arguments.
+merge_to_base=no
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
+    -m)
+    	merge_to_base=yes;
+	break;
+	;;
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
@@ -32,17 +43,44 @@ while [ $# -ne 0 ]; do
     shift;
 done
 
+# What's my current branch?
+current_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
 # Check non-flag arguments.
-if [ $# -ne 0 ]; then
-    echo "Usage: $usageString" 1>&2;
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString <rev>" 1>&2;
     exit 1;
+fi
+
+if [ "$merge_to_base" = "yes" ]; then
+    if [ "$current_branch" = "trunk" ]; then
+        echo "-m only valid on non-trunk branch." 1>&2;
+	exit 1;
+    fi
+
+    if [ $# -gt 0 ]; then
+        echo "Usage: $usageString <rev>" 1>&2;
+	exit 1;
+    fi
 fi
 
 if ! git-treeclean; then
     exit 1;  # git-treeclean will have output error message.
 fi   
 set -e					# Shouldn't be needed, but better safe..
-lkgr=`curl http://chromium-status.appspot.com/lkgr`
+if [ $# -eq 1 ]; then
+    lkgr=$1
+elif [ "$merge_to_base" = "yes" ]; then
+    git fetch --all
+    merge_commit="`git merge-base HEAD origin/trunk`";
+    lkgr=`git log -1 $merge_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
+    if [ "`echo $svn_revision | wc`" -ne 1 -o "svn_revision" = "" ]; then
+        echo "Problem with determining merge base.  Commit: $merge_commit, Revision: $lkgr" 1>&2
+	exit 1;
+    fi
+else
+    lkgr=`curl http://chromium-status.appspot.com/lkgr`
+fi
 git checkout trunk
 git pull 
 git svn fetch
@@ -52,7 +90,7 @@ if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
     exit 1
 fi
 git reset --hard $lkgr_git_commit
-gclient sync
+gclient sync -j12 -D
 echo Trunk branch reset to SVN revision $lkgr
 
 ## Todo: Merge trunk into all branches tracking trunk.

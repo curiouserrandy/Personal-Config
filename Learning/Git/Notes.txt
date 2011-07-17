@@ -476,6 +476,8 @@ Yep.  This seems to work.
 	git diff --stat <commit>^1 commit
 	git diff <commit>^1 commit
    
+* Git rebase notes   
+
 * Git proper
 
 An object is the unit of storage in git.  It it uniquely identified

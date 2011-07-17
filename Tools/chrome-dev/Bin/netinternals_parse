@@ -48,13 +48,13 @@ class BadLineForState(Exception):
     pass
 
 ## The error checking in this routine is pretty darn close to abyssmal.
-def parse_file(f, state_table):
+def parse_file(f, state_table, starting_lineno = 1):
     """Parse a file according to the passed state table."""
     line_buffer = f.read(4192)  # Reaonble sized buffer
     eof_hit = not line_buffer      # Generally false, but might be true
     last_state = None
     state = "Start"
-    starting_lineno = lineno = 1
+    lineno = starting_lineno
     while not eof_hit:
         if state not in state_table:
             raise BadState("Invalid state %s found from state %s"
@@ -98,6 +98,8 @@ def parse_file(f, state_table):
     if state_table[state][2] is not None and None not in state_table[state][2]:
         raise BadLineForState("Invalid EOF found following state %s" % state)
 
+earliest_time = None
+
 headers = {}
 
 def parse_header(t):
@@ -108,7 +110,11 @@ def parse_header(t):
 lines = []
 
 def parse_line(t):
-    lines.append((current_header, current_id, t[0], t[1]))
+    global earliest_time
+    lines.append((current_header, current_id, int(t[0]), t[1]))
+    if earliest_time is None or earliest_time > int(t[0]):
+        earliest_time = int(t[0])
+    
 
 requests_re = r"""----------------------------------------------
  Requests
@@ -118,9 +124,9 @@ net_internals_state_table = {
     "Start" : (None, None, "Requests"),
     "Requests" : (requests_re, None, "Header"),
     "Header" : (r"""
-------------------------------
-(\w+) \(id=(\d+)\)
-------------------------------
+-{30,42}
+(\w+) \(id=(\d+)\)(?:\s+\[start=.*\]\s*)?
+-{30,42}
 """, parse_header, "Line"),
     "Line" : (r"""(?s)(?:\(P\) )?\s*t=(\d+)(.*?\n)(?=((?:\(P\) )?\s*t=|\n|$))""", parse_line, ("Header", "Line", "CacheStats", None)),
     "CacheStats" : (r"""
@@ -142,7 +148,8 @@ if not rmo:
     raise InputError("Couldn't find request section in file %s" % args[0])
 ## Reset the file to the beginning of the requests section.
 f.seek(rmo.start())
-parse_file(f, net_internals_state_table)
+parse_file(f, net_internals_state_table,
+           starting_lineno=all_lines[0:rmo.start()].count("\n")+1)
 
 headers_printed = {}
 
@@ -151,6 +158,6 @@ for l in lines:
     if l[1] not in headers_printed:
         headers_printed[l[1]] = 1
         print "\n[%03d %s]" % (int(l[1]), headers[l[1]])
-    print "[%03d] " % int(l[1]), l[3],
+    print "[%03d] [t=%5d] " % (int(l[1]), l[2] - earliest_time), l[3],
 
 

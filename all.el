@@ -87,8 +87,6 @@ It's ok for this function to be called pointing into space."
 (randy-init-from "OS" randy-configuration-os)
 (randy-init-from "OS" randy-configuration-os randy-configuration-arch)
 
-(message "To domain loop ...")
-
 (let ((tmp-config-domain randy-configuration-domain))
   (while (not (equal tmp-config-domain ""))
     (message (concat "Loading from directory " tmp-config-domain))
@@ -115,9 +113,12 @@ It's ok for this function to be called pointing into space."
 	  (randy-init-from randy-configuration-fdomain
 			   randy-configuration-fhost))
       ))
+(randy-init-from "Emacs/rs-persist")
+(randy-init-from "Emacs/rs-frames")
+(randy-init-from "Emacs/rs-compile")
+(randy-init-from "Emacs/rs-server")
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
 
 ;; Unilaterally setup emacs server; I think this is an ok place for that.
-(server-start)
-(setenv "EDITOR" "emacsclient")
+(rs-server-start)			;Sets EDITOR in the environment.

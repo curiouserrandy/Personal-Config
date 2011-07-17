@@ -27,6 +27,8 @@
 ;;; The "official" user customization keys; \C-c[a-z]
 ;;; a
 ;;; b
+(if (featurep 'chrome-dev)
+    (define-key mode-specific-map "b" 'chrome-visit-issue))
 (define-key mode-specific-map "c" 'compile)
 (add-hook 'shell-mode-hook
 	  '(lambda () (define-key shell-mode-map "\C-cd"
@@ -62,10 +64,15 @@
 (define-key mode-specific-map "u" 'randy-uniquename-buffer)
 (define-key mode-specific-map "v" 'set-vi-type-indent)
 (define-key mode-specific-map "w" 'write-region)
-(define-key mode-specific-map "z" 'randy-greplist-sandbox-file)
+(if (featurep 'rs-frames)
+    (progn
+      (define-key mode-specific-map "xs" 'randy-save-current-config)
+      (define-key mode-specific-map "xr" 'randy-restore-config)
+      (define-key mode-specific-map "xd" 'randy-delete-named-config)))
+  
 ;;; x
 ;;; y
-;;; z
+(define-key mode-specific-map "z" 'randy-greplist-sandbox-file)
 (add-hook 'rstodo-mode-hook
 	  '(lambda ()
 	     (define-key outline-mode-map "\C-cz" 'rstodo-insert-prioritize)))

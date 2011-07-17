@@ -16,12 +16,15 @@ will also be output into the file.
 Options:
 	-o <file>	Output file.  This defauls to <command>.log.  If the
 			specified or defaulted output file would result in
-			overwriting an already existing file, a ~<n> is
-			appended to avoid this happening.
+			overwriting an already existing file, that file
+			is moved to the first to the first available backup
+			file (<name>.~<n>~)
 	-x<geometry>	Says that an xterm should be spawned to follow the
 			command output as it occurs.  The option <geometry>
 			specifies where this window will appear; <geometry>
 			defaults to -0+0.
+	-a 		Append to output file if it exists rather that
+			creating a new backup file.			
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -30,10 +33,11 @@ usageString="$progname [-o <file>] [-x<geometry>] [--] <command> <options>";
 # Parse all arguments.
 outfile=""
 geometry=""
+append="no"
 while [ $# -ne 0 ]; do
     case $1 in 
     -x*) 
-	geometry=`echo $1 | dd size=1 skip=2`
+	geometry=`echo $1 | dd bs=1 skip=2 2> /dev/null`
 	if [ X"$geometry" = X"" ]; then
 	    geometry=$default_geometry
 	fi
@@ -45,6 +49,9 @@ while [ $# -ne 0 ]; do
 	fi
 	outfile=$2;
 	shift;
+	;;
+    -a)
+    	append=yes;
 	;;
     # Repeat as needed.
     -h|-\?)
@@ -68,17 +75,21 @@ if [ X"$outfile" = X"" ]; then
     outfile=$1.log
 fi
 
-# Figure out output
+# Move output file over.
 if [ -r $outfile ]; then
     count=1;
-    while [ -r ${outfile}~$count ]; do
+    while [ -r ${outfile}.~${count}~ ]; do
         count=`expr $count + 1`
     done
-    outfile=${outfile}~$count
+    mv $outfile ${outfile}.~${count}~
 fi
     
 # Execute command in background
-echo "Executing command: $@" > $outfile
+if [ "$append" = "no" ]; then
+    echo -n "" > $outfile
+fi
+
+echo "Executing command: $@" >> $outfile
 (perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
 
 perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""

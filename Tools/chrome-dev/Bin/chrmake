@@ -1,10 +1,12 @@
 #!/bin/bash
-
-cros=no
-
-#!/bin/bash
 if [ $# -eq 0 ]; then
     set chrome 		# Target
+fi
+
+## Bail to proprietary version if we've got one.
+if [ -x ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake ]; then
+    echo "Redirecting to proprietary chrmake."
+    exec ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake "$@"
 fi
 
 # Set the LD flags to make it possible to link with shared library
@@ -14,11 +16,6 @@ SOLIB_OUTPUT_DIR=`pwd`/out/Debug/obj.target
 ## Note that all envdefines obviously won't apply outside this file, 
 ## so they're pretty safe to do here.
 export LDFLAGS=-L${SOLIB_OUTPUT_DIR}
-if [ "$cros" = "yes" ]; then
-    ## Note that currently cros is always no; I want to figure out a way
-    ## to have this completely dependent on the sandbox.
-    export GYP_DEFINES="chromeos=1"
-fi
 
 if [ "$DISTCC_HOSTS" != "" ]; then
     export CCACHE_PREFIX=distcc

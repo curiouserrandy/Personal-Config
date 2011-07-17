@@ -8,7 +8,7 @@ git_binary_location=`type -p git`
 
 git_branch () {
     if $git_binary_location branch > /dev/null 2>&1 ; then
-        br=`$git_binary_location branch 2>&1 | awk '$1 == "*" {print $2;}'`
+        br=`$git_binary_location branch 2>&1 | sed -n '/^\*/s/^..//p'`
         echo " [$br]"
     fi
 }

@@ -1,31 +1,75 @@
 #!/bin/bash
 
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname pulls the specified patch (or the current branch if none
+specified on the command line) from the central patch repository.  Flags:
+	-d 		Delete the local copy of the branch before pull.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-d] [<branch name>]";
+
+delete_local_patch=no
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -d) 
+	delete_local_patch=yes;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -gt 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
 if ! git-treeclean ; then
     exit 1				# Error message output by git-treeclean
 fi
 
+# Default branch is current
+target_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
 if [ $# -gt 0 ]; then
-    echo "Unknown args to $0: $*" 1>&2
-    exit 1;
+    target_branch=$1
 fi
 
-current_branch=`git branch | awk '$1 == "*" {print $2;}'`
-
-if [ "$current_branch" = "origin/trunk" -o \
-     "$current_branch" = "trunk" -o \
-     "$current_branch" = "master" ]; then
-    echo "Not on a development branch: $current_branch" 1>&2
+if [ "$target_branch" = "origin/trunk" -o \
+     "$target_branch" = "trunk" -o \
+     "$target_branch" = "master" ]; then
+    echo "Not on a development branch: $target_branch" 1>&2
     exit 1
 fi
 
-git pull $chrome_patches $current_branch:
-if git-treeclean ; then
-    gclient sync
+git fetch $chrome_patches $target_branch:
+if [ "$delete_local_patch" = "yes" ]; then
+    git checkout trunk
+    git branch -D $target_branch
+    git checkout --track -b $target_branch
+    git merge FETCH_HEAD
 else
-    echo "*** Gclient sync not done because tree dirty."
+    git checkout $target_branch
+    git merge FETCH_HEAD
 fi
 
-    
-
-     
-     
+echo "Not doing gclient sync; do manually if required."

@@ -1,0 +1,178 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import sys
+from optparse import OptionParser
+import csv
+import urllib
+import re
+from lpod.document import odf_new_document
+from lpod.table import odf_create_table 
+from lpod.table import odf_create_column
+from lpod.table import odf_create_row
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%s is a program to automatically snarf bugs from the chromium issues 
+tracker and produce a spreadsheet grouping them by grouping issue.
+""" % program_name
+
+usage_string = "%s [-o <output_file_prefix>]"
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+parser.add_option("-o", dest="outfile", help="Output file Prefix",
+                  default="rollup")
+parser.add_option("-S", "--ods", dest="ods", default=False,
+                  action="store_true")
+
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+# Process any non-flag arguments
+if len(args) > 0:
+    print >> sys.stderr, "Expected usage: %s" % usage_string
+    sys.exit(2)
+
+# TDOD: CSV mods
+url_template = ("http://code.google.com/p/chromium/issues/csv?" +
+                "can=2&q=%s&sort=%s&colspec=%s")
+
+cols=('ID', 'Stars', 'Pri', 'Type', 'Status', 'Summary', 
+      'Owner', 'Mstone', 'OS', 'BlockedOn', 'Blocking')
+sort_cols=('Blocking', 'BlockedOn', 'ID')
+query="Feature=Downloads"
+
+url = url_template % (query, "+".join(sort_cols), "+".join(cols))
+
+## Put everything into issue_dict
+issue_dict = {}
+in_first_row = True
+line_count = 0
+# Using reader rather than DictReader because of a bug in DictReader;
+# I was getting keys with the name "OwnerMstone", which was bogus.
+for l in csv.reader(urllib.urlopen(url)):
+    line_count += 1
+    if in_first_row:
+        header_fields = l
+        in_first_row = False
+        continue
+    if not l: continue                  # Blank line
+
+    ldict = dict(zip(header_fields, l))
+
+    ## Convert appropriate to integer
+    for key in ('ID', 'Stars'):
+        ldict[key] = int(ldict[key])
+    for key in ('BlockedOn', 'Blocking'):
+        ldict[key] = [int(y) for y in ldict[key].split(",") if y]
+
+    id = ldict['ID']
+    ## Enter into full issue dict
+    issue_dict[id] = ldict
+
+## Get some important summary stats
+grouping_issues = frozenset(
+    [id for id in issue_dict
+     if issue_dict[id]['Summary'] .find('(grouping issue)') != -1])
+
+## Write it all out
+if options.ods:
+    document = odf_new_document('spreadsheet')
+    body = document.get_body()
+    ods_table = odf_create_table(u"Download Issues Rollup")
+    body.append(ods_table)
+    ods_table.insert_row(0, odf_create_row())
+    ods_table.get_cell((0,1)).set_text("Warning: This spreadsheet is periodically overwritten.")
+    ods_table.get_cell((1,1)).set_text("If you need permanent access to the data here, please make a copy.")
+else:
+    outfile = open(options.outfile + ".csv", 'w')
+    csvwriter = csv.writer(outfile)
+    csvwriter.writerow(("", "Warning: This spreadsheet is periodically overwritten.",))
+    csvwriter.writerow(("","If you need permanent access to the data here, please make a copy.",))
+    csvwriter.writerow(("",))
+
+def format_cell(col, contents):
+    if col == 'ID':
+        return '=hyperlink("http://crbug.com/%d"; "%d")' % (contents, contents)
+    elif col == 'Blocking' or col == 'Blocked':
+        if len(contents) == 0:
+            return ''
+        elif len(contents) == 1:
+            return str(contents[0])
+        else:
+            return '"' + ", ".join(map(str, contents)) + '"'
+    else:
+        return contents
+
+def output_issues(title, output_cols, from_dict,
+                  issue_filter, sort_fn = lambda a,b: cmp(a,b),
+                  limit = None):
+    issues = [id for id in issue_dict if issue_filter(issue_dict[id])]
+    issues.sort(lambda a,b: sort_fn(issue_dict[a], issue_dict[b]))
+    if limit:
+        issues = issues[:limit]
+    if len(issues) == 0: return
+    if options.ods:
+        coldiff = len(output_cols) - ods_table.get_width()
+        while coldiff > 0:
+            ods_table.insert_column(-1, odf_create_column())
+            coldiff -= 1
+
+        for id in issues:
+            idict = issue_dict[id]
+            ods_table.insert_row(-1, odf_create_row())
+            for (i, c, fd) in zip (range(len(output_cols)),
+                                   output_cols,
+                                   from_dict):
+                cell = ods_table.get_cell((-1, i))
+                cell_val = format_cell(c, idict[c]) if fd else ""
+                if (cell_val and isinstance(cell_val, str)
+                    and cell_val[0] == "="):
+                    cell.set_formula(cell_val[1:])
+                else:
+                    cell.set_value(cell_val)
+    else:
+        csvwriter.writerow((title,))
+        csvwriter.writerow(output_cols)
+        for id in issues:
+            idict = issue_dict[id]
+            csvwriter.writerow([format_cell(c, idict[c]) if fd else ""
+                            for (c,fd) in zip(output_cols,from_dict)])
+        csvwriter.writerow(("",))
+
+global_output_cols = ("ID", "Summary", "Blocking", "Status", "Mstone", "Stars",
+                      "Randy Rec", "Jeff Rec", "Notes")
+global_from_dict = (True, True, True, True, True, True, False, False, False)
+
+## Issues that aren't blocking a grouping issue.
+output_issues("Orphaned issues", global_output_cols,
+              global_from_dict,
+              lambda a: not (a['ID'] in grouping_issues or
+                             grouping_issues.intersection(a['Blocking'])))
+
+## Untriaged issues
+output_issues("Untriaged Issues", global_output_cols,
+              global_from_dict,
+              lambda a: a['Status'] == "Untriaged")
+
+## High star issues
+output_issues("High Star Issues", global_output_cols,
+              global_from_dict, lambda a: a['ID'] not in grouping_issues,
+              lambda a,b: -cmp(a["Stars"], b["Stars"]),
+              10)
+
+if options.ods:
+    document.save('rollup.ods')
