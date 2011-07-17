@@ -169,8 +169,36 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 -- git-branch
 -- git-pull
 -- git-push
--- git-fetch
--- git-remote: manage set of tracked repositories.
+-- git fetch <repository> +?<srcrefspec>:<dstrefspec>...
+   Fetch srcrefspec from repository and fastforward dstrefspec to match.
+   Null dstrefspec -> no local fast forward (only FETCH_HEAD set)
+   + -> dstrefspec is updated even if not a fast forward merge (??)
+
+   branch.<name>.remote: Default remote repository to fetch for branch <name>
+   branch.<name>.merge: Default refspec to merge on git pull.
+   			Defaults to first refspec fetched.  Multiple
+   			values lead to octopus.
+
+-- git remote add <rname> <url>
+   Creates a remote tracking branch for the url and puts configuration
+   in the conf file looking like:
+
+[remote "<rname>"]
+	# URL to pull for this remote   
+	url = <url>
+	# Default refspec(s) to use for fetch
+   	fetch = +refs/heads/*:refs/remotes/<rname>/*
+
+   git fetch <rname> will then pull down everything from this remote
+
+   git clone automatically sets up origin (setup is for git fetch to
+   pull everything, and git pull to merge remote master into local
+   master.) 
+
+?? Does git fetch fetch and entire repository, a branch, or both? 
+
+From the man page, it fetches a refspec (+ all objects needed for that
+refspec.)
 
 ?? What precisely happens on a git fetch
 ?? How is the merge implied by a git pull specified
@@ -301,7 +329,22 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 -- git-send-email: Send a collection of patches as emails.
 
 ** Plumbing
+-- git update-index: Working tree -> index, --add/remove must be explicit
+-- git cat-file: -t <name>->type, <type> <name> -> contents
+-- git diff-files: working vs. index (default format messy)
+-- git write-tree: Create a tree for the index.  Prints name.
+-- git commit-tree: <tree>; commit message on stdin.  Prints name.
+-- git update-ref HEAD <ref>: Updates symbolic ref
+-- git diff-index <tree>: Compare tree to working tree.  --cached
+   compares against index.  (List of files always comes from the
+   index; --cached indicates whether contents do as well or not)
+-- git diff-tree <a> <b>: Diff a, b
+-- git diff-tree <a>: Diff a versus its parent
+-- git whatchanges: Show commit messages and patches
+   
 ## Manipulation commands
+   
+   
 -- git-apply: Apply a patch on a git index file and a working tree.
 -- git-checkout-index: Copy files from the index to the working tree.
 -- git-commit-tree: Create a new commit object.
@@ -316,12 +359,10 @@ X!! It looks as if git-clone "just" copies a repository and refreshes
 -- git-read-tree: Reads tree information into the index.
 -- git-symbolic-ref: Read and modify symbolic refs.
 -- git-unpack-objects: Unpack objects from a packed archive.
--- git-update-index: Register file contents in the working tree to the index.
 -- git-update-ref: Update the object name stored in a ref safely.
 -- git-write-tree: Create a tree object from the current index.
    
 ## Interrogation commands
--- git-cat-file: Provide content or type/size information for repository objects.
 -- git-diff-files: Compares files in the working tree and the index.
 -- git-diff-index: Compares content and mode of blobs between the index and repository.
 -- git-diff-tree: Compares the content and mode of blobs found via two tree objects.

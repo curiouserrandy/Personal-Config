@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Run all the download tests.
-# TODO: Automatically avoid existing files.
+## Just compile and run all download tests; output to stdout.  Stop if 
+## compile fails.  Single argument -1 means use DISPLAY=:1.0
 
 if [ `/bin/pwd | sed 's;^.*/;;'` != "src" -o ! -d .git ]; then
     echo "Not in sandbox top level." 1>&2
@@ -10,10 +10,43 @@ if [ `/bin/pwd | sed 's;^.*/;;'` != "src" -o ! -d .git ]; then
     exit 1;
 fi
 
-(chrmake unit_tests browser_tests ui_tests && \
- 	(out/Debug/unit_tests \
-		--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;  \
-	out/Debug/browser_tests --gtest_also_run_disabled_tests --gtest_filter=SavePageBrowserTest.*:DownloadTest.* --v=20; \
- 	out/Debug/ui_tests --gtest_also_run_disabled_tests --gtest_filter=DownloadTest.*:SavePageTest.* --v=20 ) ) > download_tests.log 2>&1 
+if [ $# -eq 1 -a "$1" = "-1" ]; then
+    export DISPLAY=:1.0
+    shift
+    if ! xdpyinfo > /dev/null 2>&1 ; then
+        echo "Couldn't contact display :1.0" 1>&2
+        exit 1;
+    fi
+fi
+
+if [ $# -ne 0 ]; then
+    echo "Bad argument list $*" 1>&2
+    exit 1;
+fi
+
+chrmake unit_tests browser_tests ui_tests pyautolib
+if [ $? -ne 0 ]; then
+    echo "Compilation failed with error code $?" 1>&2
+    exit 1;
+fi
+
+echo "=== Unit tests."
+
+out/Debug/unit_tests \
+	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;
+
+echo "=== Browser tests."
+
+out/Debug/browser_tests --gtest_also_run_disabled_tests \
+	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*;
+
+echo "=== UI tests."
+
+out/Debug/ui_tests --gtest_also_run_disabled_tests \
+	--gtest_filter=SavePageTest.*;
+
+echo "=== Python automation server tests."
+
+python chrome/test/functional/downloads.py
 
 
