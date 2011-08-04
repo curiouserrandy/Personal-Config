@@ -24,7 +24,10 @@ Options:
 			specifies where this window will appear; <geometry>
 			defaults to -0+0.
 	-a 		Append to output file if it exists rather that
-			creating a new backup file.			
+			creating a new backup file.
+	-1		Confirm that the :1 X display is available, and
+			use DISPLAY=:1.0 for the command (but not for the
+			Xterm above). 
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -34,6 +37,7 @@ usageString="$progname [-o <file>] [-x<geometry>] [--] <command> <options>";
 outfile=""
 geometry=""
 append="no"
+one="no"
 while [ $# -ne 0 ]; do
     case $1 in 
     -x*) 
@@ -53,6 +57,9 @@ while [ $# -ne 0 ]; do
     -a)
     	append=yes;
 	;;
+    -1)
+        one=yes;
+        ;;
     # Repeat as needed.
     -h|-\?)
 	echo "$helpString" 1>&2;
@@ -75,8 +82,15 @@ if [ X"$outfile" = X"" ]; then
     outfile=$1.log
 fi
 
+if [ X"$one" = X"yes" ]; then
+    if ! DISPLAY=:1.0 xdpyinfo > /dev/null 2>&1 ; then
+        echo "Couldn't contact display :1.0" 1>&2
+        exit 1;
+    fi
+fi
+
 # Move output file over.
-if [ -r $outfile ]; then
+if [ -r $outfile -a "$append" = "no" ]; then
     count=1;
     while [ -r ${outfile}.~${count}~ ]; do
         count=`expr $count + 1`
@@ -90,7 +104,11 @@ if [ "$append" = "no" ]; then
 fi
 
 echo "Executing command: $@" >> $outfile
-(perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
+if [ X"$one" = X"yes" ]; then
+    (export DISPLAY=:1.0; perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
+else
+    (perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
+fi
 
 perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""
 
