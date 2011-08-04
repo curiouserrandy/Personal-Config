@@ -23,15 +23,15 @@ Should always have a trailing '/' (emacs canonical directory)")
   (let ((tags-add-tables nil))
     (visit-tags-table
      (concat randy-sandbox-directory "/TAGS")))
-  (string-match "\\(\\(.*\\)/\\)*\\([^/][^/]*\\)/?$" sandboxdir)
-  (randy-set-frame-name (substring sandboxdir
-				   (match-beginning 3)
-				   (match-end 3)))
+  (string-match "\\([^/][^/]*?\\)\\(/src\\)?/?$" sandboxdir)
+  (set-frame-name (substring sandboxdir
+				   (match-beginning 1)
+				   (match-end 1)))
   (find-file sandboxdir)
   (delete-other-windows)
   (if (not dontstartshell)
       (progn
-	(split-window-horizontally)
+	(split-window-vertically)
 	(other-window 1)
 	(shell))))
 
