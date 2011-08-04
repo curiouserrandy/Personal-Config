@@ -12,12 +12,12 @@ helpString="`cat $tf`" ;
 rm -f $tf;
 usageString="$progname [-d] [<branch name>]";
 
-delete_local_patch=no
+delete_remote_patch=no
 # Parse all arguments.
 while [ $# -ne 0 ]; do
     case $1 in 
     -d) 
-	delete_local_patch=yes;
+	delete_remote_patch=yes;
 	;;
     # Repeat as needed.
     -h|-\?)
@@ -60,9 +60,14 @@ if [ "$target_branch" = "origin/trunk" -o \
     exit 1
 fi
 
-## TODO: Check to see if target branch exists locally
+if ! git branch | fgrep "$target_branch" > /dev/null ; then
+    echo "Target branch $target_branch not seen in local sandbox." 1>&2
+    exit 1;
+fi
 
-## TODO: Delete remotely if requested.
+if [ "$delete_remote_patch" = "yes" ]; then
+    git --git-dir=$chrome_patches branch -D $target_branch
+fi
 
 git push $chrome_patches $target_branch:$target_branch
      
