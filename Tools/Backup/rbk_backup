@@ -1,0 +1,307 @@
+#!/usr/bin/perl -w
+
+## Todo
+# * Estimate total size and output before backup
+# * Some type of progress tracker
+# * Create an applescript variant
+# * Next level: Create the regular backup thingy.
+
+use POSIX qw(strftime);
+use Errno qw(ENOENT);
+use Data::Dumper qw(Dumper);
+
+## Confirm that we can find ourselves, and our helper programs
+my ($full_progname) = ($0);
+if ($full_progname !~ m;^/;) {
+    $full_progname = $ENV{'PWD'} . "/" . $full_progname;
+}
+die "Couldn't find full pathname to self\n" unless -x $full_progname;
+
+my ($progname_dir) = ($full_progname);
+$progname_dir =~ s;/[^/]*$;; ;
+
+die "Couldn't find helper program $progname_dir/rbk_filechunk\n" unless -x "$progname_dir/rbk_filechunk";
+
+my ($helper_chunk_program) = ("$progname_dir/rbk_filechunk");
+
+$progname=`basename $0`;
+chomp $progname;
+$helpstring = <<"HelpString";
+$progname is part of the rbk backup system.  This program creates a backup 
+based on provided input files.  Argument:
+	-o <output metadir>	Directory in which to create subdirectory
+				containing backup.  Required.
+	-F 			Specifies a full backup; default.
+	-I <date>		Specifies an incremental backup since <date>
+				Note that if <date> is a simple number it
+    				will be interpretted as seconds since the epoch.
+	-i <file>		Specifies an incremental backup since mod date
+				of file.
+	-r <n>d			Specifies an incremental backup of changes
+				in the last <n> days.
+	-b <file>		Specifies file containing backup set, which
+    				contains a list of backup lines.
+				Format is specified below.  -b or -B are
+				mutually exclusive; one is required.
+	-B <backup_set_line>	Specifies a single line of a backup set.
+				Multiple lines may be specified.  -b or -B are
+				mutually exclusive; one is required.
+Each backup set line begins with one of the following characters:
+	\"+\" or \" \"		The rest of the line is a subtree to
+				include in the backup set
+	\"-\"			The rest of the line is a subtree to exclude 
+				from the backup set
+	\".\"			The rest of the line is an absolute path
+    				to use as an anchor for any following relative
+    				paths.
+	\"*\"			The rest of the line is a regexp to use to
+				exclude files from the backup set.
+	\"\#\"			The rest of the line is a comment and is ignored
+Lines are applied in order read (i.e. \"+/etc\" followed by \"-/etc/network\" 
+will result in all files in /etc except for those in /etc/network being 
+included, where the reverse order would result in all files in /etc/
+being included).
+HelpString
+;				# Tail off emacs commenting 
+
+$usageString="$progname -o <output metadir> [ | -F | -I <date> | -i <file> | -r <n>d] [-b <file> | -B <backup_set_line> -t <backup_set_line> ...]";
+
+# Parse all the arguments.
+# Initialize argument flag values here.
+
+$output_metadir="";		# Location for backup dir
+$backup_type="";		# Backup type; "i" or "f"
+$backup_since=0;		# Seconds since epoch to start from.
+				# Only used for incremental.
+$backup_set_file="";		# File containing backup set.
+$backup_set="";			# Actual backup setup, inline.
+
+ARGS: while (scalar(@ARGV) > 0 && $ARGV[0] =~ /^-/) { # For all flag args
+    ($_ = shift) =~ s/^-//;	# Get just argument without -
+    (/^o$/) && do {
+	$output_metadir=shift;
+	$output_metadir = $ENV{'PWD'} . "/" . $output_metadir
+	    unless $output_metadir =~ m;^/;;
+	next ARGS;
+    };
+    (/^F$/) && do {
+	die "Backup type specified twice\n" if $backup_type;
+	$backup_type="f";
+	next ARGS;
+    };
+    (/^I$/) && do {
+	die "Backup type specified twice\n" if $backup_type;
+	my ($backup_date) = shift;
+	die "Incremental since formatted DATE backup not yet implemented\n"
+	    unless ($backup_date =~ /^\d+$/);
+	$backup_type="i";
+	$backup_since = $backup_date;
+	next ARGS;
+    };
+    (/^i$/) && do {
+	die "Backup type specified twice\n" if $backup_type;
+	my ($since_file) = (shift);
+	my (@stat_results) = stat $since_file;
+	die "Error stating file $since_file\n" if !@stat_results;
+	$backup_type="i";
+	$backup_since=$stat_results[9];
+	next ARGS;
+    };
+    (/^r$/) && do {
+	die "Backup type specified twice\n" if $backup_type;
+	my ($arg) = (shift);
+	die "Bad format for -r flag: $arg\n" if !($arg =~ /^([0-9]+)d$/);
+	$backup_type="i";
+	$backup_since=time() - $1 * 24 * 60 * 60;
+	next ARGS;
+    };
+    (/^b$/) && do {
+	die "Backup set already specified\n" if $backup_set_file || $backup_set;
+	$backup_set_file = shift;
+	next ARGS;
+    };
+    (/^B$/) && do {
+	die "Backup set file already specified\n" if $backup_set_file;
+	$backup_set .= (shift) . "\n";
+	next ARGS;
+    };
+
+    # Print help if requested, recognize "--" as indicating end of flag
+    # arguments, and error out on an unknown argument.
+    (/^h(elp)?$/ || /^\?$/) && do { print $helpstring; exit 0; };
+    /^-$/ && last;
+    die "Usage: $usageString";
+}
+
+die "Usage: $usageString" if (scalar(@ARGV) > 0);
+
+die "No output directory specified\n" unless $output_metadir;
+die "No backup set specified\n" unless $backup_set_file or $backup_set;
+
+# Check and default arguments
+$output_metadir .= "/" unless $output_metadir =~ m;/$;;
+
+$backup_type="f" if (!$backup_type);
+
+die "Backup set and backup set file both specified\n"
+    if $backup_set_file && $backup_set;
+
+my ($backup_start) = time;	# Start time of this backup.
+
+if ($backup_set_file) {
+    local ($/) = (undef);
+    open(BSF, "<$backup_set_file") || die "Couldn't open $backup_set_file for reading\n";
+    $backup_set = <BSF>;
+    close(BSF) || die "Couldn't close $backup_set_file\n";
+}
+
+# Create file name and make unique
+my ($incr_dirname_suffix) = "";	# Suffix to backup dir indicating incremental.
+if ($backup_type eq "i") {
+    my ($seconds_to_now) = ($backup_start - $backup_since);
+    my ($days_to_now) = int((($seconds_to_now -1) / (24 * 60 * 60))) + 1;
+    $incr_dirname_suffix = "-${days_to_now}d";
+}
+
+my ($output_dir_name);		# Un-diambiguated name for backup directory
+{
+    my (@now_array) = localtime(time());
+    $output_dir_name
+	= sprintf("%04d-%02d-%02d%s%s", $now_array[5] + 1900, $now_array[4] + 1,
+		  $now_array[3], $backup_type, $incr_dirname_suffix);
+}
+
+if (-e $output_metadir . $output_dir_name) {
+    my ($odn_suffix) = (0);
+    while (-e $output_metadir . $output_dir_name . ".$odn_suffix") {
+	$odn_suffix++;
+    }
+    $output_dir_name .= ".$odn_suffix";
+}
+
+# Create the file backup set list.
+my (@backup_set_list) = split("\n", $backup_set); # Array with BS info
+my (@backup_set_detail);			  # Full set of files in BS
+{
+    my ($backup_set_anchor) = "";	
+    while (my $backup_set_item = shift @backup_set_list) {
+	die "Bad backup set line $backup_set_item\n"
+	    unless ($backup_set_item =~ /([\- \+\*\.\#])(.*)$/);
+	my ($type, $contents) = ($1, $2);
+	next if ($type eq "#");
+	if ($type ne "." && $type ne "*" && $contents !~ m;^/;) {
+	    die "Bad backup set line $backup_set_item; relative path\n"
+		unless $backup_set_anchor;
+	    $contents =~ s;^\./;;g;
+	    $contents = $backup_set_anchor . $contents;
+	}
+	if ($type eq " " or $type eq "+") {
+	    @backup_set_detail = (@backup_set_detail, `find "$contents" -type f -print`);
+	} elsif ($type eq "-") {
+	    my ($re_quote_contents) = quotemeta($contents);
+	    study $re_quote_contents;
+	    @backup_set_detail = grep {!m;^${re_quote_contents}(/.*)?$;} @backup_set_detail;
+	} elsif ($type eq ".") {
+	    $backup_set_anchor = $contents;
+	    $backup_set_anchor .= "/" unless $backup_set_anchor =~ m;/$;;
+	} elsif ($type eq "*") {
+	    @backup_set_detail = grep {!m;${contents};} @backup_set_detail;
+	}
+    }
+}
+	    
+## "sort -u" equivalent; there's almost certainly a simpler way.
+## Remove newlines at the same time.
+@backup_set_detail = sort @backup_set_detail;
+{
+    my (@tmp) = (@backup_set_detail);
+    @backup_set_detail = ();
+    my ($last_backup_item) = ("");
+    while (my $backup_item = shift @tmp) {
+	chomp $backup_item;
+	push(@backup_set_detail, $backup_item) if $backup_item ne $last_backup_item;
+	$last_backup_item = $backup_item;
+    }
+}
+
+# Create save list and untouched list
+my (@backup_untouched_list);	# Files that haven't been modified since mark
+my (@backup_modified_list);	# Files that have been modified since mark
+
+foreach $backup_item (@backup_set_detail) {
+    my (@stat_results) = (stat($backup_item));
+    if (!@stat_results) {
+	if ($! == &ENOENT) {
+	    # If a file was found by the above find, but isn't there
+	    # now, we assume it was deleted, and treat it as if it was
+	    # deleted before the find, i.e. it doesn't show up in
+	    # either list.
+	    next;
+	}
+	printf STDERR "Stat of file %s failed: %s\n", $backup_item, $!;
+    }
+    if (!@stat_results || $stat_results[9] < $backup_since) {
+	push(@backup_untouched_list, $backup_item);
+    } else {
+	push(@backup_modified_list, $backup_item);
+    }
+}
+
+#
+#		***State changing operations start here.***
+#
+
+# Create directory and change to it.  
+mkdir($output_metadir . $output_dir_name, 0700)
+    || die "Couldn't make directory ${output_metadir}$output_dir_name: $!\n";
+chdir($output_metadir . $output_dir_name)
+    || die "Couldn't change to directory ${output_metadir}$output_dir_name: $!\n";
+
+# Save backup set
+open(BACKUP_SET, ">backup_set")
+    || die "Couldn't open \"${output_metadir}$output_dir_name/backup_set\" for writing: $!\n";
+print BACKUP_SET $backup_set;
+close(BACKUP_SET)
+    || die "Couldn't close \"${output_metadir}$output_dir_name/backup_set\": $!\n";
+
+# Save untouched list
+open(UNTOUCHED, ">untouched")
+    || die "Couldn't open \"${output_metadir}$output_dir_name/untouched\" for writing: $!\n";
+print UNTOUCHED join("\n", @backup_untouched_list);
+close(UNTOUCHED) || die "Couldn't close ${output_metadir}$output_dir_name/untouched: $!\n";
+
+# Save touched list
+open(UNTOUCHED, ">touched")
+    || die "Couldn't open \"${output_metadir}$output_dir_name/touched\" for writing: $!\n";
+print UNTOUCHED join("\n", @backup_modified_list);
+close(UNTOUCHED) || die "Couldn't close ${output_metadir}$output_dir_name/touched: $!\n";
+
+# Save tar archive
+open(TAR, "|tar -czf - -T - | $helper_chunk_program backup.tgz")
+    || die "Coudln't open tar pipe for creating backup: $!\n";
+print TAR join("\n", @backup_modified_list);
+close(TAR) || die "Coudln't close tar pipe: $!\n";
+
+my ($backup_end) = (time);	# Time at which backup is considered complete.
+    
+## Create and save backup context.
+my ($created_backup_context);	# Variable holding backup info.
+
+$created_backup_context->{backup_since_s} = $backup_since;
+$created_backup_context->{backup_start_s} = $backup_start;
+$created_backup_context->{backup_end_s} = $backup_end;
+
+$created_backup_context->{backup_since_fmt}
+    = strftime "%a %b %e %H:%M:%S %Y", localtime($backup_since);
+$created_backup_context->{backup_start_fmt}
+    = strftime "%a %b %e %H:%M:%S %Y", localtime($backup_start);
+$created_backup_context->{backup_end_fmt}
+    = strftime "%a %b %e %H:%M:%S %Y", localtime($backup_end);
+
+open(CONTEXT, ">context")
+    || die "Coudln't open file \"context\" for writing: $!\n";
+print CONTEXT Dumper($created_backup_context);
+close(CONTEXT) || die "Couldn't close file \"context\": $!\n";
+
+print "Backup complete\n";
+

@@ -30,6 +30,6 @@ parser.add_option("-D", "--debug", help="Enable script debugging",
 
 # Process any non-flag arguments
 if len(args) > {EXPECTED NON-FLAG ARGS}:
-    print sys.stderr "Expected usage: %s" % usage_string
+    print >> sys.stderr, "Expected usage: %s" % usage_string
     sys.exit(2)
 
