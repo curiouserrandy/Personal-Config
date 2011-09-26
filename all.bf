@@ -4,4 +4,5 @@ init_from $config_files_directory/Tools/git
 init_from $config_files_directory/Tools/postgres
 init_from $config_files_directory/Tools/python
 init_from $config_files_directory/Tools/X
+init_from $config_files_directory/Tools/Backup
 
