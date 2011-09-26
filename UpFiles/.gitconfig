@@ -3,4 +3,5 @@
 	excludesfile=~/.gitignore
 [user]
 	name = Randy Smith
-
+[merge]
+	conflictstyle=diff3
