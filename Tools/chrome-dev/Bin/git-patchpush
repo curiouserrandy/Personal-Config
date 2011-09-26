@@ -12,12 +12,12 @@ helpString="`cat $tf`" ;
 rm -f $tf;
 usageString="$progname [-d] [<branch name>]";
 
-delete_local_patch=no
+force=
 # Parse all arguments.
 while [ $# -ne 0 ]; do
     case $1 in 
     -d) 
-	delete_local_patch=yes;
+	force=-f;	# Nuke remote repository
 	;;
     # Repeat as needed.
     -h|-\?)
@@ -60,10 +60,12 @@ if [ "$target_branch" = "origin/trunk" -o \
     exit 1
 fi
 
-## TODO: Check to see if target branch exists locally
+if ! git branch | sed 's/^..//' | grep -w "$target_branch" > /dev/null; then
+  echo "Specified branch $target_branch not in repository." 1>&2;
+  exit 1
+fi
 
-## TODO: Delete remotely if requested.
 
-git push $chrome_patches $target_branch:$target_branch
+git push $force $chrome_patches $target_branch:$target_branch
      
      
