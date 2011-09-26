@@ -65,7 +65,6 @@ if ! git branch | sed 's/^..//' | grep -w "$target_branch" > /dev/null; then
   exit 1
 fi
 
-
 git push $force $chrome_patches $target_branch:$target_branch
      
      
