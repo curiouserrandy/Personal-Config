@@ -13,6 +13,7 @@ on the command line, that is the revision to sync to.  Options:
 			and the trunk line (i.e. it may move trunk
 			forward).
 	-t		Merge to top of tree rather than LKGR.
+	-G		Skip automatic gclient sync.			
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -21,12 +22,13 @@ usageString="$progname [-m | -t | <revision number>]";
 # Parse all arguments.
 merge_to_base=no
 merge_to_tot=no
+do_gclient_sync=yes
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
-    -m)
-    	merge_to_base=yes;
-	break;
+    -m) merge_to_base=yes;
+	;;
+    -G) do_gclient_sync=no;
 	;;
     -t) merge_to_tot=yes;
         ;;
@@ -113,7 +115,11 @@ if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
     exit 1
 fi
 git reset --hard $lkgr_git_commit
-gclient sync -j12 -D
+if [ "$do_gclient_sync" = "yes" ]; then
+    gclient sync -j12 -D
+else
+    echo "===> Did not do automatic gclient sync."    
+fi
 echo Trunk branch reset to SVN revision $lkgr
 
 ## Todo: Merge trunk into all branches tracking trunk.

@@ -6,6 +6,7 @@ import os.path
 import sys
 from optparse import OptionParser
 import csv
+import operator
 import urllib
 import re
 from lpod.document import odf_new_document
@@ -31,6 +32,12 @@ parser.add_option("-o", dest="outfile", help="Output file Prefix",
                   default="rollup")
 parser.add_option("-S", "--ods", dest="ods", default=False,
                   action="store_true")
+parser.add_option("-b", "--bugs", dest="buglist",
+                  help="Specify a bug or list of bugs to include to start",
+                  default="")
+parser.add_option("-m", "--milestone", dest="milestone", type="string",
+                  metavar="MILESTONE",
+                  help="Milestone targetted bugs to include.")
 
 ## Further options here; template follows.  
 ## All args are optional; if action is store_true/false, no extra
@@ -86,7 +93,7 @@ for l in csv.reader(urllib.urlopen(url)):
 ## Get some important summary stats
 grouping_issues = frozenset(
     [id for id in issue_dict
-     if issue_dict[id]['Summary'] .find('(grouping issue)') != -1])
+     if issue_dict[id]['Summary'] .find('grouping issue)') != -1])
 
 ## Write it all out
 if options.ods:
@@ -117,14 +124,28 @@ def format_cell(col, contents):
     else:
         return contents
 
+issue_list_url_template = "http://code.google.com/p/chromium/issues/list?can=1&q=%s&colspec=ID+Stars+Pri+Area+Feature+Type+Status+Summary+Modified+Owner+Mstone+OS&x=mstone&y=area&cells=tiles"
+
+def issue_list_url(issues):
+    return issue_list_url_template % (
+        "+OR+".join(map(lambda a: "id:" + str(a),issues)))
+
+all_issues_template = "javascript:var buglist=[%s]; for (var i=0; i <buglist.length; i++) { window.open('http://crbug.com/' + buglist[i]); }"
+
+def all_issue_url(issues):
+    return all_issues_template % ", ".join(map(str,issues))
+
+## TODO(rdsmith): Write a javascript url that will bring up each issue
+## in a separate tab.
+
 def output_issues(title, output_cols, from_dict,
                   issue_filter, sort_fn = lambda a,b: cmp(a,b),
                   limit = None):
     issues = [id for id in issue_dict if issue_filter(issue_dict[id])]
-    issues.sort(lambda a,b: sort_fn(issue_dict[a], issue_dict[b]))
+    issues.sort()
     if limit:
         issues = issues[:limit]
-    if len(issues) == 0: return
+    if len(issues) == 0: return []
     if options.ods:
         coldiff = len(output_cols) - ods_table.get_width()
         while coldiff > 0:
@@ -145,34 +166,64 @@ def output_issues(title, output_cols, from_dict,
                 else:
                     cell.set_value(cell_val)
     else:
-        csvwriter.writerow((title,))
+        csvwriter.writerow(
+            (title, '=hyperlink("%s", "Issue List")' % issue_list_url(issues)))
         csvwriter.writerow(output_cols)
         for id in issues:
             idict = issue_dict[id]
             csvwriter.writerow([format_cell(c, idict[c]) if fd else ""
                             for (c,fd) in zip(output_cols,from_dict)])
         csvwriter.writerow(("",))
+    return issues
 
 global_output_cols = ("ID", "Summary", "Blocking", "Status", "Mstone", "Stars",
                       "Randy Rec", "Jeff Rec", "Notes")
 global_from_dict = (True, True, True, True, True, True, False, False, False)
 
-## Issues that aren't blocking a grouping issue.
-output_issues("Orphaned issues", global_output_cols,
-              global_from_dict,
-              lambda a: not (a['ID'] in grouping_issues or
-                             grouping_issues.intersection(a['Blocking'])))
+exclude_issues = frozenset(grouping_issues)
+
+## Issues listed as special
+if options.buglist:
+    actual_list=map(int, options.buglist.split(","))
+    assert len(actual_list) != 0
+    assert reduce(operator.or_,
+                  map(lambda a: a in issue_dict, actual_list))
+        
+    exclude_issues = exclude_issues.union(
+        output_issues("Special issues", global_output_cols,
+                      global_from_dict,
+                      lambda a: a['ID'] in actual_list))
+
+## Untriaged issues that aren't blocking a grouping issue.
+exclude_issues = exclude_issues.union(
+    output_issues("Issues to Prioritize (Confirmed Orphaned + Untriaged)",
+                  global_output_cols, global_from_dict,
+                  lambda a:
+                      (a['ID'] not in exclude_issues and 
+                       ((not grouping_issues.intersection(a['Blocking']) and
+                         a['Status'] != "Unconfirmed") or
+                        a['Status'] == "Untriaged"))))
+
+## Milestone targetted issues (note not participating in excluded issues). 
+if options.milestone:
+    output_issues("MStone-%s Issues" % options.milestone, 
+                  global_output_cols, global_from_dict,
+                  lambda a: (a['Mstone'] == options.milestone))
 
 ## Untriaged issues
-output_issues("Untriaged Issues", global_output_cols,
-              global_from_dict,
-              lambda a: a['Status'] == "Untriaged")
+exclude_issues = exclude_issues.union(
+    output_issues("Unconfirmed Orphaned Issues", global_output_cols,
+                  global_from_dict,
+                  lambda a: (a['ID'] not in exclude_issues and
+                             a['Status'] == "Unconfirmed" and
+                             not grouping_issues.intersection(a['Blocking']))))
 
 ## High star issues
-output_issues("High Star Issues", global_output_cols,
-              global_from_dict, lambda a: a['ID'] not in grouping_issues,
-              lambda a,b: -cmp(a["Stars"], b["Stars"]),
-              10)
+exclude_issues = exclude_issues.union(
+    output_issues("High Star Issues", global_output_cols,
+                  global_from_dict, lambda a: a['ID'] not in exclude_issues,
+                  lambda a,b: -cmp(a["Stars"], b["Stars"]),
+                  10))
 
 if options.ods:
     document.save('rollup.ods')
