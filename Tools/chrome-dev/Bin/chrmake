@@ -11,11 +11,11 @@ fi
 
 # Set the LD flags to make it possible to link with shared library
 # builds.  This presumes we're in src
-SOLIB_OUTPUT_DIR=`pwd`/out/Debug/obj.target
+SOLIB_OUTPUT_DIR=`pwd`/out/Debug/lib.target
 
 ## Note that all envdefines obviously won't apply outside this file, 
 ## so they're pretty safe to do here.
-export LDFLAGS=-L${SOLIB_OUTPUT_DIR}
+export LDFLAGS="-L${SOLIB_OUTPUT_DIR} ${LDFLAGS}"
 
 if [ "$DISTCC_HOSTS" != "" ]; then
     export CCACHE_PREFIX=distcc
