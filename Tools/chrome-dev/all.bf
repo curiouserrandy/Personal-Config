@@ -22,3 +22,9 @@ fi
 # Email for trybots (git try doesn't quite do the same thing as git for email.)
 export TRYBOT_RESULTS_EMAIL_ADDRESS=$EMAIL
 
+unset -f trunklkgr
+trunklkgr_binary_location=`type -p trunklkgr`
+trunklkgr () {
+    $trunklkgr_binary_location "$@"
+    reset_shell_prompt
+}
