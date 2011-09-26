@@ -11,6 +11,7 @@ $progname compiles and runs all known download tests in the current
 sandbox.  Arguments:
 	-1	Set DISPLAY=:1.0 before running tests.
 	-R	Build release rather than debug.
+	-S	Override sandbox check (e.g. for svn sandboxes)
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -19,6 +20,7 @@ usageString="$progname [-1] [-R]";
 # Parse all arguments.
 set_display=no
 build_config=
+sandbox_check=yes
 while [ $# -ne 0 ]; do
     case $1 in 
     -1) 
@@ -27,14 +29,8 @@ while [ $# -ne 0 ]; do
     -R) 
 	build_config=BUILDTYPE=Release
 	;;
-    -{ARG1}) 
-	if [ $# -lt 2 ]; then
-	    echo "Usage: $usageString" 1>&2;
-	    exit 1;
-	fi
-	{HANDLE VALUED ARG ARG1}
-	shift;
-	;;
+    -S) sandbox_check=no;
+        ;;
     # Repeat as needed.
     -h|-\?)
 	echo "$helpString" 1>&2;
@@ -59,11 +55,13 @@ if [ $# -ne 0 ]; then
     exit 1;
 fi
 
-if [ `/bin/pwd | sed 's;^.*/;;'` != "src" -o ! -d .git ]; then
-    echo "Not in sandbox top level." 1>&2
-    /bin/pwd
-    /bin/pwd | sed 's;^.*/;;'
-    exit 1;
+if [ "$sandbox_check" = "yes" ]; then
+    if [ `/bin/pwd | sed 's;^.*/;;'` != "src" -o ! -d .git ]; then
+        echo "Not in sandbox top level." 1>&2
+        /bin/pwd
+        /bin/pwd | sed 's;^.*/;;'
+        exit 1;
+    fi
 fi
 
 if [ "$set_display" = "yes" ]; then
@@ -75,7 +73,7 @@ if [ "$set_display" = "yes" ]; then
     fi
 fi
 
-chrmake $build_config unit_tests browser_tests ui_tests pyautolib
+chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
 if [ $? -ne 0 ]; then
     echo "Compilation failed with error code $?" 1>&2
     exit 1;
@@ -86,10 +84,20 @@ echo "=== Unit tests."
 out/Debug/unit_tests \
 	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;
 
+echo "=== Content Unit tests."
+
+out/Debug/content_unittests \
+	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;
+
+echo "=== Test Shell tets."
+
+out/Debug/test_shell_tests \
+	--gtest_filter=GlueSErializeTest.GetPostInfoTest   
+
 echo "=== Browser tests."
 
 out/Debug/browser_tests --gtest_also_run_disabled_tests \
-	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck;
+	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*;
 
 echo "=== UI tests."
 
