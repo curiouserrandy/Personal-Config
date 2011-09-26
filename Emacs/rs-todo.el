@@ -523,6 +523,20 @@ An outline topic is marked with a hotkey if it matches the regexp
 	    (error "Key '%s' not found bound to outline heading."
 		   (char-to-string char-read)))))))
 
+;;; TODO (next two functions): Need to error if todo mark is not set.
+(defun rstodo-region-to-todo-mark (begin end)
+  (interactive "r")
+  (save-excursion 
+    (kill-region begin end)
+    (goto-char (marker-position rstodo-todo-mark))
+    (yank)))
+
+(defun rstodo-exchange-point-and-todo-mark ()
+  (interactive)
+  (let ((pos (point)))
+    (goto-char (marker-position rstodo-todo-mark))
+    (set-mark pos)))
+
 (define-derived-mode rstodo-mode outline-mode "Todo"
   "Major mode for todo lists in Randy style.
 \\{rstodo-mode-map}"
@@ -533,6 +547,16 @@ An outline topic is marked with a hotkey if it matches the regexp
 (fset 'rstodo-insert-prioritize
    [return ?\C-p ?> ?> ?\S-  ?P ?r ?i ?o ?t ?i backspace backspace ?r ?i ?t ?i ?z ?e return return ?< ?< return ?\C-p ?\C-p return return ?\C-p])
 
+
+;;; Take current todo item and put it in a project file; insert link
+;;; to project file at current location.
+;;;	* Error checking around todo item.
+;;;	* Determine if space ended or not.
+;;;	* Prompt user for project file
+;;; 	* Confirm project file can be opened.
+;;;	* Put Todo template into it.
+;;;	* Kill current todo item into project file.
+;;;	* Insert link to project file in place.
 
 ;;; Binding to C-c <blank>.  Outline stuff:
 ;;;	C-a make all text visible
@@ -571,8 +595,10 @@ An outline topic is marked with a hotkey if it matches the regexp
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
 (define-key rstodo-mode-map [f5] 'rstodo-move-todo-piece-to-mark)
-(define-key rstodo-mode-map [f6] 'rstodo-next-active-todo-item)
-(define-key rstodo-mode-map [f7] 'rstodo-move-item-up)
-(define-key rstodo-mode-map [f8] 'rstodo-move-item-down)
+(define-key rstodo-mode-map [f6] 'rstodo-next-open-todo-item)
+(define-key rstodo-mode-map [f7] 'rstodo-prev-open-todo-item)
+(define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
+(define-key rstodo-mode-map [f9] 'rstodo-move-item-down)
+
 
 (provide 'rs-todo)
