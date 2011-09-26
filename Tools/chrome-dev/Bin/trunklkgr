@@ -12,13 +12,15 @@ on the command line, that is the revision to sync to.  Options:
 			trunk to the "git merge-base' of that branch
 			and the trunk line (i.e. it may move trunk
 			forward).
+	-t		Merge to top of tree rather than LKGR.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname [-m | <revision number>]";
+usageString="$progname [-m | -t | <revision number>]";
 
 # Parse all arguments.
 merge_to_base=no
+merge_to_tot=no
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
@@ -26,6 +28,8 @@ while [ $# -ne 0 ]; do
     	merge_to_base=yes;
 	break;
 	;;
+    -t) merge_to_tot=yes;
+        ;;
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
@@ -51,6 +55,21 @@ if [ $# -gt 1 ]; then
     echo "Usage: $usageString <rev>" 1>&2;
     exit 1;
 fi
+# Only one of -m/-t/rev ok.
+rev_spec_count=0
+if [ "$merge_to_base" = "yes" ]; then
+    rev_spec_count=`expr $rev_spec_count + 1`;
+fi
+if [ "$merge_to_tot" = "yes" ]; then
+    rev_spec_count=`expr $rev_spec_count + 1`;
+fi
+if [ $# -eq 1 ]; then
+    rev_spec_count=`expr $rev_spec_count + 1`;
+fi
+if [ $rev_spec_count -gt 1 ]; then
+    echo "Only one of -t, -m, or <rev> allowed." 1>&2;
+    exit 1;
+fi  
 
 if [ "$merge_to_base" = "yes" ]; then
     if [ "$current_branch" = "trunk" ]; then
@@ -68,6 +87,8 @@ if ! git-treeclean; then
     exit 1;  # git-treeclean will have output error message.
 fi   
 set -e					# Shouldn't be needed, but better safe..
+git fetch --all
+
 if [ $# -eq 1 ]; then
     lkgr=$1
 elif [ "$merge_to_base" = "yes" ]; then
@@ -78,6 +99,8 @@ elif [ "$merge_to_base" = "yes" ]; then
         echo "Problem with determining merge base.  Commit: $merge_commit, Revision: $lkgr" 1>&2
 	exit 1;
     fi
+elif [ "$merge_to_tot" = "yes" ]; then
+    lkgr=`git log -1 origin/trunk | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
 else
     lkgr=`curl http://chromium-status.appspot.com/lkgr`
 fi
