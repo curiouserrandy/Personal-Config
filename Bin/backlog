@@ -27,7 +27,8 @@ Options:
 			creating a new backup file.
 	-1		Confirm that the :1 X display is available, and
 			use DISPLAY=:1.0 for the command (but not for the
-			Xterm above). 
+			Xterm above).
+	-D		Turn on command echoing.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -60,6 +61,9 @@ while [ $# -ne 0 ]; do
     -1)
         one=yes;
         ;;
+    -D)
+        set -x
+        ;;
     # Repeat as needed.
     -h|-\?)
 	echo "$helpString" 1>&2;
@@ -79,7 +83,7 @@ while [ $# -ne 0 ]; do
 done
 
 if [ X"$outfile" = X"" ]; then
-    outfile=$1.log
+    outfile=`basename $1`.log
 fi
 
 if [ X"$one" = X"yes" ]; then
