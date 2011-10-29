@@ -9,6 +9,9 @@ if [ -x ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake ]; then
     exec ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake "$@"
 fi
 
+# Set the path so that you can link with gold
+export PATH=/usr/local/gold/bin:$PATH
+
 # Set the LD flags to make it possible to link with shared library
 # builds.  This presumes we're in src
 SOLIB_OUTPUT_DIR=`pwd`/out/Debug/lib.target
