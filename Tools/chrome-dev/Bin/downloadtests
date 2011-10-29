@@ -73,6 +73,10 @@ if [ "$set_display" = "yes" ]; then
     fi
 fi
 
+## Get initial list of files in ~/Downloads
+
+ls ~/Downloads > /tmp/InitialFileList$$
+
 chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
 if [ $? -ne 0 ]; then
     echo "Compilation failed with error code $?" 1>&2
@@ -108,4 +112,8 @@ echo "=== Python automation server tests."
 
 python chrome/test/functional/downloads.py
 
-
+ls ~/Downloads > /tmp/FinalFileList$$
+if ! diff -q /tmp/InitialFileList$$ /tmp/FinalFileList$$ > /dev/null ; then
+    echo "=== Turds left in downloads output directory"
+    comm -13 /tmp/InitialFileList$$ /tmp/FinalFileList$$
+fi
