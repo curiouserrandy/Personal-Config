@@ -5,3 +5,5 @@
 	name = Randy Smith
 [merge]
 	conflictstyle=diff3
+[branch]
+	autosetupmerge=always
