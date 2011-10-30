@@ -19,5 +19,7 @@ fi
 
 git() {
     $git_binary_location "$@"
+    result=$?
     reset_shell_prompt
+    return $result
 }
