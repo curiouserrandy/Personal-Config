@@ -93,10 +93,10 @@ echo "=== Content Unit tests."
 out/Debug/content_unittests \
 	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*;
 
-echo "=== Test Shell tets."
+echo "=== Test Shell tests."
 
 out/Debug/test_shell_tests \
-	--gtest_filter=GlueSErializeTest.GetPostInfoTest   
+	--gtest_filter=GlueSerializeTest.GetPostInfoTest   
 
 echo "=== Browser tests."
 
