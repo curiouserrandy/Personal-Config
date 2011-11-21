@@ -7,7 +7,7 @@ fi
 
 git branch | (while read branch_name branch2; do
   if [[ '*' = $branch_name ]]; then branch_name=$branch2; fi
-  echo `git log -1 --format=format:%ai $branch_name` $branch_name
+  echo `git log -1 --format=format:%ai $branch_name --` $branch_name 
 done) | sort -nr | head $limit
 
 
