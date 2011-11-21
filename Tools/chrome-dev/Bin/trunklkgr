@@ -8,6 +8,9 @@ $progname is a program to bring the trunk branch of the current git
 chrome repository to last known good status.  If a number is provided 
 on the command line, that is the revision to sync to.  Options:
 	-m		Only valid if done on a branch other than trunk.
+			After executing the base of the command, switch
+			back to this branch and merge trunk into it.
+	-M		Only valid if done on a branch other than trunk.
 			If done on a branch other than trunk, brings
 			trunk to the "git merge-base' of that branch
 			and the trunk line (i.e. it may move trunk
@@ -21,13 +24,16 @@ usageString="$progname [-m | -t | <revision number>]";
 
 # Parse all arguments.
 merge_to_base=no
+merge_to_original=no
 merge_to_tot=no
 do_gclient_sync=yes
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
-    -m) merge_to_base=yes;
+    -M) merge_to_base=yes;
 	;;
+    -m) merge_to_original=yes;
+        ;;
     -G) do_gclient_sync=no;
 	;;
     -t) merge_to_tot=yes;
@@ -73,6 +79,11 @@ if [ $rev_spec_count -gt 1 ]; then
     exit 1;
 fi  
 
+if [ "$merge_to_original" = "yes" -a "$current_branch" = "trunk" ]; then
+    echo "Can't merge trunk to original branch if original branch is trunk!" 1>&2;
+    exit 1;
+fi
+
 if [ "$merge_to_base" = "yes" ]; then
     if [ "$current_branch" = "trunk" ]; then
         echo "-m only valid on non-trunk branch." 1>&2;
@@ -107,22 +118,35 @@ else
     lkgr=`curl http://chromium-status.appspot.com/lkgr`
 fi
 echo Syncing to revision $lkgr
-git checkout trunk
-git pull 
 git svn fetch
 lkgr_git_commit=`git svn find-rev r$lkgr`
+
+# TODO: There's almost certainly a simpler and quicker way to do the following
+# that doesn't affect the working tree.  Simple editing the commit reference
+# in .git/refs/heads/trunk would probably do it, and I'll probably implement
+# it that way, but that's pretty scary.  
+git checkout trunk
 echo Git commit $lkgr_git_commit
 if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
     echo "Bad return from git svn find: $lkgr_git_commit" 1>&2 
     exit 1
 fi
 git reset --hard $lkgr_git_commit
+
 if [ "$do_gclient_sync" = "yes" ]; then
+    # TODO: If I ever accomplish the above, there should be a
+    # git checkout trunk here :-}.
     gclient sync -j12 -D
 else
     echo "===> Did not do automatic gclient sync."    
 fi
 echo Trunk branch reset to SVN revision $lkgr
+
+if [ "$merge_to_original" = "yes" ]; then
+    echo "Merging trunk into $current_branch"
+    git checkout $current_branch
+    git merge trunk
+fi
 
 ## Todo: Merge trunk into all branches tracking trunk.
 
