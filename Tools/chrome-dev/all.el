@@ -56,7 +56,11 @@ ISSUES is a list of integer values."
 (defun chrome-visit-issue (issue)
   (interactive
    (list (string-to-number (randy-word-under-point))))
-  (browse-url (format "http://crbug.com/%d" issue)))
+  (if (< issue 1000000)
+      ;; Bug
+      (browse-url (format "http://crbug.com/%d" issue))
+    ;; CL
+    (browse-url (format "http://codereview.chromium.org/%d" issue))))
 
 
 (defun chrome-visit-issues-mentioned-in-file ()
