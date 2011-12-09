@@ -121,32 +121,34 @@ echo Syncing to revision $lkgr
 git svn fetch
 lkgr_git_commit=`git svn find-rev r$lkgr`
 
-# TODO: There's almost certainly a simpler and quicker way to do the following
-# that doesn't affect the working tree.  Simple editing the commit reference
-# in .git/refs/heads/trunk would probably do it, and I'll probably implement
-# it that way, but that's pretty scary.  
-git checkout trunk
-echo Git commit $lkgr_git_commit
-if [ "`echo $lkgr_git_commit | wc -l`" -ne 1 ]; then
-    echo "Bad return from git svn find: $lkgr_git_commit" 1>&2 
-    exit 1
+if [ "$current_branch" = "trunk" ]; then
+  # Turns out you can't force update the current branch.  Who knew?
+  git reset --hard $lkgr_git_commit
+else
+  git branch -f trunk $lkgr_git_commit
 fi
-git reset --hard $lkgr_git_commit
+echo Trunk branch reset to SVN revision $lkgr
 
-if [ "$do_gclient_sync" = "yes" ]; then
+merge_succeeded=0               # If we didn't do it, it suceeded
+if [ "$merge_to_original" = "yes" ]; then
+    ## Note that we're still on the starting branch
+    echo "Merging trunk into $current_branch"
+    git merge trunk
+    merge_succeeded=$?
+    if [ $merge_succeeded -ne 0 ]; then
+        echo "===> Merge Failed."
+    fi
+else
+    ## If we didn't ask for a merge, we implicitly asked to switch to trunk.
+    git checkout trunk
+fi
+
+if [ "$do_gclient_sync" = "yes" -a $merge_succeeded -eq 0 ]; then
     # TODO: If I ever accomplish the above, there should be a
     # git checkout trunk here :-}.
     gclient sync -j12 -D
 else
     echo "===> Did not do automatic gclient sync."    
 fi
-echo Trunk branch reset to SVN revision $lkgr
-
-if [ "$merge_to_original" = "yes" ]; then
-    echo "Merging trunk into $current_branch"
-    git checkout $current_branch
-    git merge trunk
-fi
-
 ## Todo: Merge trunk into all branches tracking trunk.
 
