@@ -23,3 +23,14 @@ trunklkgr () {
     $trunklkgr_binary_location "$@"
     reset_shell_prompt
 }
+
+# Add a define to GYP_DEFINES if it's not already there.
+add_gyp () {
+  if echo $GYP_DEFINES | tr ' ' '\n' | fgrep -w "$1" > /dev/null ; then
+      echo \"$1\" already present in GYP_DEFINES: $GYP_DEFINES
+  else
+      export GYP_DEFINES="$GYP_DEFINES $1"
+      echo \"$1\" added to GYP_DEFINES: $GYP_DEFINES
+  fi
+}
+
