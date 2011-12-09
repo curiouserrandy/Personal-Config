@@ -43,14 +43,20 @@ if [ $# -gt 1 ]; then
     exit 1;
 fi
 
-if ! git-treeclean ; then 
-    exit 1				# Error message already output
-fi
-
-target_branch=`git branch | awk '$1 == "*" {print $2;}'`
+current_branch=`git branch | awk '$1 == "*" {print $2;}'`
 
 if [ $# -gt 0 ]; then
     target_branch=$1
+else
+    target_branch=$current_branch
+fi
+
+## If we're pushing a branch other than the current, we don't care if the 
+## tree is dirty.
+if [ "$target_branch" = "$current_branch" ]; then
+    if ! git-treeclean ; then 
+        exit 1				# Error message already output
+    fi
 fi
 
 if [ "$target_branch" = "origin/trunk" -o \
