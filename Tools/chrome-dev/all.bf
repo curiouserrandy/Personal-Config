@@ -34,3 +34,13 @@ add_gyp () {
   fi
 }
 
+# Setup build to use my plugin.
+if [ "$config_os" = "Linux" ]; then
+  add_plugin() {
+    RANDY_DB_PLUGIN=/usr/local/google/home/rdsmith/Sandboxen/3chrome-newgit/src/third_party/llvm-build/Release+Asserts/lib/libOutputDB.so
+    DB_OUTPUT_FILE=/usr/local/google/home/rdsmith/Sandboxen/3chrome-newgit/src/clang-db
+    add_gyp clang=1
+    add_gyp clang_load=$RANDY_DB_PLUGIN
+    add_gyp clang_add_plugin='"complete -Xclang -plugin-arg-complete -Xclang --db='$DB_OUTPUT_FILE'"'
+  }
+fi
