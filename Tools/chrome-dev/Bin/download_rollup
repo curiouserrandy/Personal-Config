@@ -18,7 +18,7 @@ help_string = """
 tracker and produce a spreadsheet grouping them by grouping issue.
 """ % program_name
 
-usage_string = "%s [-o <output_file_prefix>]"
+usage_string = "%s [-o <output_file_prefix>] [-b <buglist>] [-m <milestone>]"
 
 parser = OptionParser(description=help_string, usage=usage_string)
 parser.add_option("-?", action="help")
