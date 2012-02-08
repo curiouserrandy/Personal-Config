@@ -18,7 +18,7 @@ help_string = """
 tracker and produce a spreadsheet grouping them by grouping issue.
 """ % program_name
 
-usage_string = "%s [-o <output_file_prefix>] [-b <buglist>] [-m <milestone>]"
+usage_string = "%s [-o <output_file_prefix>] [-b <buglist>] [-m <milestone>]" % program_name
 
 parser = OptionParser(description=help_string, usage=usage_string)
 parser.add_option("-?", action="help")
@@ -90,6 +90,11 @@ grouping_issues = frozenset(
      if issue_dict[id]['Summary'] .find('grouping issue)') != -1])
 
 ## Write it all out
+outfile = open(options.outfile + ".csv", 'w')
+csvwriter = csv.writer(outfile)
+csvwriter.writerow(("", "Warning: This spreadsheet is periodically overwritten.",))
+csvwriter.writerow(("","If you need permanent access to the data here, please make a copy.",))
+csvwriter.writerow(("",))
 
 def format_cell(col, contents):
     if col == 'ID':
