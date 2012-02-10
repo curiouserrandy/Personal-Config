@@ -55,6 +55,23 @@ while [ $# -ne 0 ]; do
     shift;
 done
 
+# Am I in the old workflow or the new one?
+workflow=unknown
+case `git config remote.origin.url` in
+    http://git.chromium.org/chromium/src.git)
+        workflow=new;
+	trunkbranch=master;
+	;;
+    http://git.chromium.org/git/chromium.git)
+        workflow=old;
+	trunkbranch=trunk;
+	;;
+esac
+if [ "$workflow" = "unknown" ]; then
+    echo "Unknown remote.origin.url: " `git config remote.origin.url` 1>&2
+    exit 1;
+fi    
+
 # What's my current branch?
 current_branch=`git branch | awk '$1 == "*" {print $2;}'`
 
@@ -79,14 +96,14 @@ if [ $rev_spec_count -gt 1 ]; then
     exit 1;
 fi  
 
-if [ "$merge_to_original" = "yes" -a "$current_branch" = "trunk" ]; then
-    echo "Can't merge trunk to original branch if original branch is trunk!" 1>&2;
+if [ "$merge_to_original" = "yes" -a "$current_branch" = "$trunkbranch" ]; then
+    echo "Can't merge trunk to original branch if original branch is $trunkbranch!" 1>&2;
     exit 1;
 fi
 
 if [ "$merge_to_base" = "yes" ]; then
-    if [ "$current_branch" = "trunk" ]; then
-        echo "-m only valid on non-trunk branch." 1>&2;
+    if [ "$current_branch" = "$trunkbranch" ]; then
+        echo "-m only valid on non-$trunkbranch branch." 1>&2;
 	exit 1;
     fi
 
@@ -106,14 +123,14 @@ if [ $# -eq 1 ]; then
     lkgr=$1
 elif [ "$merge_to_base" = "yes" ]; then
     git fetch --all
-    merge_commit="`git merge-base HEAD origin/trunk`";
+    merge_commit="`git merge-base HEAD origin/$trunkbranch`";
     lkgr=`git log -1 $merge_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
     if [ "`echo $lkgr | wc -l`" -ne 1 -o "lkgr" = "" ]; then
         echo "Problem with determining merge base.  Commit: $merge_commit, Revision: $lkgr" 1>&2
 	exit 1;
     fi
 elif [ "$merge_to_tot" = "yes" ]; then
-    lkgr=`git log -1 origin/trunk | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
+    lkgr=`git log -1 origin/$trunkbranch | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
 else
     lkgr=`curl http://chromium-status.appspot.com/lkgr`
 fi
@@ -125,17 +142,17 @@ if [ "$current_branch" = "trunk" ]; then
   # Turns out you can't force update the current branch.  Who knew?
   git reset --hard $lkgr_git_commit
 else
-  git branch -f trunk $lkgr_git_commit
+  git branch -f $trunkbranch $lkgr_git_commit
 fi
-echo Trunk branch reset to SVN revision $lkgr
+echo Trunkbranch reset to SVN revision $lkgr
 
 
 merge_succeeded=0               # If we didn't do it, it suceeded
 if [ "$merge_to_original" = "yes" ]; then
     ## Note that we're still on the starting branch
-    echo "Merging trunk into $current_branch"
+    echo "Merging $trunkbranch into $current_branch"
     set +e   # Doing my own exit code management for merge.
-    git merge trunk
+    git merge $trunkbranch
     merge_succeeded=$?
     if [ $merge_succeeded -ne 0 ]; then
         echo "===> Merge Failed."
@@ -143,15 +160,13 @@ if [ "$merge_to_original" = "yes" ]; then
     set -e
 else
     ## If we didn't ask for a merge, we implicitly asked to switch to trunk.
-    git checkout trunk
+    git checkout $trunkbranch
 fi
 
 if [ "$do_gclient_sync" = "yes" -a $merge_succeeded -eq 0 ]; then
-    # TODO: If I ever accomplish the above, there should be a
-    # git checkout trunk here :-}.
     gclient sync -j12 -D
 else
     echo "===> Did not do automatic gclient sync."    
 fi
-## Todo: Merge trunk into all branches tracking trunk.
+## Todo: Merge trunkbranch into all branches tracking trunkbranch.  Maybe.
 
