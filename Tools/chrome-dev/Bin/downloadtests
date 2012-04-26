@@ -73,9 +73,12 @@ if [ "$set_display" = "yes" ]; then
     fi
 fi
 
-## Get initial list of files in ~/Downloads
+## Get initial list of files in ~/Downloads and ~/Documents
 
-ls ~/Downloads > /tmp/InitialFileList$$
+ls ~/Downloads > /tmp/DFFileList$$
+if [ -d ~/Documents ]; then
+    ls ~/Documents > /tmp/DocFileList$$
+fi
 
 nice chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
 if [ $? -ne 0 ]; then
@@ -101,7 +104,7 @@ out/Debug/test_shell_tests \
 echo "=== Browser tests."
 
 out/Debug/browser_tests --gtest_also_run_disabled_tests \
-	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*;
+	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
 
 echo "=== UI tests."
 
@@ -111,9 +114,22 @@ out/Debug/ui_tests --gtest_also_run_disabled_tests \
 echo "=== Python automation server tests."
 
 python chrome/test/functional/downloads.py
+python chrome/test/functional/browsing_data.py __main__.BrowsingDataTest.testClearDownloads __main__.BrowsingDataTest.testClearHistoryAndDownloads __main__.BrowsingDataTest.testClearingAccuracy
+python chrome/test/functional/history.py __main__.HistoryTest.testDownloadNoHistory
+python chrome/test/functional/infobars.py __main__.InfobarTest.testMultipleDownloadsInfobar
+python chrome/test/functional/prefs.py __main__.PrefsTest.testDownloadDirPref
 
-ls ~/Downloads > /tmp/FinalFileList$$
-if ! diff -q /tmp/InitialFileList$$ /tmp/FinalFileList$$ > /dev/null ; then
+ls ~/Downloads > /tmp/DFFileList2$$
+if ! diff -q /tmp/DFFileList$$ /tmp/DFFileList2$$ > /dev/null ; then
     echo "=== Turds left in downloads output directory"
-    comm -13 /tmp/InitialFileList$$ /tmp/FinalFileList$$
+    comm -13 /tmp/DFFileList$$ /tmp/DFFileList2$$
 fi
+
+if [ -d ~/Documents ]; then
+    ls ~/Documents > /tmp/DocFileList2$$
+    if ! diff -q /tmp/DocFileList$$ /tmp/DocFileList2$$ > /dev/null ; then
+        echo "=== Turds left in downloads output directory"
+        comm -13 /tmp/DocFileList$$ /tmp/DocFileList2$$
+    fi
+fi
+rm -f /tmp/DFFileList$$ /tmp/DFFileList2$$ /tmp/DocFileList$$ /tmp/DocFileList2$$
