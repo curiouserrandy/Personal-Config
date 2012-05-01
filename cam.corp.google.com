@@ -1,1 +1,1 @@
-/home/rdsmith/Proprietary-Config/cam.corp.google.com
+/Users/rdsmith/Proprietary-Config/cam.corp.google.com

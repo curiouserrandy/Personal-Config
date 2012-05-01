@@ -30,4 +30,4 @@ else
 fi
 
 ## All argument go to make.
-make -j${pm} "$@"
+nice make -j${pm} "$@"

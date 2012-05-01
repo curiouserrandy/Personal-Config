@@ -41,6 +41,6 @@ if [ "$config_os" = "Linux" ]; then
     DB_OUTPUT_FILE=/usr/local/google/home/rdsmith/Sandboxen/3chrome-newgit/src/clang-db
     add_gyp clang=1
     add_gyp clang_load=$RANDY_DB_PLUGIN
-    add_gyp clang_add_plugin='"complete -Xclang -plugin-arg-complete -Xclang --db='$DB_OUTPUT_FILE'"'
+    add_gyp clang_add_plugin='"SemanticDatabase -Xclang -plugin-arg-SemanticDatabase -Xclang --db='$DB_OUTPUT_FILE'"'
   }
 fi
