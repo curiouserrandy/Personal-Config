@@ -34,7 +34,9 @@
 	  '(lambda () (define-key shell-mode-map "\C-cd"
 			'randy-shell-cd-directory-other-window)))
 (define-key mode-specific-map "e" '(lambda () (interactive)
-				     (shell-command "date" t)))
+				     (insert "-- ")
+				     (shell-command "date" t)
+				     (end-of-line)))
 (define-key mode-specific-map "f" 'randy-alternative-find-file-under-point)
 (define-key mode-specific-map "g" 'grep)
 (define-key mode-specific-map "h" 'shell)
@@ -98,6 +100,7 @@
 
 ;;; Function key definitions
 (define-key global-map '[f12] 'quoted-tab)
+(define-key global-map '[f11] 'randy-restore-config)
 (define-key global-map '[f9] 'next-error)
 
 ;;; Mouse key defns
