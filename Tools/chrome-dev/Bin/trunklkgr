@@ -4,16 +4,17 @@
 progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
-$progname is a program to bring the trunk branch of the current git 
-chrome repository to last known good status.  If a number is provided 
-on the command line, that is the revision to sync to.  Options:
-	-m		Only valid if done on a branch other than trunk.
+$progname is a program to bring the core branch (OldGit: trunk, NewGit: master)
+of the current git chrome repository to last known good status.
+If a number is provided on the command line, that is the revision to sync to.
+Options:
+	-m		Only valid if done on a branch other than core.
 			After executing the base of the command, switch
-			back to this branch and merge trunk into it.
-	-M		Only valid if done on a branch other than trunk.
-			If done on a branch other than trunk, brings
-			trunk to the "git merge-base' of that branch
-			and the trunk line (i.e. it may move trunk
+			back to this branch and merge core into it.
+	-M		Only valid if done on a branch other than core.
+			If done on a branch other than core, brings
+			core to the "git merge-base' of that branch
+			and the trunk line (i.e. it may move core
 			forward).
 	-t		Merge to top of tree rather than LKGR.
 	-G		Skip automatic gclient sync.			
@@ -138,7 +139,7 @@ echo Syncing to revision $lkgr
 git svn fetch
 lkgr_git_commit=`git svn find-rev r$lkgr`
 
-if [ "$current_branch" = "trunk" ]; then
+if [ "$current_branch" = "$trunkbranch" ]; then
   # Turns out you can't force update the current branch.  Who knew?
   git reset --hard $lkgr_git_commit
 else
