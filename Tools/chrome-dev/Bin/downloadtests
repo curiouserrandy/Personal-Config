@@ -50,9 +50,11 @@ while [ $# -ne 0 ]; do
 done
 
 # Check non-flag arguments.
-if [ $# -ne 0 ]; then
-    echo "Usage: $usageString" 1>&2;
-    exit 1;
+testname=
+if [ $# != 0 ]; then
+  testname=$1;
+  shift;
+  rest_of_args="$*"
 fi
 
 if [ "$sandbox_check" = "yes" ]; then
@@ -80,44 +82,54 @@ if [ -d ~/Documents ]; then
     ls ~/Documents > /tmp/DocFileList$$
 fi
 
-nice chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
-if [ $? -ne 0 ]; then
-    echo "Compilation failed with error code $?" 1>&2
-    exit 1;
+if [ X"$testname" != X"" ]; then
+    nice chrmake -k $build_config $testname
+    if [ $? -ne 0 ]; then
+        echo "Compilation failed with error code $?" 1>&2
+        exit 1;
+    fi
+    out/Debug/$testname $rest_of_args
+else
+
+    ionice -c 3 nice chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
+    if [ $? -ne 0 ]; then
+        echo "Compilation failed with error code $?" 1>&2
+        exit 1;
+    fi
+
+    echo "=== Unit tests."
+
+    out/Debug/unit_tests \
+            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*;
+
+    echo "=== Content Unit tests."
+
+    out/Debug/content_unittests \
+            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:ByteStreamTest.*;
+
+    echo "=== Test Shell tests."
+
+    out/Debug/test_shell_tests \
+            --gtest_filter=GlueSerializeTest.GetPostInfoTest   
+
+    echo "=== Browser tests."
+
+    out/Debug/browser_tests --gtest_also_run_disabled_tests \
+            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
+
+    echo "=== UI tests."
+
+    out/Debug/ui_tests --gtest_also_run_disabled_tests \
+            --gtest_filter=SavePageTest.*;
+
+    echo "=== Python automation server tests."
+
+    python chrome/test/functional/downloads.py
+    python chrome/test/functional/browsing_data.py __main__.BrowsingDataTest.testClearDownloads __main__.BrowsingDataTest.testClearHistoryAndDownloads __main__.BrowsingDataTest.testClearingAccuracy
+    python chrome/test/functional/history.py __main__.HistoryTest.testDownloadNoHistory
+    python chrome/test/functional/infobars.py __main__.InfobarTest.testMultipleDownloadsInfobar
+    python chrome/test/functional/prefs.py __main__.PrefsTest.testDownloadDirPref
 fi
-
-echo "=== Unit tests."
-
-out/Debug/unit_tests \
-	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*;
-
-echo "=== Content Unit tests."
-
-out/Debug/content_unittests \
-	--gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*;
-
-echo "=== Test Shell tests."
-
-out/Debug/test_shell_tests \
-	--gtest_filter=GlueSerializeTest.GetPostInfoTest   
-
-echo "=== Browser tests."
-
-out/Debug/browser_tests --gtest_also_run_disabled_tests \
-	--gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
-
-echo "=== UI tests."
-
-out/Debug/ui_tests --gtest_also_run_disabled_tests \
-	--gtest_filter=SavePageTest.*;
-
-echo "=== Python automation server tests."
-
-python chrome/test/functional/downloads.py
-python chrome/test/functional/browsing_data.py __main__.BrowsingDataTest.testClearDownloads __main__.BrowsingDataTest.testClearHistoryAndDownloads __main__.BrowsingDataTest.testClearingAccuracy
-python chrome/test/functional/history.py __main__.HistoryTest.testDownloadNoHistory
-python chrome/test/functional/infobars.py __main__.InfobarTest.testMultipleDownloadsInfobar
-python chrome/test/functional/prefs.py __main__.PrefsTest.testDownloadDirPref
 
 ls ~/Downloads > /tmp/DFFileList2$$
 if ! diff -q /tmp/DFFileList$$ /tmp/DFFileList2$$ > /dev/null ; then

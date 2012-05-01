@@ -23,11 +23,19 @@ Should always have a trailing '/' (emacs canonical directory)")
   (let ((tags-add-tables nil))
     (visit-tags-table
      (concat randy-sandbox-directory "/TAGS")))
-  (string-match "\\([^/][^/]*?\\)\\(/src\\)?/?$" sandboxdir)
-  (set-frame-name (substring sandboxdir
-				   (match-beginning 1)
-				   (match-end 1)))
+
   (find-file sandboxdir)
+
+  ;; If we're using git, figure out the local branch.
+  (let (frame-name)
+    (string-match "\\([^/][^/]*?\\)\\(/src\\)?/?$" sandboxdir)
+    (setq frame-name (substring sandboxdir
+				(match-beginning 1)
+				(match-end 1)))
+    (if (fboundp 'git-local-branch)
+	(setq frame-name (concat frame-name " - " (git-local-branch))))
+    (set-frame-name frame-name))
+  
   (delete-other-windows)
   (if (not dontstartshell)
       (progn

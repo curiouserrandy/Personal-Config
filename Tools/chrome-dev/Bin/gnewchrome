@@ -119,9 +119,29 @@ set -e
 # Note that on windows the right place to create is in D:\src
 $ECHO mkdir $sbd;			# No -p; error if no Sandboxen directory
 $ECHO cd $sbd
-# Note that the below won't work in an emacs shell buffer on windows; dunno why.
-$ECHO git clone http://git.chromium.org/git/chromium.git src
-$ECHO gclient config svn://svn.chromium.org/chrome/trunk/src
+
+## Note that the below won't work in an emacs shell buffer on windows;
+## dunno why.
+
+# Configure gclient
+$ECHO gclient config http://git.chromium.org/chromium/src.git --git-deps
+
+$ECHO ed .gclient  <<EOF
+/"managed"/s/True/False/
+/custom_deps
+a
+      "src/third_party/WebKit/LayoutTests": None,
+      "src/chrome_frame/tools/test/reference_build/chrome": None,
+      "src/chrome_frame/tools/test/reference_build/chrome_win": None,
+      "src/chrome/tools/test/reference_build/chrome": None,
+      "src/chrome/tools/test/reference_build/chrome_linux": None,
+      "src/chrome/tools/test/reference_build/chrome_mac": None,
+      "src/chrome/tools/test/reference_build/chrome_win": None,
+.
+w
+q
+EOF
+
 # Try and get the authentication info cached, quickly.
 if [ "$password" != "" ]; then
     $ECHO svn ls --username "$username" --password "$password" svn://svn.chromium.org/chrome/trunk/src
@@ -129,53 +149,8 @@ else
     $ECHO svn ls --username $username svn://svn.chromium.org/chrome/trunk/src
 fi
 
-$ECHO ed .gclient  <<EOF
-/url
-a
-    "custom_vars" : {
-      "webkit_trunk" : "svn://svn.chromium.org/webkit-readonly/trunk"
-    },
-.
-/custom_deps
-a
-      "src/third_party/WebKit/LayoutTests": None,
-.
-/^]
-.-1a
-  { "name"	: "src-internal",
-    "url"	: "svn://svn.chromium.org/chrome-internal/trunk/src-internal",
-    "custom_deps" : {
-      "src/data/esctf" : None,
-      "src/data/memory_test" : None,
-      "src/data/mozilla_js_tests" : None ,
-      "src/data/page_cycler" : None,
-      "src/data/tab_switching" : None,
-      "src/data/saved_caches" : None,
-      "src/data/selenium_core" : None,
-      "src/tools/grit/grit/tests/data" : None,
-      "src/gpu/gles2_conform_test" : None,
-      "src/third_party/gles2_conform" : None,
-    }
-  }
-.
-w
-q
-EOF
-if [ "$cros" = "yes" ]; then
-    $ECHO ed .gclient <<'EOF'
-/name.*src-internal
-.-1a
-  { "name"        : "cros_deps",
-    "url"         : "http://src.chromium.org/svn/trunk/cros_deps",
-  },
-.
-w
-q
-EOF
-fi
-$ECHO gclient sync
-$ECHO cd src
+$ECHO gclient sync -j32 
+cd src
 $ECHO git svn init --prefix=origin/ -T trunk/src svn://svn.chromium.org/chrome
+$ECHO git config svn-remote.svn.fetch trunk/src:refs/remotes/origin/master
 $ECHO git svn fetch
-$ECHO git cl config http://src.chromium.org/svn
-$ECHO chtags

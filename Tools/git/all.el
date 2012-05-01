@@ -61,3 +61,5 @@ the hacky dired-after-readin-hook method.")
 			  (concat "Git" (if dirty ":" "-") branch)))
 		  (setq randy-vc-set-with-hack t)
 		  (force-mode-line-update)))))
+
+(provide 'rs-git)

@@ -20,7 +20,7 @@ on the command line, that is the revision to sync to.  Options:
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname [-m | -t | <revision number>]";
+usageString="$progname [-m | -t | -M | -G | <revision number>]";
 
 # Parse all arguments.
 merge_to_base=no
@@ -133,11 +133,13 @@ merge_succeeded=0               # If we didn't do it, it suceeded
 if [ "$merge_to_original" = "yes" ]; then
     ## Note that we're still on the starting branch
     echo "Merging trunk into $current_branch"
+    set +e
     git merge trunk
     merge_succeeded=$?
     if [ $merge_succeeded -ne 0 ]; then
         echo "===> Merge Failed."
     fi
+    set -e
 else
     ## If we didn't ask for a merge, we implicitly asked to switch to trunk.
     git checkout trunk
