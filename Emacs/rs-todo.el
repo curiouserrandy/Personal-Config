@@ -467,15 +467,14 @@ An outline topic is marked with a hotkey if it matches the regexp
   "Return a text listing of the mapping between hotkeys and sections."
   (let ((hotkey-list (rstodo-collect-outline-hotkeys)))
     (mapconcat 'identity 
-	       (sort (apply 'append
-			    (mapcar '(lambda (elt)
-				       (let ((line (nth 2 elt))
+	       (apply 'append
+		      (mapcar '(lambda (elt)
+				 (let ((line (nth 2 elt))
 					     (keys (nth 3 elt)))
-					 (mapcar '(lambda (key)
-						    (concat (string key) " --\t" line))
-						 keys)))
-				    hotkey-list))
-		     'string<) "\n")))
+				   (mapcar '(lambda (key)
+					      (concat (string key) " --\t" line))
+					   keys)))
+			      hotkey-list)) "\n")))
 
 ;;; Plan
 ;;;	* Create cheatsheet
@@ -600,5 +599,13 @@ An outline topic is marked with a hotkey if it matches the regexp
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
 (define-key rstodo-mode-map [f9] 'rstodo-move-item-down)
 
+;;; Reset the buffer back to specified layout. 
+;;; With prefix argument, actually do a revert.
+(define-key rstodo-mode-map "\C-cr" '(lambda (really-revert)
+				       (interactive "P")
+				       (if really-revert
+					   (revert-buffer t t)
+					 (randy-explode-hook)
+					 (randy-implode-hook))))
 
 (provide 'rs-todo)
