@@ -1,1 +1,1 @@
-/Users/rdsmith/Proprietary-Config/google.com
+../Proprietary-Config/google.com
