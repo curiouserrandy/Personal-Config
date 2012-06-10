@@ -1,4 +1,10 @@
 #!/bin/bash
+buildtype=Debug
+if [ X"$1" = X"-R" ]; then
+    buildtype=Release;
+    shift;
+fi    
+
 if [ $# -eq 0 ]; then
     set chrome 		# Target
 fi
@@ -29,5 +35,12 @@ else
     pm=4
 fi
 
+# Make or ninja?
+if [ -r out/$buildtype/build.ninja ]; then
+    build="ninja -C out/$buildtype"
+else
+    build="make BUILDTYPE=buildtype"
+fi
+
 ## All argument go to make.
-nice make -j${pm} "$@"
+nice $build -j${pm} "$@"
