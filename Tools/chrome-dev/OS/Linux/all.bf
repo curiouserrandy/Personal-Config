@@ -7,7 +7,7 @@ if [ "$GYP_DEFINES" = "" ]; then
     fi
 fi
 
-export GYP_GENERATORS=make,ninja
+export GYP_GENERATORS=ninja
 
 
 
