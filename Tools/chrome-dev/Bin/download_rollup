@@ -49,7 +49,7 @@ if len(args) > 0:
 
 # TDOD: CSV mods
 url_template = ("http://code.google.com/p/chromium/issues/csv?" +
-                "can=2&q=%s&sort=%s&colspec=%s")
+                "can=2&q=%s&sort=%s&colspec=%s&start=0&num=1000")
 
 cols=('ID', 'Stars', 'Pri', 'Type', 'Status', 'Summary', 
       'Owner', 'Mstone', 'OS', 'BlockedOn', 'Blocking')
@@ -78,7 +78,8 @@ for l in csv.reader(urllib.urlopen(url)):
     for key in ('ID', 'Stars'):
         ldict[key] = int(ldict[key])
     for key in ('BlockedOn', 'Blocking'):
-        ldict[key] = [int(y) for y in ldict[key].split(",") if y]
+        ldict[key] = [int(y.replace("chromium:",""))
+                      for y in ldict[key].split(",") if y]
 
     id = ldict['ID']
     ## Enter into full issue dict
