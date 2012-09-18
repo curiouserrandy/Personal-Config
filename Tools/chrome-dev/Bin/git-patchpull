@@ -61,6 +61,8 @@ if [ "$target_branch" = "origin/trunk" -o \
     exit 1
 fi
 
+## TODO?: Fetch directly into target branch.  Will fail if not a fast forward,
+## but won't mess up current checkuot (which is probably what I want).
 git fetch $chrome_patches $target_branch:
 if [ "$delete_local_patch" = "yes" ]; then
     git checkout trunk
@@ -68,6 +70,11 @@ if [ "$delete_local_patch" = "yes" ]; then
     git checkout --track -b $target_branch
     git merge FETCH_HEAD
 else
+    if ! git branch | sed 's/^..//' | fgrep -w $target_branch -q ; then
+      # Branch does not exist; create it.
+      git branch master $target_branch
+    fi
+
     git checkout $target_branch
     git merge FETCH_HEAD
 fi
