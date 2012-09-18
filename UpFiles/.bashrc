@@ -12,4 +12,3 @@ fi
 if [ "$BASH" != "" ]; then
     . $config_files_directory/master.bf;
 fi
-
