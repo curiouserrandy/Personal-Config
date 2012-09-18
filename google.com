@@ -1,1 +1,0 @@
-../Proprietary-Config/google.com
