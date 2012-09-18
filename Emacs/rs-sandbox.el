@@ -20,7 +20,7 @@ Should always have a trailing '/' (emacs canonical directory)")
   (setq egrep-history nil)
   (setq fsfile-history nil)
   ;;
-  (let ((tags-add-tables nil))
+  (let ((tags-add-tables nil) (large-file-warning-threshold 50000000))
     (visit-tags-table
      (concat randy-sandbox-directory "/TAGS")))
 
