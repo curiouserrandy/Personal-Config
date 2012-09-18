@@ -19,5 +19,4 @@ if [ "$load_files" = "yes" ]; then
 	USERNAME=""
 	export USERNAME BASH_ENV PATH
     fi
-    ;;
 fi
