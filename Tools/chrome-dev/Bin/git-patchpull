@@ -72,7 +72,7 @@ if [ "$delete_local_patch" = "yes" ]; then
 else
     if ! git branch | sed 's/^..//' | fgrep -w $target_branch -q ; then
       # Branch does not exist; create it.
-      git branch master $target_branch
+      git branch $target_branch master
     fi
 
     git checkout $target_branch
