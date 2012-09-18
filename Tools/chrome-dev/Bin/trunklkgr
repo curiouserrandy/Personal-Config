@@ -132,6 +132,13 @@ elif [ "$merge_to_base" = "yes" ]; then
     fi
 elif [ "$merge_to_tot" = "yes" ]; then
     lkgr=`git log -1 origin/$trunkbranch | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
+    if [ X"$lkgr" = X"" ]; then
+	lkgr=`git log -1 origin/$trunkbranch | sed -n '/SVN changes/s/^[ 	]*SVN changes up to revision \([0-9]*\)/\1/p'`;
+	if [ X"$lkgr" = X"" ]; then
+	    echo "Could not find top of tree SVN revision." 1>&2
+	    exit 1;
+	fi
+    fi
 else
     lkgr=`curl http://chromium-status.appspot.com/lkgr`
 fi
