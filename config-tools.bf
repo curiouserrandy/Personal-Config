@@ -11,6 +11,14 @@ function suffix_val_to_var ()
     fi
 }
 
+function suffix_val_to_var_if_not_present ()
+{
+    eval "deref="'$'"$2";
+    if ! fgrep $1 <(echo $deref | tr ':' '\012') > /dev/null ; then
+        suffix_val_to_var $1 $2
+    fi
+}
+
 function prefix_val_to_var ()
 {
     eval "deref="'$'"$2";
@@ -135,6 +143,9 @@ function init_from ()
 	    
 	    # Source the all.bf file.
 	    read_if_exists ${file_root}/all.bf;
+
+	    suffix_val_to_var_if_not_present ${file_root} emacs_init_list
+	    export emacs_init_list
 	fi
     else
 	if [ "$INIT_FROM_LOG" = "yes" ]; then echo "IFing ${file_root} failed"; fi
@@ -173,18 +184,27 @@ init_from_recurse ()
     local file_root=$1;
 
     if [ ! -e ${file_root} -a -e ${file_root}.lnk ]; then
-        file_root=`cat ${file_root}.lnk`
+        local new_file_root=`cat ${file_root}.lnk`
+	if [ `echo $new_file_root | sed 's/^\(.\).*$/\1/'` != '/' ]; then
+	    new_file_root=`dirname $file_root`/$new_file_root;
+	fi
+	file_root=$new_file_root
     fi
     
      if [ -e ${file_root} ]; then
         init_from ${file_root}	# Do the actual work in this directory
+
+	# Note: We normally we expect archs to be in <os>/<arch> and
+	# hostnames to be in <domainname>/<hostname> but this is simpler
+	# to code and won't cause us grief unless an archname == an osname
+	# or a hostname == a domain name.
 	init_from_recurse ${file_root}/OS/$config_os
-	init_from_recurse ${file_root}/OS/$config_os/$config_arch
+	init_from_recurse ${file_root}/$config_arch
 
 	local tmp_domainname=$config_domain
 	while [ X"$tmp_domainname" != X"" ] ; do
 	    init_from_recurse $file_root/$tmp_domainname
-	    init_from_recurse $file_root/$tmp_domainname/$config_host
+	    init_from_recurse $file_root/$config_host
 
 	    tmp_domainname=`echo $tmp_domainname | sed 's/^[^.]*\.*//'`
 	done
