@@ -34,7 +34,7 @@
 	  '(lambda () (define-key shell-mode-map "\C-cd"
 			'randy-shell-cd-directory-other-window)))
 (define-key mode-specific-map "e" '(lambda () (interactive)
-				     (insert "-- ")
+				     (insert "** ")
 				     (shell-command "date" t)
 				     (end-of-line)))
 (define-key mode-specific-map "f" 'randy-alternative-find-file-under-point)
