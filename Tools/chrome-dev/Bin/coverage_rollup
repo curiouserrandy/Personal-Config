@@ -1,0 +1,112 @@
+#!/bin/bash
+
+unittest_out_directory=coverage_download_unittests_html
+browsertest_out_directory=coverage_download_browsertests_html
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a script to do the downloads coverage rollup.  It produces 
+output directories in out/Debug ($unittest_out_directory and
+$browsertest_out_directory) containing rollups for the unit and browser
+tests.  Note that this script must be run in the "src" directory of a 
+sandbox that has been built with "coverage_build".
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-b]";
+
+# Parse all arguments.
+build=no;
+while [ $# -ne 0 ]; do
+    case $1 in
+    -b)
+        build=yes;
+        ;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+# TODO: Check if in src.
+# TODO: Check if built with coverage_build (if !-b)
+
+# Check if downloads.croc is present. 
+
+if [ ! -r build/downloads.croc ]; then
+    echo "File build/downloads.croc not present in this sandbox." 1>&2
+    exit 1;
+fi    
+
+set -e                          # Poor man's error handling.
+
+if [ "$build" = "yes" ]; then
+  need_runhooks=no
+  if ! echo $GYP_DEFINES | tr ' ' '\n' | fgrep -w "disable_nacl=1" > /dev/null ; then
+      export GYP_DEFINES="$GYP_DEFINES disable_nacl=1"
+      echo \"$1\" added to GYP_DEFINES: $GYP_DEFINES
+      need_runhooks=yes
+  fi
+
+  if ! echo $GYP_DEFINES | tr ' ' '\n' | fgrep -w "coverage=1" > /dev/null ; then
+      export GYP_DEFINES="$GYP_DEFINES coverage=1"
+      echo \"$1\" added to GYP_DEFINES: $GYP_DEFINES
+      need_runhooks=yes
+  fi
+
+  if [ "$need_runhooks" = "yes" ]; then
+    gclient runhooks
+  fi
+
+  chrmake coverage_build
+fi
+
+find out/Debug -name '*.gcda' -print | xargs -r rm
+python tools/code_coverage/coverage_posix.py \
+	--directory out/Debug \
+	--src_root . \
+	'browser_tests[DownloadTest.*:SavePageBrowserTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*]' \
+	'ui_tests[SavePageTest.*]' 
+
+rm -rf out/Debug/coverage_download_browsertests_html
+tools/code_coverage/croc.py \
+	-c build/downloads.croc \
+	-c build/linux/chrome_linux.croc \
+	-i out/Debug/coverage.info \
+	-r .. \
+	--html out/Debug/coverage_download_browsertests_html
+
+find out/Debug -name '*.gcda' -print | xargs rm
+python tools/code_coverage/coverage_posix.py \
+	--directory out/Debug \
+	--src_root . \
+	'unit_tests[BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*]' \
+	'content_unittests[BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadUtiTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*]' 
+
+rm -rf out/Debug/coverage_download_unittests_html
+tools/code_coverage/croc.py \
+	-c build/downloads.croc \
+	-c build/linux/chrome_linux.croc \
+	-i out/Debug/coverage.info \
+	-r .. \
+	--html out/Debug/coverage_download_unittests_html
