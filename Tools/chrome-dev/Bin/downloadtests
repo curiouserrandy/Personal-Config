@@ -75,6 +75,10 @@ if [ "$set_display" = "yes" ]; then
     fi
 fi
 
+## What's our base revision and branch?
+echo -n "Branch: " ; git branch | sed -n '/^\* /s/\* //p'
+git log -1
+
 ## Get initial list of files in ~/Downloads and ~/Documents
 
 ls ~/Downloads > /tmp/DFFileList$$
@@ -83,15 +87,14 @@ if [ -d ~/Documents ]; then
 fi
 
 if [ X"$testname" != X"" ]; then
-    nice chrmake -k $build_config $testname
+    nice chrmake -k 10 $build_config $testname
     if [ $? -ne 0 ]; then
         echo "Compilation failed with error code $?" 1>&2
         exit 1;
     fi
     out/Debug/$testname $rest_of_args
 else
-
-    ionice -c 3 nice chrmake -k $build_config unit_tests content_unittests test_shell_tests browser_tests ui_tests pyautolib
+    ionice -c 3 nice chrmake -k 10 $build_config unit_tests content_unittests test_shell_tests content_browsertests browser_tests pyautolib chromedriver
     if [ $? -ne 0 ]; then
         echo "Compilation failed with error code $?" 1>&2
         exit 1;
@@ -105,25 +108,30 @@ else
     echo "=== Content Unit tests."
 
     out/Debug/content_unittests \
-            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:ByteStreamTest.*;
+            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:ByteStreamTest.*:ResourceDispatcherHostTest.IgnoreCancelForDownloads:ResourceDispatcherHostTest.CancelRequestsForContext:DownloadFileManagerTest.*:DownloadItemTest.*;
 
     echo "=== Test Shell tests."
 
     out/Debug/test_shell_tests \
             --gtest_filter=GlueSerializeTest.GetPostInfoTest   
 
+    echo "=== Content Browser tests."
+
+    out/Debug/content_browsertests --gtest_filter=DownloadContentTest.*
+
     echo "=== Browser tests."
 
     out/Debug/browser_tests --gtest_also_run_disabled_tests \
-            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
-
-    echo "=== UI tests."
-
-    out/Debug/ui_tests --gtest_also_run_disabled_tests \
-            --gtest_filter=SavePageTest.*;
+            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.*DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
 
     echo "=== Python automation server tests."
 
+    ## See http://crbug.com/114769
+    if [ X"$build_config" != X"" ];then
+        export LD_LIBRARY_PATH=out/Release/lib
+    else
+        export LD_LIBRARY_PATH=out/Debug/lib
+    fi
     python chrome/test/functional/downloads.py
     python chrome/test/functional/browsing_data.py __main__.BrowsingDataTest.testClearDownloads __main__.BrowsingDataTest.testClearHistoryAndDownloads __main__.BrowsingDataTest.testClearingAccuracy
     python chrome/test/functional/history.py __main__.HistoryTest.testDownloadNoHistory
