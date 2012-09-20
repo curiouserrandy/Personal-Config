@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is determins the svn revision that a chromium branch is based on.
+It does this by finding the most recent revision on origin/git-svn that 
+the branch is derived from, and parsing it's revision spec.  
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname <branch> <branch> ...";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	{RETURN} 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	{RETURN} 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ $# -eq 0 ]; then
+    # Default to current branch.
+    set `git branch | awk '$1 == "*" {print $2;}'`
+fi
+
+git fetch --all 
+
+while [ $# -ne 0 ]; do
+    branch=$1;
+    shift;
+    base_commit=`git merge-base $branch origin/git-svn`
+    echo r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`: $branch
+done
