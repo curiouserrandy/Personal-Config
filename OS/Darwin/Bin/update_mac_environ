@@ -45,7 +45,8 @@ goodEnvironVars = (
 	'config_domain',
 	'config_files_directory',
 	'config_host',
-	'config_os'
+	'config_os',
+        'emacs_init_list'
 	)
 
 ### Build the body: text containing the xml for all
