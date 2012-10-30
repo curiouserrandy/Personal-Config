@@ -4,28 +4,39 @@
 progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
-$progname is determins the svn revision that a chromium branch is based on.
+$progname is determines the svn revision that a chromium branch is based on 
+and outputs that along with the last time the branch was modified. 
 It does this by finding the most recent revision on origin/git-svn that 
 the branch is derived from, and parsing it's revision spec.  
+By default it outputs the 10 most recently modified branches, with base 
+revision.  If given arguments, it outputs the branches listed as arguments
+along with the master branch.  
+Arguments:
+	* -F: Do not do the initial 'git fetch --all'.  Useful in
+	  offline contexts.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname <branch> <branch> ...";
+usageString="$progname -F <branch> <branch> ...";
 
 # Parse all arguments.
+fetchall=yes;
 while [ $# -ne 0 ]; do
     case $1 in 
+    -F)
+        fetchall=no;
+	;;
     # Repeat as needed.
     -h|-\?)
 	echo "$helpString" 1>&2;
-	{RETURN} 1;
+	exit 1;
 	;;
     --) shift;		# Everything after this point is taken as
 	break;		# regular args.
 	;;
     -*)
 	echo "Usage: $usageString" 1>&2;
-	{RETURN} 1;
+	exit 1;
 	;;
     *)  break;
 	;;
@@ -33,16 +44,32 @@ while [ $# -ne 0 ]; do
     shift;
 done
 
-if [ $# -eq 0 ]; then
-    # Default to current branch.
-    set `git branch | awk '$1 == "*" {print $2;}'`
+if [ $# -ne 0 ]; then
+    branches="$* master";
 fi
 
-git fetch --all 
+if [ "$fetchall" = "yes" ]; then
+    git fetch --all 
+fi
 
+if [ X"$branches" = X"" ]; then
+    branches=`git branch | (while read branch_name branch2; do
+      if [[ '*' = $branch_name ]]; then branch_name=$branch2; fi;
+      echo \`git log -1 --format=format:%ai $branch_name --\` $branch_name ;
+    done) | sort -nr | head $limit | awk '{print $4;}'`
+fi
+
+set $branches
+echo -e 'Rev\tCL\t\tLast Modified\t\t\tBranch'
 while [ $# -ne 0 ]; do
     branch=$1;
     shift;
     base_commit=`git merge-base $branch origin/git-svn`
-    echo r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`: $branch
+    svn_rev=r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`
+    base_time=`git log -1 --format=format:%ai $branch | awk '{print $1, $2, $3;}'`
+    issue=`git config branch.$branch.rietveldissue`
+    if [ X"$issue" = X"" ]; then
+        issue="        "
+    fi
+    echo -e "$svn_rev\t$issue\t$base_time\t$branch"
 done
