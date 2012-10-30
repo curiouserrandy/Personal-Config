@@ -435,13 +435,13 @@ rstodo-move-todo-piece-to-mark."
 	(setq outline-list (append outline-list (list current-outline))))
       outline-list)))
 
-(defconst rstodo-hotkey-regexp "\\[[a-zA-Z]\\(,[a-zA-Z]\\)*\\]"
+(defconst rstodo-hotkey-regexp "\\[[a-zA-Z0-9]\\(,[a-zA-Z0-9]\\)*\\]"
   "Regular expression for finding hotkeys in outline topic headings.")
 
 (defun rstodo-collect-outline-hotkeys ()
   "Returns the list of outline topics marked with hotkeys.
 An outline topic is marked with a hotkey if it matches the regexp 
-\"\[[a-zA-Z]\(,[a-zA-Z]\)*\]\"."
+\"\[[a-zA-Z0-9]\(,[a-zA-Z0-9]\)*\]\"."
   (let ((full-outline-list (rstodo-collect-outline-topics))
 	hotkey-outline-list)
     (while full-outline-list
