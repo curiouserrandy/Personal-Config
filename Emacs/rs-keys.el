@@ -11,6 +11,7 @@
 (define-key esc-map ":" 'goto-line)
 (define-key esc-map "?" 'what-line)
 (define-key esc-map "+" 'pop-tag-mark)	;Deprecate--it's on M-*
+(define-key global-map "\C-z" nil)	;Causes too much grief.
 (if (equal "Darwin" randy-configuration-os)
     (progn
       (define-key esc-map " " 'just-one-space)   ;Reset back to correct value.
