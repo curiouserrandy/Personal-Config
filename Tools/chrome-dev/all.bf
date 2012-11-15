@@ -1,5 +1,9 @@
 prefix_path_with_dirlist PATH ~/Sandboxen/depot_tools	# There's a gcl in Google symlinks I don't want.
 
+## To allow builds of chrome with clang to work even if the gyp build
+## relies on using the path (for proprietary compile acceleators).
+suffix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
+
 # Location of patches repository
 if [ "$config_os" = "CYGWIN" ]; then
     chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
@@ -44,3 +48,6 @@ if [ "$config_os" = "Linux" ]; then
     add_gyp clang_add_plugin='"SemanticDatabase -Xclang -plugin-arg-SemanticDatabase -Xclang --db='$DB_OUTPUT_FILE'"'
   }
 fi
+
+alias chrsync="CC=clang CXX=clang++ gclient sync -j32 -D"
+alias chrgyp="CC=clang CXX=clang++ build/gyp_chromium"
