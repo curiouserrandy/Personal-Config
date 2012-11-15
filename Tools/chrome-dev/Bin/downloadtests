@@ -103,7 +103,7 @@ else
     echo "=== Unit tests."
 
     out/Debug/unit_tests \
-            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*;
+            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*:HistoryBackendDBTest.MigrateDownloadsState:HistoryBackendDBTest.MigrateReasonAndPaths
 
     echo "=== Content Unit tests."
 
@@ -122,7 +122,7 @@ else
     echo "=== Browser tests."
 
     out/Debug/browser_tests --gtest_also_run_disabled_tests \
-            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.*DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*;
+            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.*DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*:DownloadExtensionTest.*;
 
     echo "=== Python automation server tests."
 
