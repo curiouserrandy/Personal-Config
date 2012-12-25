@@ -54,4 +54,4 @@ fi
 
 cd $sandbox_dir
 rm -f TAGS
-git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|mm|inc|inl)$' | etags -r '/class[ 	]*[^ 	]*_EXPORT[ 	]*\([_A-Za-z][_A-Za-z0-9]*\)/\1/' -
+git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|mm|inc|inl)$' | etags -r '/(class|struct)[ 	]*[^ 	]*_EXPORT[ 	]*\([_A-Za-z][_A-Za-z0-9]*\)/\1/' -
