@@ -77,4 +77,64 @@ bring each such chrome issue up in the browser."
 ;; Setup git bindings
 (randy-init-from "Tools/git")
 
+(defun chrome-compile-and-run-current-test ()
+  "Figure out what test the cursor is currently in, and compile and run it."
+  (let (testname filepath filename filepath dirdepth path-to-src)
+  (save-excursion
+    (forward-line 2)
+    (if (not 
+	 (re-search-backward "^TEST[^(]*(\([A-Za-z0-9_]*\),[ 	
+]*\([A-Za-z0-9_]*\))"))
+	(error "Coudln't find test header."))
+    ;; Figure out the test name
+    (setq testname
+	  (concat (buffer-substring (match-beginning 1) (match-end 1))
+		  "."
+		  (buffer-substring (match-beginning 1) (match-end 1))))
+
+    ;; Figure out the path to the src
+    (setq filepath (buffer-file-name))
+    (setq filename (file-name-nondirectory filepath))
+    (if (not (string-match "/src/\(.*\)$" filepath))
+	(error "Coudln't find /src directory in test file path."))
+    (setq path-elements
+	  (split-string (substring filepath (match-beginning)) "/" t))
+    (setq dirdepth (length path-elements))
+    (setq path-to-src "")
+    (while (not (equal dirdepth 1))
+      (setq path-to-src (concat "../" path-to-src))
+      (setq dirdepth (- dirdepth 1)))
+
+    ;; Figure out the test type
+    (setq test_executable_name
+	  (cond
+	   ((and (string-match "_unittest.cc$" filename)
+		 (equal (car path-elements) "content"))
+	    "content_unittests")
+	   ((and (string-match "_browsertest.cc$" filename)
+		 (equal (car path-elements) "content"))
+	    "content_browsertests")
+	   ((and (string-match "_unittest.cc$" filename)
+		 (equal (car path-elements) "chrome"))
+	    "unit_tests")
+	   ((and (string-match "_browsertest.cc$" filename)
+		 (equal (car path-elements) "chrome"))
+	    "browser_tests")
+	   ((and (string-match "_uitest.cc$" filename)
+		 (equal (car path-elements) "chrome"))
+	    "ui_tests")
+	   ((and (string-match "_unittest.cc$" filename)
+		 (equal (car path-elements) "net"))
+	    "net_unittests")
+	   (t nil)))
+    (if (not test_executable_name)
+	(error "Coudln't interpret test name " (buffer-file-name)))
+
+    ;; Compile and run the sucker.
+    (message (concat "cd " path-to-src
+		     "; chrmake " test_executable_name
+		     " && out/Debug/" test_executable_name
+		     " --gtest_filter=" testname))
+    )))
+
 (provide 'chrome-dev)
