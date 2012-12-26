@@ -34,7 +34,7 @@
       (define-key mode-specific-map "c" 
 	'(lambda () (interactive) (if current-prefix-arg
 				      (chrome-compile-and-run-current-test)
-				    (compile)))))
+				    (call-interactively 'compile)))))
   (define-key mode-specific-map "c" 'compile))
 
 (add-hook 'shell-mode-hook
