@@ -122,7 +122,7 @@ else
     echo "=== Browser tests."
 
     out/Debug/browser_tests --gtest_also_run_disabled_tests \
-            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.*DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*:DownloadExtensionTest.*;
+            --gtest_filter=SavePageBrowserTest.*:DownloadTest.*:BrowserCloseTest.*DownloadsCloseCheck*:MHTMLGenerationTest.*:DownloadsApiTest.*:DownloadExtensionTest.*:DownloadQueryTest.*;
 
     echo "=== Python automation server tests."
 
