@@ -17,7 +17,8 @@ Options:
 			and the trunk line (i.e. it may move master
 			forward).
 	-t		Merge to top of tree rather than LKGR.
-	-G		Skip automatic gclient sync.			
+	-G		Skip automatic gclient sync.
+	-q 		Just print LKGR and exit.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -28,6 +29,7 @@ merge_to_base=no
 merge_to_original=no
 merge_to_tot=no
 do_gclient_sync=yes
+print_lkgr=no
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
@@ -39,6 +41,8 @@ while [ $# -ne 0 ]; do
 	;;
     -t) merge_to_tot=yes;
         ;;
+    -q) print_lkgr=yes;
+	;;
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
@@ -90,6 +94,11 @@ if [ "$merge_to_original" = "yes" -a "$current_branch" = "master" ]; then
     exit 1;
 fi
 
+if [ "$print_lkgr" = "yes" -a \( "$merge_to_base" = "yes" -o "$merge_to_original" = "yes" -o "$go_gclient_sync" = "no" -o "$merge_to_tot" = "yes" \) ]; then
+    echo "-q must be specified by itself." 1>&2;
+    exit 1;
+fi
+
 if [ "$merge_to_base" = "yes" ]; then
     if [ "$current_branch" = "master" ]; then
         echo "-m only valid on non-master branch." 1>&2;
@@ -100,6 +109,12 @@ if [ "$merge_to_base" = "yes" ]; then
         echo "Usage: $usageString <rev>" 1>&2;
 	exit 1;
     fi
+fi
+
+lkgr=`curl http://chromium-status.appspot.com/lkgr`
+if [ "$print_lkgr" = "yes" ]; then
+    echo "LKGR is $lkgr"
+    exit 0
 fi
 
 if ! git-treeclean; then
@@ -127,8 +142,6 @@ elif [ "$merge_to_tot" = "yes" ]; then
 	    exit 1;
 	fi
     fi
-else
-    lkgr=`curl http://chromium-status.appspot.com/lkgr`
 fi
 echo Syncing to revision $lkgr
 git svn fetch
@@ -160,7 +173,7 @@ else
 fi
 
 if [ "$do_gclient_sync" = "yes" -a $merge_succeeded -eq 0 ]; then
-    gclient sync -j12 -D
+    CC=clang CXX=clang++ gclient sync -j12 -D
 else
     echo "===> Did not do automatic gclient sync."    
 fi
