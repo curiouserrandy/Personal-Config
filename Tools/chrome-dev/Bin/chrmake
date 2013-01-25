@@ -42,5 +42,11 @@ else
     build="make BUILDTYPE=buildtype"
 fi
 
-## All argument go to make.
+if [ -d ~/goma ]; then
+    pm=100
+fi
+
+echo PATH = $PATH
+
+## All argument go to build program.  
 nice $build -j${pm} "$@"

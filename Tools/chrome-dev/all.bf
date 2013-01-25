@@ -2,7 +2,12 @@ prefix_path_with_dirlist PATH ~/Sandboxen/depot_tools	# There's a gcl in Google 
 
 ## To allow builds of chrome with clang to work even if the gyp build
 ## relies on using the path (for proprietary compile acceleators).
-suffix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
+## Must be "prefix" so that we get the right binaries even on mac.
+prefix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
+
+if [ -r ~/goma/goma_ctl.sh ]; then
+    prefix_val_to_var ~/goma PATH
+fi
 
 # Location of patches repository
 if [ "$config_os" = "CYGWIN" ]; then
