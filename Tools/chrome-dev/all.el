@@ -79,26 +79,27 @@ bring each such chrome issue up in the browser."
 
 (defun chrome-compile-and-run-current-test ()
   "Figure out what test the cursor is currently in, and compile and run it."
-  (let (testname filepath filename filepath dirdepth path-to-src)
+  (let (testname filepath filename filepath
+		 dirdepth path-to-src path-elements test_executable_name)
   (save-excursion
     (forward-line 2)
     (if (not 
-	 (re-search-backward "^TEST[^(]*(\([A-Za-z0-9_]*\),[ 	
-]*\([A-Za-z0-9_]*\))"))
+	 (re-search-backward "^[A-Z_]*TEST[^(]*(\\([A-Za-z0-9_]*\\),[ 	
+]*\\([A-Za-z0-9_]*\\))" (point-min) t))
 	(error "Coudln't find test header."))
     ;; Figure out the test name
     (setq testname
 	  (concat (buffer-substring (match-beginning 1) (match-end 1))
 		  "."
-		  (buffer-substring (match-beginning 1) (match-end 1))))
+		  (buffer-substring (match-beginning 2) (match-end 2))))
 
     ;; Figure out the path to the src
     (setq filepath (buffer-file-name))
     (setq filename (file-name-nondirectory filepath))
-    (if (not (string-match "/src/\(.*\)$" filepath))
-	(error "Coudln't find /src directory in test file path."))
+    (if (not (string-match "/src/\\(.*\\)$" filepath))
+	(error "Coudln't find /src directory in test file path %s." filepath))
     (setq path-elements
-	  (split-string (substring filepath (match-beginning)) "/" t))
+	  (split-string (substring filepath (match-beginning 1)) "/" t))
     (setq dirdepth (length path-elements))
     (setq path-to-src "")
     (while (not (equal dirdepth 1))
@@ -128,10 +129,10 @@ bring each such chrome issue up in the browser."
 	    "net_unittests")
 	   (t nil)))
     (if (not test_executable_name)
-	(error "Coudln't interpret test name " (buffer-file-name)))
+	(error "Coudln't interpret test name %s." (buffer-file-name)))
 
     ;; Compile and run the sucker.
-    (message (concat "cd " path-to-src
+    (compile (concat "cd " path-to-src
 		     "; chrmake " test_executable_name
 		     " && out/Debug/" test_executable_name
 		     " --gtest_filter=" testname))

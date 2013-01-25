@@ -1,4 +1,11 @@
 #!/bin/bash
+
+## Bail to proprietary version if we've got one.
+if [ -x ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake ]; then
+    echo "Redirecting to proprietary chrmake."
+    exec ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake "$@"
+fi
+
 buildtype=Debug
 if [ X"$1" = X"-R" ]; then
     buildtype=Release;
@@ -7,12 +14,6 @@ fi
 
 if [ $# -eq 0 ]; then
     set chrome 		# Target
-fi
-
-## Bail to proprietary version if we've got one.
-if [ -x ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake ]; then
-    echo "Redirecting to proprietary chrmake."
-    exec ~/Proprietary-Config/Tools/chrome-dev/Bin/chrmake "$@"
 fi
 
 # Set the path so that you can link with gold
