@@ -47,7 +47,5 @@ if [ -d ~/goma ]; then
     pm=100
 fi
 
-echo PATH = $PATH
-
 ## All argument go to build program.  
 nice $build -j${pm} "$@"
