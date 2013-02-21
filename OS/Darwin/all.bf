@@ -6,3 +6,4 @@ suffix_path_with_dirlist MANPATH /opt/local/man
 
 # Darwin specific tools
 init_from $config_files_directory/Tools/fink
+init_from $config_files_directory/Tools/MacPorts
