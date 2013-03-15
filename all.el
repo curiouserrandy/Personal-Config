@@ -68,7 +68,7 @@
 (randy-init-from "pre-system")
 
 ;;; Read in everything the shell initiatlization has told us to
-(let* ((files (getenv "emacs_init_list"))
+(let* ((files (or (getenv "emacs_init_list") ""))
        (file-list (split-string files ":")))
   (while file-list
     (randy-init-directly (car file-list))
