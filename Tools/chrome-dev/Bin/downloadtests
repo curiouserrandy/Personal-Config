@@ -103,7 +103,7 @@ else
     echo "=== Unit tests."
 
     out/Debug/unit_tests \
-            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*:HistoryBackendDBTest.*:HistoryProfileTest.TypicalProfileVersion:DownloadHistoryTest.*
+            --gtest_filter=BaseFileTest.*:DownloadRequestInfobar.*:DownloadRequestLimiterTest.*:DownloadStatusUpdaterTest.*:DownloadUtilTest.*:SavePackageTest.*:HistoryTest.*:DownloadManagerTest.*:DownloadRequestInfobarDelegate.*:DownloadRequestLimiterTest.*:BaseFileTest.*:DownloadSBClientTest.*:DownloadBufferTest.*:DownloadFileTest.*:DownloadIdTest.*:DownloadItemTest.*:HistoryBackendDBTest.*:HistoryProfileTest.TypicalProfileVersion:DownloadHistoryTest.*:DownloadItemModelTest.*
 
     echo "=== Content Unit tests."
 
