@@ -78,8 +78,14 @@
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
 (randy-init-from "Emacs/rs-server")
+(randy-init-from "Emacs/rs-man")
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
 
 ;; Unilaterally setup emacs server; I think this is an ok place for that.
 (rs-server-start)			;Sets EDITOR in the environment.
+
+;; Unilaterally enable winner mode.
+(winner-mode t)
+
+(shell)
