@@ -1,6 +1,6 @@
 # Environ variables
 case $EDITOR in
-    emacs*|emacsclient*)	# Leave it alone
+    emacs*|*emacsclient*)	# Leave it alone
     	;;
     *)
         export EDITOR=emacs
