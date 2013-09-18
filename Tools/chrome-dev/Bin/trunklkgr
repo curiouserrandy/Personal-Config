@@ -161,7 +161,7 @@ if [ "$merge_to_original" = "yes" ]; then
     ## Note that we're still on the starting branch
     echo "Merging master into $current_branch"
     set +e   # Doing my own exit code management for merge.
-    git merge master
+    git merge --no-edit master
     merge_succeeded=$?
     if [ $merge_succeeded -ne 0 ]; then
         echo "===> Merge Failed."
