@@ -1,0 +1,93 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import os.path
+import sys
+from optparse import OptionParser
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+{HELPSTRING}
+"""
+
+usage_string = "{SHORT USAGE STRING}"
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+# Process any non-flag arguments
+if len(args) > {EXPECTED NON-FLAG ARGS}:
+    print >> sys.stderr, "Expected usage: %s" % usage_string
+    sys.exit(2)
+
+class BlobTreeState(object):
+    def __init__(self, blobs):
+        """|blobs| is a list of git sha1 hashes to search for."""
+        self.blobs = blobs
+        ## Maps from tree sha1 to a list of bools indicating which blobs
+        ## are in that tree.
+        self.tree_snap = {}
+
+    def record(self, tree_hash, blobs_signals):
+        """|blobs_signals| are a list of booleans indicating which
+        blobs are in the tree."""
+        self.tree_snap[tree_hash] = blobs_signals
+
+    def lookup(self, tree_hash):
+        return (None if tree_hash not in self.tree_snap else
+                self.tree_snap[tree_hash])
+
+    
+## blobs now set, bts maps tree hash to set.
+def analyze_tree(tree_hash, blobs, bts={}):
+    """|bts| is a dict mapping a tree hash to a list of booleans.
+    The list must of of the same length as blobs, and indicates which
+    blobs are in the tree named by tree_hash."""
+    if tree_hash in bts:
+        return bts[tree_hash]
+
+    blob_set = set()
+
+    while tree_list:
+        next_tree = tree_list.pop()
+        result = subprocess.check_output(["git", "ls-tree", next_tree])
+        for line in result.split('\n'):
+            _, hashtype, hashvalue, _ = line.split()
+            if hashtype == "blob" and hashvalue in blobs:
+                blob_set.add(hashvalue)
+            else if hashtype == "tree":
+                blob_set |= analyze_tree(hashvalue, blobs, bts)
+
+    bts[tree_hash] = blob_set
+    return blob_set
+
+def find_first_full_tree(tree_hash, blobs):
+    """Does a git log, stops when it finds a commit with everything."""
+
+    blob_set = frozen_set(blobs)
+    subtree_state = {}
+    log_process = subprocess.Popen(
+        ["git", "log", tree_hash, "--pretty=format:%T"],
+        stdout=subprocess.PIPE)
+    for tree in log_process.stdout:
+        if analyze_tree(tree, blob_set, subtree_state) == blob_set:
+            return tree
+
+    return None
+
+
+            
+        
