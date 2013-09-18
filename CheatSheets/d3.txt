@@ -1,0 +1,23 @@
+
+{d3,sel}.select{,All}(<selector>):
+	Select the first/all element(s) in the document/under the object that
+	matches the specified selector.  Selection from a previous
+	selector moves the node topology in the ancester to the
+	grouping topology in the descendant.
+	
+sel.data(<data>): Associate the data specified by <data> with the selection.
+	* Note that the shape of the data generally should be an
+	  array, which is then split among the nodes in the selection
+	  (creating enter/exit as you'd expect).
+	* <data> may be a function; if it is, it is passed the data of
+	  the parent selection node.
+	* The array passed or returned from the function is split at
+	  the group->node level; i.e. if you have groups selection and
+	  pass a function, the function is called for each element in
+	  the original selection, and returns an array that is splitup
+	  for the nodes in the group defined by that element.
+	? It appears that if there's a single element in each group,
+	  you can return a singleton rather than an array.  But it may
+	  be that this is only true for .select() results.  Would be
+	  worth figuring out. 
+

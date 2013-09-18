@@ -1,0 +1,11 @@
+## Formatting
+%
+	# All optional
+	(<mapping key>)		# If argument is dict, maps.
+	<conversion flags>
+	<min field width>
+	.<precision>
+	<length modifier>
+
+	# Required
+	<conversion type>
