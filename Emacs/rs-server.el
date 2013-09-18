@@ -5,8 +5,11 @@
 on the process number, and put that name into the environment variable
 EMACS_SERVER_NAME for subprocesees of emacs."
   (interactive "P")
-  (let ((server-name (format "EmacsServer%d" (emacs-pid))))
-    (setenv "EDITOR" (concat "emacsclient -s " server-name))
-    (server-start leave-dead)))
+  (setq server-name (format "EmacsServer%d" (emacs-pid)))
+  (setenv "EDITOR"
+	  (concat (if (equal randy-configuration-os "Darwin")
+		      "/Applications/Emacs.app/Contents/MacOS/bin/" "")
+		  "emacsclient -s " server-name))
+  (server-start leave-dead))
     
 (provide 'rs-server)
