@@ -26,7 +26,16 @@ http://en.wikipedia.org/wiki/Class_diagram
 	* Realization [Generalization with dotted line]:
 	  Implementation of an interface.
 
-	  subtype -> supertype[style=dashed, arrowhead="open"];
+	  subtype -> supertype[style=dashed, arrowhead="empty"];
+
+	* Dependency
+	  supertype -> subtype [style=dashed];
+
+	## My invention, because I needed it.
+	## TODO: Find a way to make this not fit into rank order.
+	* Generated
+	  ## May want to add weight=0, inside rank=same subgraph.
+	  factory -> object [arrowhead=veevee];
 
 -- Representing maps: Try representing them as a cluster subgraph
    (subgraph cluster_a), and drawing lines to the cluster.  
