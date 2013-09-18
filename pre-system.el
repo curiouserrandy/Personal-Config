@@ -6,7 +6,7 @@
 (setq find-file-visit-truename t)
 (setq version-control t)		; Always make numeric backups
 (setq require-final-newline 1)		; Ask when saving
-(setq-default case-fold-search nil)
+(setq-default case-fold-search t)
 (setq delete-old-versions t) ; Almost never use backup; standard fine.
 
 (defvar tags-revert-without-query)	; Defined in etags.el
