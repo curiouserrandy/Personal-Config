@@ -4,6 +4,7 @@
 (require 'rs-underpoint)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
+<<<<<<< HEAD
 ;; Also make sure that when we save a C or python style file, we eliminate
 ;; trailing spaces.
 (let ((this-hook '(lambda ()
@@ -14,6 +15,30 @@
 				   (replace-regexp "[ 	][ 	]*$" "")))))))
   (add-hook 'c-mode-common-hook this-hook)
   (add-hook 'python-mode-hook this-hook))
+||||||| merged common ancestors
+;; Also make sure that when we save a C style file, we eliminate trailing
+;; spaces.
+(add-hook 'c-mode-common-hook
+	  '(lambda ()
+	     (add-hook (make-local-variable 'before-save-hook)
+		       '(lambda ()
+			  (save-excursion
+			    (goto-char (point-min))
+			    (replace-regexp "[ 	][ 	]*$" ""))))))
+=======
+;; Make sure objective C shows up before nroff :-}
+(setq auto-mode-alist (cons '("\\.mm" . objc-mode) auto-mode-alist))
+
+;; Also make sure that when we save a C style file, we eliminate trailing
+;; spaces.
+(add-hook 'c-mode-common-hook
+	  (lambda ()
+	    (add-hook (make-local-variable 'before-save-hook)
+		      (lambda ()
+			(save-excursion
+			  (goto-char (point-min))
+			  (replace-regexp "[ 	][ 	]*$" ""))))))
+>>>>>>> 701b65ae8e7251d71d45faf4dd2c5be9f6fa1a22
 
 (setq large-file-warning-threshold
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
@@ -78,65 +103,93 @@ bring each such chrome issue up in the browser."
 ;; Setup git bindings
 (randy-init-from "Tools/git")
 
-(defun chrome-compile-and-run-current-test ()
-  "Figure out what test the cursor is currently in, and compile and run it."
-  (let (testname filepath filename filepath
-		 dirdepth path-to-src path-elements test_executable_name)
-  (save-excursion
-    (forward-line 2)
-    (if (not 
-	 (re-search-backward "^[A-Z_]*TEST[^(]*(\\([A-Za-z0-9_]*\\),[ 	
-]*\\([A-Za-z0-9_]*\\))" (point-min) t))
-	(error "Coudln't find test header."))
-    ;; Figure out the test name
-    (setq testname
-	  (concat (buffer-substring (match-beginning 1) (match-end 1))
-		  "."
-		  (buffer-substring (match-beginning 2) (match-end 2))))
+(defconst chrome-test-regexp  "[A-Z_]*TEST[^(]*(\\([A-Za-z0-9_]*\\),[ 	
+]*\\([A-Za-z0-9_]*\\))"
+  "Regexp to match tests.")
 
-    ;; Figure out the path to the src
+(defun chrome-speciality-compile ()
+  "If in a test, compile and run that test.  If not in a test, compile
+just the current file."
+  (let ((in-test t) testname filepath filename filepath
+		 dirdepth path-to-src path-from-src
+		 path-elements test_executable_name)
+  (save-excursion
+    ;; Figure out the path to the src; needed for both forks.
     (setq filepath (buffer-file-name))
     (setq filename (file-name-nondirectory filepath))
     (if (not (string-match "/src/\\(.*\\)$" filepath))
 	(error "Coudln't find /src directory in test file path %s." filepath))
-    (setq path-elements
-	  (split-string (substring filepath (match-beginning 1)) "/" t))
+    (setq path-from-src (substring filepath (match-beginning 1)))
+    (setq path-elements (split-string path-from-src "/" t))
     (setq dirdepth (length path-elements))
     (setq path-to-src "")
     (while (not (equal dirdepth 1))
       (setq path-to-src (concat "../" path-to-src))
       (setq dirdepth (- dirdepth 1)))
 
-    ;; Figure out the test type
-    (setq test_executable_name
-	  (cond
-	   ((and (string-match "_unittest.cc$" filename)
-		 (equal (car path-elements) "content"))
-	    "content_unittests")
-	   ((and (string-match "_browsertest.cc$" filename)
-		 (equal (car path-elements) "content"))
-	    "content_browsertests")
-	   ((and (string-match "_unittest.cc$" filename)
-		 (equal (car path-elements) "chrome"))
-	    "unit_tests")
-	   ((and (string-match "_browsertest.cc$" filename)
-		 (equal (car path-elements) "chrome"))
-	    "browser_tests")
-	   ((and (string-match "_uitest.cc$" filename)
-		 (equal (car path-elements) "chrome"))
-	    "ui_tests")
-	   ((and (string-match "_unittest.cc$" filename)
-		 (equal (car path-elements) "net"))
-	    "net_unittests")
-	   (t nil)))
-    (if (not test_executable_name)
-	(error "Coudln't interpret test name %s." (buffer-file-name)))
+    ;; Test or not test?
+    (forward-line 2)
+    (if (not (re-search-backward (concat "^\\(}\\|" chrome-test-regexp "\\)")
+					 (point-min) t))
+	(setq in-test nil))
+    (if (not (looking-at chrome-test-regexp))
+	(setq in-test nil))
 
-    ;; Compile and run the sucker.
-    (compile (concat "cd " path-to-src
-		     "; chrmake " test_executable_name
-		     " && out/Debug/" test_executable_name
-		     " --gtest_filter=" testname))
-    )))
+    (if in-test
+	(progn
+	  ;; Figure out the test name
+	  (setq testname
+		(concat (buffer-substring (match-beginning 1) (match-end 1))
+			"."
+			(buffer-substring (match-beginning 2) (match-end 2))))
+
+	  ;; Figure out the test type
+	  (setq test_executable_name
+		(cond
+		 ((and (string-match "_unittest.cc$" filename)
+		       (equal (car path-elements) "content"))
+		  "content_unittests")
+		 ((and (string-match "_browsertest.cc$" filename)
+		       (equal (car path-elements) "content"))
+		  "content_browsertests")
+		 ((and (string-match "_unittest.cc$" filename)
+		       (equal (car path-elements) "chrome"))
+		  "unit_tests")
+		 ((and (string-match "_browsertest.cc$" filename)
+		       (equal (car path-elements) "chrome"))
+		  "browser_tests")
+		 ((and (string-match "_uitest.cc$" filename)
+		       (equal (car path-elements) "chrome"))
+		  "ui_tests")
+		 ((and (string-match "_unittest.cc$" filename)
+		       (equal (car path-elements) "net"))
+		  "net_unittests")
+		 (t nil)))
+	  (if (not test_executable_name)
+	      (error "Coudln't interpret test name %s." (buffer-file-name)))
+
+	  ;; Compile and run the sucker.
+	  (compile (concat "cd " path-to-src
+			   "; chrmake " test_executable_name
+			   " && out/Debug/" test_executable_name
+			   " --gtest_filter=" testname))
+	  )
+      ;; (not in-test)
+      (compile (concat "cd " path-to-src "; chrmake ../../"
+		       path-from-src "^"))))))
+
+(defconst chrome-codesearch-search-template
+  "https://code.google.com/p/chromium/codesearch#search/&q=%s&sq=package:chromium"
+  "URL to visit for searching for a particular string in codesearch.")
+
+(setq chrome-codesearch-history '())
+
+(defun chrome-codesearch (search-string)
+  (interactive (list
+		(read-from-minibuffer
+		 "Tag to Codesearch: " 
+		 (randy-word-under-point)
+		 nil nil chrome-codesearch-history)))
+  (browse-url (format chrome-codesearch-search-template search-string)))
 
 (provide 'chrome-dev)

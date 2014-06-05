@@ -3,6 +3,10 @@
 prefix_path_with_dirlist PATH /opt/local/bin 
 suffix_path_with_dirlist PATH /Developer/Tools/ /opt/local/sbin
 suffix_path_with_dirlist MANPATH /opt/local/man
+suffix_path_with_dirlist MANPATH /Applications/Xcode.app/Contents/Developer/usr/share/man
+
+# So that we find the right emacsclient 
+prefix_path_with_dirlist PATH /Applications/Emacs.app/Contents/MacOS/bin/
 
 # Darwin specific tools
 init_from $config_files_directory/Tools/fink

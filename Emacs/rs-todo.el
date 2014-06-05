@@ -183,10 +183,10 @@ is nil, (point-min) or (point-max) will be used instead."
 	;;; General case.  First create the regexp.
 	(setq search-re
 	      (concat "^"
-		      ;; Not done allows any other mark; don't scan for those
+		      ;; Not done allows any other mark (other than whitespce); don't scan for those
 		      (if (and (member t done) (member nil done)) ".?")
 		      (if (not (member nil done)) "X")
-		      (if (not (member t done)) "[^X]?")
+		      (if (not (member t done)) "[^X 	]?")
 
 		      ;; For each member of type
 		      ;;   I want to translate it to the prefix
@@ -220,7 +220,7 @@ is nil, (point-min) or (point-max) will be used instead."
   (let* ((myoutl (rstodo-get-outline-info (point)))
 	 (nextpiece
 	  (rstodo-get-related-piece-info
-	   (point) rel '("todo" "copy" "question")
+	   (point) rel '("todo" "copy" "question" "note")
 	   (if skip-done nil '(t nil))
 	   (if skip-wait nil '(t nil))
 	   (rstodo-outline-info-start myoutl)
@@ -593,11 +593,11 @@ An outline topic is marked with a hotkey if it matches the regexp
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
-(define-key rstodo-mode-map [f5] 'rstodo-move-todo-piece-to-mark)
-(define-key rstodo-mode-map [f6] 'rstodo-next-open-todo-item)
-(define-key rstodo-mode-map [f7] 'rstodo-prev-open-todo-item)
+(define-key rstodo-mode-map [f5] 'rstodo-next-open-todo-item)
+(define-key rstodo-mode-map [f6] 'rstodo-prev-open-todo-item)
+(define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
-(define-key rstodo-mode-map [f9] 'rstodo-move-item-down)
+(define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
 
 ;;; Reset the buffer back to specified layout. 
 ;;; With prefix argument, actually do a revert.

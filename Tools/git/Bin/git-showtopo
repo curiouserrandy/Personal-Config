@@ -1,0 +1,141 @@
+#!/usr/bin/env python 
+# At least on the mac, I really don't trust python to be in a consistent 
+# place, so I'm using the path.
+
+import collections
+import os.path
+import subprocess
+import sys
+from optparse import OptionParser
+
+enable_debugging = 0
+
+(program_directory, program_name) = os.path.split(sys.argv[0])
+help_string = """
+%(program_name)s shows the topology of a git repository.  It shortens all
+linear links to a single link (with intermediate commit count) but shows 
+all branches, splits, and merges.
+""" % { 'program_name' : program_name}
+
+usage_string = "%s" % program_name
+
+parser = OptionParser(description=help_string, usage=usage_string)
+parser.add_option("-?", action="help")
+parser.add_option("-D", "--debug", help="Enable script debugging",
+                  type="int", dest="debug", default=0, metavar="DBGLVL")
+## Further options here; template follows.  
+## All args are optional; if action is store_true/false, no extra
+## args are consumed.
+## parser.add_option({opts-short or long}, ..., dest={}, help={},
+##		     type={}, default={}, metavar={},
+##		     nargs={}, choices={}, callback={}, 
+
+(options, args) = parser.parse_args()
+
+# Process any non-flag arguments
+if len(args) > 0:
+    print >> sys.stderr, "Expected usage: %s" % usage_string
+    sys.exit(2)
+
+## Setup parent_map as a hash mapping from a commit to its parents
+## in list form.
+git_commits = subprocess.Popen('git log --all --pretty=format:"%H:%P"',
+                               shell=True, stdout=subprocess.PIPE)
+child_count = collections.defaultdict(int)
+parent_map = {}
+for line in git_commits.stdout:
+    (commit, parents) = line.split(":")
+    parent_list = parents.split()
+    assert commit not in parent_map, \
+	"Commit: %s, Existing map: %s, line: %s" % (commit, parent_map[commit], line)
+    parent_map[commit] = parent_list
+    for p in parent_list:
+        child_count[p] += 1
+
+## TODO(rdsmith): Handle multiple labels pointing to the same commit.  
+## For all references:
+##	ref_commit maps from a label/reference to the commit it refers to.
+##	commit_ref maps from a commit, to the label/reference it refers to.
+git_refs = subprocess.Popen('git show-ref', shell=True, stdout=subprocess.PIPE)
+ref_commit = {}
+commit_ref = {}
+for ref in git_refs.stdout:
+    (commit, label) = ref.split()
+    if label.startswith("refs/heads/"):
+        label = label[len("refs/heads/"):]
+    elif label.startswith("refs/remotes/"):
+        label = label[len("refs/remotes/"):]
+    else:
+        assert False, "Label %s: unknown format" % label
+
+    ref_commit[label] = commit
+    commit_ref[commit] = label
+
+## Make interesting a dictionary, mapping from commits to the reason
+## they are interesting.  
+interesting = dict.fromkeys(commit_ref.keys(), "ref")
+interesting.update(dict.fromkeys([p for p in parent_map.keys()
+                                  if len(parent_map[p]) == 0], "root"))
+interesting.update(dict.fromkeys([p for p in parent_map.keys()
+                                   if len(parent_map[p]) > 1], "merge"))
+interesting.update(dict.fromkeys([p for p in child_count.keys()
+                                  if child_count[p] > 1], "branch"))
+
+## TODO(rdsmith): Pull a commit out of "interesting" if it's a branch or a
+## merge that can only be reached from or through one of a list of 
+## commits
+boring_label_list = [ 'origin/master' ]
+
+
+## summary_graph is an associative map from child to
+## (parent, num_link, termination_reason) tuple
+
+refs_to_analyze = list(interesting)
+summary_graph = collections.defaultdict(list)
+
+while refs_to_analyze:
+    r = refs_to_analyze.pop(0)
+    for p in parent_map[r]:
+        count = 0
+        c = p
+        while c not in interesting:
+            count += 1
+            child_parents = parent_map[c]
+            assert len(child_parents) == 1
+            c = child_parents[0]
+        summary_graph[r].append((c, count))
+        if c not in summary_graph:
+            refs_to_analyze.append(c)
+
+def best_output(commit):
+    return commit_ref[commit] if commit in commit_ref else commit[0:6]
+
+already_output = set()
+def output_commit(commit, recursion_level=0, link_count=0):
+    previously_output = commit in already_output
+    assert commit in interesting
+    interesting_reason = interesting[commit]
+    try:
+        print "%s%s%s%s%s" % (
+            ' ' * recursion_level * 2,
+            '[%d] ' % link_count if link_count else "",
+            best_output(commit),
+            ' (' + interesting_reason +')' if interesting_reason != "ref" else "",
+            "..." if previously_output else "")
+    except IOError:
+        print >> sys.stderr, "Broken Pipe"
+        sys.exit(1)
+
+    if previously_output:
+        return
+
+    already_output.add(commit)
+    for p,count in summary_graph[commit]:
+        output_commit(p, recursion_level+1, count)
+
+for r in commit_ref.keys():
+    output_commit(r)
+
+
+    
+                 

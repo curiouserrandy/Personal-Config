@@ -4,7 +4,10 @@
 	deltaBaseCacheLimit = 1G
 [user]
 	name = Randy Smith
+	email = rdsmith@chromium.org
 [merge]
 	conflictstyle=diff3
 [branch]
 	autosetupmerge=always
+[alias]
+	sed = !git ls-files -- . | xargs -L 1 sed -i \"\"
