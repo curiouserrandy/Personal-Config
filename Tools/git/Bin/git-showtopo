@@ -37,6 +37,8 @@ if len(args) > 0:
     print >> sys.stderr, "Expected usage: %s" % usage_string
     sys.exit(2)
 
+## Setup parent_map as a hash mapping from a commit to its parents
+## in list form.
 git_commits = subprocess.Popen('git log --all --pretty=format:"%H:%P"',
                                shell=True, stdout=subprocess.PIPE)
 child_count = collections.defaultdict(int)
@@ -50,8 +52,11 @@ for line in git_commits.stdout:
     for p in parent_list:
         child_count[p] += 1
 
+## TODO(rdsmith): Handle multiple labels pointing to the same commit.  
+## For all references:
+##	ref_commit maps from a label/reference to the commit it refers to.
+##	commit_ref maps from a commit, to the label/reference it refers to.
 git_refs = subprocess.Popen('git show-ref', shell=True, stdout=subprocess.PIPE)
-
 ref_commit = {}
 commit_ref = {}
 for ref in git_refs.stdout:
@@ -66,6 +71,8 @@ for ref in git_refs.stdout:
     ref_commit[label] = commit
     commit_ref[commit] = label
 
+## Make interesting a dictionary, mapping from commits to the reason
+## they are interesting.  
 interesting = dict.fromkeys(commit_ref.keys(), "ref")
 interesting.update(dict.fromkeys([p for p in parent_map.keys()
                                   if len(parent_map[p]) == 0], "root"))
@@ -73,6 +80,12 @@ interesting.update(dict.fromkeys([p for p in parent_map.keys()
                                    if len(parent_map[p]) > 1], "merge"))
 interesting.update(dict.fromkeys([p for p in child_count.keys()
                                   if child_count[p] > 1], "branch"))
+
+## TODO(rdsmith): Pull a commit out of "interesting" if it's a branch or a
+## merge that can only be reached from or through one of a list of 
+## commits
+boring_label_list = [ 'origin/master' ]
+
 
 ## summary_graph is an associative map from child to
 ## (parent, num_link, termination_reason) tuple
