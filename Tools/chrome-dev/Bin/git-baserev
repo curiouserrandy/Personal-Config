@@ -12,19 +12,19 @@ By default it outputs the 10 most recently modified branches, with base
 revision.  If given arguments, it outputs the branches listed as arguments
 along with the master branch.  
 Arguments:
-	* -F: Do not do the initial 'git fetch --all'.  Useful in
-	  offline contexts.
+	* -f: Do an initial 'git fetch --all'.  Useful when some of the
+	  patches are from other repositories with more recent master branches.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
 usageString="$progname -F <branch> <branch> ...";
 
 # Parse all arguments.
-fetchall=yes;
+fetchall=no;
 while [ $# -ne 0 ]; do
     case $1 in 
-    -F)
-        fetchall=no;
+    -f)
+        fetchall=yes;
 	;;
     # Repeat as needed.
     -h|-\?)
