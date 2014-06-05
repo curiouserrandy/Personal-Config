@@ -54,4 +54,8 @@ fi
 
 cd $sandbox_dir
 rm -f TAGS
-git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|mm|inc|inl)$' | etags -r '/\(class\|struct\)[ 	]*[^ 	]*_EXPORT\(_PRIVATE\)?[ 	]*\([_A-Za-z][_A-Za-z0-9]*\)/\3/' -
+
+# .mm files
+git ls-files -- '*.mm' | etags -l objc -
+# Non-.mm files
+git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|inc|inl)$' | etags -a -r '/\(class\|struct\)[ 	]*[^ 	]*_EXPORT\(_PRIVATE\)?[ 	]*\([_A-Za-z][_A-Za-z0-9]*\)/\3/' -
