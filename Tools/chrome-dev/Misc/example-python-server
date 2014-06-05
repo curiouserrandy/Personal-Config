@@ -27,6 +27,12 @@ class SimpleRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write("This is a sample text string.")
         path_dict[self.path] -= 1
 
+    def do_POST(self):
+        """Serve a POST request."""
+        print "Serving POST request for ", self.path
+        self.send_head()
+        self.wfile.write("This is a sample text string.")
+
     def do_HEAD(self):
         """Serve a HEAD request."""
         print "Serving HEAD request for ", self.path
@@ -46,6 +52,7 @@ class SimpleRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
+        self.send_header("Cache-control", "no-cache")
         self.end_headers()
 
 if __name__ == '__main__':
@@ -54,7 +61,7 @@ if __name__ == '__main__':
     (program_directory, program_name) = os.path.split(sys.argv[0])
     help_string = """
 %(program_name)s is a simple http server.  Args:
-	-p <port> 		Port to listen on (default 2049)
+	-p <port> 		Port to listen on (default 10341)
 	-c <count>		Count of successful returns before failure.
 				(default 1)
 """ % { 'program_name' : program_name }
