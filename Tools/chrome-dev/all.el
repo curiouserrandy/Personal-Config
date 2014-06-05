@@ -4,15 +4,16 @@
 (require 'rs-underpoint)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
-;; Also make sure that when we save a C style file, we eliminate trailing
-;; spaces.
-(add-hook 'c-mode-common-hook
-	  '(lambda ()
-	     (add-hook (make-local-variable 'before-save-hook)
-		       '(lambda ()
-			  (save-excursion
-			    (goto-char (point-min))
-			    (replace-regexp "[ 	][ 	]*$" ""))))))
+;; Also make sure that when we save a C or python style file, we eliminate
+;; trailing spaces.
+(let ((this-hook '(lambda ()
+		    (add-hook (make-local-variable 'before-save-hook)
+			      '(lambda ()
+				 (save-excursion
+				   (goto-char (point-min))
+				   (replace-regexp "[ 	][ 	]*$" "")))))))
+  (add-hook 'c-mode-common-hook this-hook)
+  (add-hook 'python-mode-hook this-hook))
 
 (setq large-file-warning-threshold
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
