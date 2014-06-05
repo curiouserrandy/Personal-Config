@@ -4,7 +4,9 @@
 (require 'rs-underpoint)
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
-<<<<<<< HEAD
+;; Make sure objective C shows up before nroff :-}
+(setq auto-mode-alist (cons '("\\.mm" . objc-mode) auto-mode-alist))
+
 ;; Also make sure that when we save a C or python style file, we eliminate
 ;; trailing spaces.
 (let ((this-hook '(lambda ()
@@ -15,30 +17,6 @@
 				   (replace-regexp "[ 	][ 	]*$" "")))))))
   (add-hook 'c-mode-common-hook this-hook)
   (add-hook 'python-mode-hook this-hook))
-||||||| merged common ancestors
-;; Also make sure that when we save a C style file, we eliminate trailing
-;; spaces.
-(add-hook 'c-mode-common-hook
-	  '(lambda ()
-	     (add-hook (make-local-variable 'before-save-hook)
-		       '(lambda ()
-			  (save-excursion
-			    (goto-char (point-min))
-			    (replace-regexp "[ 	][ 	]*$" ""))))))
-=======
-;; Make sure objective C shows up before nroff :-}
-(setq auto-mode-alist (cons '("\\.mm" . objc-mode) auto-mode-alist))
-
-;; Also make sure that when we save a C style file, we eliminate trailing
-;; spaces.
-(add-hook 'c-mode-common-hook
-	  (lambda ()
-	    (add-hook (make-local-variable 'before-save-hook)
-		      (lambda ()
-			(save-excursion
-			  (goto-char (point-min))
-			  (replace-regexp "[ 	][ 	]*$" ""))))))
->>>>>>> 701b65ae8e7251d71d45faf4dd2c5be9f6fa1a22
 
 (setq large-file-warning-threshold
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
