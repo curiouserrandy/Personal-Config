@@ -22,8 +22,6 @@
 				 (dired-do-shell-command
 				  "open" current-prefix-arg
 				  (dired-get-marked-files t current-prefix-arg))))))))
-						      
-  
 
 ;;; The "official" user customization keys; \C-c[a-z]
 ;;; a
@@ -104,6 +102,12 @@
 (add-hook 'mail-mode-hook
 	  '(lambda () 
 	     (define-key mail-mode-map "\C-c\C-r" 'randy-include-signature)))
+(if (featurep 'chrome-dev)
+    (define-key mode-specific-map [?\C-.] 'chrome-codesearch))
+
+;; Move iconification off of S-m; I hit it too often.
+(global-set-key [(super ?m)] 'undefined)
+(define-key mode-specific-map "\C-m" 'iconify-frame)
 
 ;;; Function key definitions
 (define-key global-map '[f12] 'quoted-tab)
