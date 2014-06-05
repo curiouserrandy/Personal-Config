@@ -1,5 +1,7 @@
 file:///Users/randy/Documentation/python-2.6.2-docs-html/library/stdtypes.html#mapping-types-dict
 
+Literal: { '<name>': <value>, ... }
+
 len(d)				
 
 # Testing key presence, accessing value by key
