@@ -23,11 +23,13 @@ if [ "$host_path" = "" ]; then
     esac
 fi
 
-# Create a path that we intend will, for all machines, have the 
-# following executables on it:
-# 	uname, hostname, host, awk, sed
-PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/ucb:/etc:/usr/etc
-export PATH
+if [ "$no_path_reset" != "true" ]; then
+    # Create a path that we intend will, for all machines, have the 
+    # following executables on it:
+    # 	uname, hostname, host, awk, sed
+    PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/ucb:/etc:/usr/etc
+    export PATH
+fi
 
 # Get the fully qualified hostname and the domain name.
 # The head -1 is to deal with situations in which the hostname is set
@@ -75,7 +77,9 @@ export config_arch;
 # modified by the various files read in below, using
 # {prefix,suffix}_path_with_dirlist.  Thus the latter files may choose 
 # to override the earlier ones, or not.
-PATH=""
+if [ "$no_path_reset" != "true" ]; then
+    PATH=""
+fi
 suffix_path_with_dirlist PATH /usr/bin /bin /usr/sbin /sbin /usr/games
 export PATH
 
