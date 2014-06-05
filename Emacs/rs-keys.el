@@ -31,7 +31,7 @@
       (define-key mode-specific-map "b" 'chrome-visit-issue)
       (define-key mode-specific-map "c" 
 	'(lambda () (interactive) (if current-prefix-arg
-				      (chrome-compile-and-run-current-test)
+				      (chrome-speciality-compile)
 				    (call-interactively 'compile)))))
   (define-key mode-specific-map "c" 'compile))
 
