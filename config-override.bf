@@ -11,7 +11,7 @@ if [ X"$config_os" = X"Darwin" ]; then
 	        config_domain=tigana.org
 	    fi
 	    ;;
-	W80141BG66H|W80201SXAGY|C02FH04VDNKY|C02FK00KDNKY|C02FW0GHDNKY)
+	C02FH04VDNKY|C02FK00KDNKY|C02FW0GHDNKY|C02L5044FGFJ)
 	    # We're on (one of) my google supplied laptop(s)
 	    config_host=rdsmith-macbookpro;
 	    config_domain=cam.corp.google.com;
