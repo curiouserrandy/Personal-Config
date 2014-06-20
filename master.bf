@@ -96,7 +96,7 @@ export LIBPATH=$LD_LIBRARY_PATH
 prefix_path_with_dirlist PATH /usr/local/bin /usr/local/sbin 
 prefix_path_with_dirlist MANPATH /usr/local/man
 suffix_path_with_dirlist PATH /opt/local/bin /opt/local/sbin
-suffix_path_with_dirlist MANPATH /opt/local/man /opt/local/share/man
+suffix_path_with_dirlist MANPATH /usr/local/share/man /opt/local/man /opt/local/share/man
 
 # Get my personal stuff that needs to come in before machine specific files
 . $config_files_directory/pre-system.bf
