@@ -59,7 +59,7 @@ following the word point is on separated from it by WORDSEP)."
 With prefix arg, find it in the other window."
   (interactive "P")
   (save-excursion
-    (if (re-search-backward "\n\\| \\|	\\|\\[" (point-min) 1)
+    (if (re-search-backward "\n\\| \\|	\\|\\[\\|\"" (point-min) 1)
 	(goto-char (match-end 0))
       ;; Else will just go to beginning of file and stop, which may be right
       )

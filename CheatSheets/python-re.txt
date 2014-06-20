@@ -27,6 +27,7 @@ ro.groupindex				# dict[name] = number
 ro.pattern				# Original pattern string
 
 # Match object methods
+# Group number 0 == entire string.
 mo.expand(template)			# Do backslash sub on template
 mo.group(gi=0), mo.group(g1, g2, ...)	# Return specified group or groups
 mo.groups(default=None)			# Tuple of groups; default

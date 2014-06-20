@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+import BaseHTTPServer
+import os.path
+import sys
+
+from optparse import OptionParser
+
+path_dict = {}
+default_success_count = 1
+
+class SimpleRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    """Very simple HTTP server that always returns the same string.
+
+    Based on python's built-in SimpleHTTPServer.py.  Intended to be copied
+    and modified."""
+
+    def do_GET(self):
+        """Serve a GET request."""
+        print "Serving GET request for ", self.path
+
+        if not path_dict.setdefault(self.path, default_success_count):
+            self.wfile.close()
+            return
+
+        self.send_head()
+        self.wfile.write("This is a sample text string.")
+        path_dict[self.path] -= 1
+
+    def do_POST(self):
+        """Serve a POST request."""
+        print "Serving POST request for ", self.path
+        self.send_head()
+        self.wfile.write("This is a sample text string.")
+
+    def do_HEAD(self):
+        """Serve a HEAD request."""
+        print "Serving HEAD request for ", self.path
+        self.send_head()
+
+    def send_head(self):
+        """Common code for GET and HEAD commands.
+
+        This sends the response code and MIME headers.
+
+        Return value is either a file object (which has to be copied
+        to the outputfile by the caller unless the command was HEAD,
+        and must be closed by the caller under all circumstances), or
+        None, in which case the caller has nothing further to do.
+
+        """
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.send_header("Cache-control", "no-cache")
+        self.end_headers()
+
+if __name__ == '__main__':
+    enable_debugging = 0
+
+    (program_directory, program_name) = os.path.split(sys.argv[0])
+    help_string = """
+%(program_name)s is a simple http server.  Args:
+	-p <port> 		Port to listen on (default 10341)
+	-c <count>		Count of successful returns before failure.
+				(default 1)
+""" % { 'program_name' : program_name }
+
+    usage_string = ("%(program_name)s [-p <port>] [-c <count>]"
+                    % { 'program_name' : program_name })
+
+    parser = OptionParser(description=help_string, usage=usage_string)
+    parser.add_option("-?", action="help")
+    parser.add_option("-D", "--debug", help="Enable script debugging",
+                      type="int", dest="debug", default=0, metavar="DBGLVL")
+    parser.add_option("-p", "--port", dest='port', default=10241, type="int",
+                      metavar='PORT')
+    parser.add_option("-c", "--count", dest='count', default=1, type='int',
+                      metavar='COUNT')
+
+    (options, args) = parser.parse_args()
+
+    # Process any non-flag arguments
+    if len(args) > 0:
+        print >> sys.stderr, "Expected usage: %s" % usage_string
+        sys.exit(2)
+
+    default_success_count = options.count
+
+    server_address = ('', options.port)
+    httpd = BaseHTTPServer.HTTPServer(server_address, SimpleRequestHandler)
+    httpd.serve_forever()

@@ -14,10 +14,8 @@ along with the master branch.
 Note that this will sometimes be inaccurate if a branch was created in 
 another checkout from an svn revision not yet retrieved into this checkout.
 Arguments:
-	* -f: Do an initial 'git fetch --all'.  This takes some time, but
-	  will guarantee correct results even if a branch was originally
-	  created (in some other checkout) from a point on the git-svn
-	  branch that has not yet been retrieved.  
+	* -f: Do an initial 'git fetch --all'.  Useful when some of the
+	  patches are from other repositories with more recent master branches.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;

@@ -19,6 +19,7 @@ Options:
 	-t		Merge to top of tree rather than LKGR.
 	-G		Skip automatic gclient sync.
 	-q 		Just print LKGR and exit.
+	-b 		Also sync up blink repository.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
@@ -30,6 +31,7 @@ merge_to_original=no
 merge_to_tot=no
 do_gclient_sync=yes
 print_lkgr=no
+sync_blink=no
 while [ $# -ne 0 ]; do
     case $1 in 
     # Repeat as needed.
@@ -42,6 +44,8 @@ while [ $# -ne 0 ]; do
     -t) merge_to_tot=yes;
         ;;
     -q) print_lkgr=yes;
+	;;
+    -b) sync_blink=yes;
 	;;
     -h|-\?)
 	echo "$helpString" 1>&2;
@@ -88,7 +92,10 @@ if [ $rev_spec_count -gt 1 ]; then
     echo "Only one of -t, -m, or <rev> allowed." 1>&2;
     exit 1;
 fi  
-
+if [ "$do_gclient_sync" = "no" -a "$sync_blink" = "yes" ]; then
+    echo "Can't sync blink if not syncing!?" 1>&2;
+    exit 1;
+fi
 if [ "$merge_to_original" = "yes" -a "$current_branch" = "master" ]; then
     echo "Can't merge trunk to original branch if original branch is master!" 1>&2;
     exit 1;
@@ -109,6 +116,38 @@ if [ "$merge_to_base" = "yes" ]; then
         echo "Usage: $usageString <rev>" 1>&2;
 	exit 1;
     fi
+fi
+
+## Find gclient root
+gclient_root=""
+save_dir=$PWD
+while [ ! -r $PWD/.gclient -a "$PWD" != "/" ]; do
+    cd ..
+done
+if [ ! -r $PWD/.gclient ]; then
+    echo "Can't find .gclient file in any ancestor directory." 1>&2;
+    exit 1;
+fi
+if [ ! -d $PWD/src ]; then
+    echo "Source root doesn't have src/ directory?!" 1>&2;
+    exit 1;
+fi
+gclient_root=$PWD
+cd $save_dir
+
+gclient_spec_arg=""
+if [ "$sync_blink" = "yes" ]; then
+    if [ ! -r $gclient_root/.gclient-blink ]; then
+	echo "Can't find .gclient-blink file in gclient directory." 1>&2;
+	exit 1;
+    fi
+    gclient_spec_arg="--gclientfile=$gclient_root/.gclient-blink";
+fi
+
+## For DEPS grep below.
+if [ ! -r $gclient_root/src/DEPS ]; then
+    echo "No file $gclient_root/src/DEPS" 1>&2;
+    exit 1;
 fi
 
 lkgr=`curl http://chromium-status.appspot.com/lkgr`
@@ -172,10 +211,45 @@ else
     git checkout master
 fi
 
-if [ "$do_gclient_sync" = "yes" -a $merge_succeeded -eq 0 ]; then
-    CC=clang CXX=clang++ gclient sync -j12 -D
-else
+if [ "$do_gclient_sync" = "no" -o $merge_succeeded -ne 0 ]; then
     echo "===> Did not do automatic gclient sync."    
+    exit $merge_succeeded;
+fi    
+
+## Sync blink first, if doing so, so gclient runhooks will work.
+
+if [ "$sync_blink" = "yes" ]; then
+    blink_revision=`sed -n '/webkit_revision/s/^.*"\([0-9]*\)".*$/\1/p' DEPS`
+    cd $gclient_root/src/third_party/WebKit
+    git fetch --all
+    blink_commit=`git log --grep='trunk@'$blink_revision' ' origin/master | head -1 | awk '{print $2;}'`
+
+    current_blink_branch=`git branch | awk '$1 == "*" {print $2;}'`
+
+    if [ "$current_blink_branch" = "master" ]; then
+	git reset --hard $blink_commit
+    else 
+	git branch -f master $blink_commit
+    fi
+    if [ $? -ne 0 ]; then
+	echo "Reset of blink master failed" 1>&2;
+	exit 1;
+    fi
+
+    git merge --no-edit master
+    if [ $? -ne 0 ]; then
+	echo "Merge of blink master into current branch failed" 1>&2;
+	exit 1;
+    fi
+
+    cd $gclient_root/src
 fi
+
+CC=clang CXX=clang++ gclient sync -j12 -D $gclient_spec_arg
+if [ $? -ne 0 ]; then
+    echo "===> Gclient sync failed." 1>&2;
+    exit 1;
+fi
+
 ## Todo: Merge master into all branches tracking master.  Maybe.
 

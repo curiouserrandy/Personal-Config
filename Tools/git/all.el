@@ -17,7 +17,7 @@
 
 	(defun randy-run-git-grep ()
 	  (interactive)
-	  (let ((grep-null-device "") (null-device "") git-dir)
+	  (let ((grep-null-device nil) (null-device "") git-dir)
 	    (setq git-dir (git-top-directory default-directory))
 	    (if (not git-dir) (error "Not in a git tree."))
 	    (let ((default-directory git-dir))

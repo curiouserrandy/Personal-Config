@@ -5,10 +5,6 @@ prefix_path_with_dirlist PATH ~/Sandboxen/depot_tools	# There's a gcl in Google 
 ## Must be "prefix" so that we get the right binaries even on mac.
 prefix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
 
-if [ -r ~/goma/goma_ctl.sh ]; then
-    prefix_val_to_var ~/goma PATH
-fi
-
 # Location of patches repository
 if [ "$config_os" = "CYGWIN" ]; then
     chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
@@ -54,5 +50,3 @@ if [ "$config_os" = "Linux" ]; then
   }
 fi
 
-alias chrsync="CC=clang CXX=clang++ gclient sync -j32 -D"
-alias chrgyp="CC=clang CXX=clang++ build/gyp_chromium"

@@ -1,5 +1,10 @@
 ;;; Easy configuration of emacs windows on a per-screen, per-display basis.
 
+;;; Debugging guide:
+;;;	(randy-current-display-config)
+;;; 	(randy-current-display-list)
+;;;	randy-frame-configs-list
+
 (require 'rs-persist)
 
 (defconst randy-interesting-frame-properties '(top left width height)
