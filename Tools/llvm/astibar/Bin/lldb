@@ -1,0 +1,8 @@
+#!/bin/bash
+
+homedir=/usr/local/google/home/rdsmith
+libdir=$homedir/toolchains/lib64
+lldb_path=$homedir/Sandboxen/llvm-build/bin/lldb
+
+LD_LIBRARY_PATH=$libdir:$LD_LIBRARY_PATH $lldb_path "$@"
+    
