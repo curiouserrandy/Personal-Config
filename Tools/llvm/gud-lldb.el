@@ -63,7 +63,7 @@ and source-file directory of your debugger."
   (gud-def gud-bt-all "thread backtrace all"
 	   "B"    "Show stacks for all the threads.")
 
-  (gud-def gud-break 	"breakpoint set -f %f %l"
+  (gud-def gud-break 	"breakpoint set -f %f -l %l"
 	   "\C-b" "Set breakpoint at current line.")
   (gud-def gud-tbreak	"breakpoint set -f %f -l %l -o"
 	   "\C-t" "Set temporary breakpoint at current line.")
