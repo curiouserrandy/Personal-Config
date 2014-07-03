@@ -1,0 +1,39 @@
+digraph ExampleGraph {
+    node [shape=box];
+
+    subgraph cluster_legend {
+        label="Legend";
+
+	## UML
+	SubClass -> BaseClass [arrowhead="empty"];
+	SubClass -> Interface [arrowhead="empty", style=dashed];
+	Part -> Whole [arrowhead="diamond", label="ownership"];
+	Part -> Whole [arrowhead="odiamond", label="part/whole (not owned)"];
+	A -> B [arrowhead="none", headlabel="?..?", taillabel="?..?",
+		label="association"];
+        Interface [label="Interface / ABC", style=dashed];
+
+	## My invention/for chrome
+	IOThread [style=filled, fillcolor=lightblue, label="IO Thread"];
+	FileThread [style=filled, fillcolor=brown, label="File Thread"];
+	UIThread [style=filled, fillcolor=green, label="UI Thread"];
+	DBThread [style=filled, fillcolor=gray, label="DB Thread"];
+	MultiThread [style=filled, fillcolor=red, label="Multithreaded"];
+	Class1Legend [label="Class"]
+	RefCounted [color=red, label="Ref Counted Member"];
+	RefCounted -> Class1Legend [arrowhead=diamond, color=red];
+
+	Factory -> object [arrowhead=veevee];
+    };
+
+    ## Templates from above (that have legend labels)
+    IOThread [style=filled, fillcolor=lightblue];
+    FileThread [style=filled, fillcolor=brown];
+    UIThread [style=filled, fillcolor=green];
+    DBThread [style=filled, fillcolor=gray]
+    MultiThread [style=filled, fillcolor=red];
+    Part -> Whole [arrowhead="diamond"];
+    Part -> Whole [arrowhead="odiamond"];
+    Interface [style=dashed];
+}
+
