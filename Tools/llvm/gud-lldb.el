@@ -24,7 +24,7 @@
 	    (string-match " at \\([^:\n]*\\):\\([0-9]*\\), stop reason = .*\n"
 			  gud-marker-acc start)
 	    ;; frame up/down
-	    (string-match "^frame.* at \\([^:\n]*\\):\\([0-9]*\\)\n"
+	    (string-match "frame.* at \\([^:\n]*\\):\\([0-9]*\\)\n"
 			  gud-marker-acc start))
       (setq gud-last-frame
             (cons (match-string 1 gud-marker-acc)
@@ -63,7 +63,7 @@ and source-file directory of your debugger."
   (gud-def gud-bt-all "thread backtrace all"
 	   "B"    "Show stacks for all the threads.")
 
-  (gud-def gud-break 	"breakpoint set -f %f %l"
+  (gud-def gud-break 	"breakpoint set -f %f -l %l"
 	   "\C-b" "Set breakpoint at current line.")
   (gud-def gud-tbreak	"breakpoint set -f %f -l %l -o"
 	   "\C-t" "Set temporary breakpoint at current line.")
