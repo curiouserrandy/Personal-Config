@@ -9,3 +9,55 @@
 
 	# Required
 	<conversion type>
+
+## Methods
+	capitalize
+	center(width[, fillchar])
+	count(sub[, start[, end]])
+	decode([encoding[, errors]])
+	encode([encoding[, errors]])
+	endswith(suffix[, start[, end]])
+	expandtabs([tabsize])
+
+	find(sub[, start[, end]])
+	rfind(sub[, start[, end]])
+
+	format(*args, **kwargs)
+
+	index(sub[, start[, end]])
+	rindex(sub[, start[, end]])
+
+	isalnum()
+	isalpha()
+	isdigit()
+	islower()
+	isspace()
+	istitle()
+	isupper()
+
+	join(iterable)
+
+	ljust(width[, fillchar])
+	rjust(width[, fillchar])
+
+	lower()
+
+	lstrip([chars])
+	rstrip([chars])
+
+	partition(sep)
+	rpartition(sep)
+
+	replace(old, new[, count])
+
+	split([sep[, maxsplit]])
+	rsplit([sep[, maxsplit]])
+
+	splitlines([keepends])
+	startswith(prefix[, start[, end]])
+	strip([chars])
+	swapcase()
+	title()
+	translate(table[, deletechars])
+	upper()
+	zfill(width)
