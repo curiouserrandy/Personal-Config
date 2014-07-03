@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program for finding the most recent commit in chromium that 
+is both an LKGR and pointed at by .DEPS.git in src/clank.  Args:
+	-f		Do a "git fetch --all" in both clank and chromium
+			checkouts, so you get the absolute latest revision.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-f]";
+
+# Parse all arguments.
+fetch=no
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -f) 
+	fetch=yes
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+# Confirm in src in a clankium checkout.
+if [ `basename $PWD` != 'src' -o ! -d .git -o ! -d clank \
+     -o ! -r clank/.DEPS.git ]; then
+    echo "Must be in a clankium checkout in the top level 'src' directory." 1>&2;
+    exit 1;
+fi
+
+if [ "$fetch" = "yes" ]; then
+    echo "Fetching remove branches in src."
+    git fetch --all
+
+    echo "Fetching remote branches in clank."
+    (cd clank; git fetch --all)
+fi
+
+git --git-dir=clank/.git log origin/master -- .DEPS.git | sed -n '/Roll DEPS/s/^.*Roll DEPS to //p' | sort > /tmp/$$clankrevs
+git log origin/git-svn..origin/lkgr | sed -n '/LKGR w\/ DEPS/s/^.*revision //p' |sort > /tmp/$$gitrevs
+shared_rev=`comm -12 /tmp/$$clankrevs /tmp/$$gitrevs | sort -nr | head -1`
+rm /tmp/$$clankrevs /tmp/$$gitrevs
+
+clank_commit=`git --git-dir=clank/.git log --grep=$shared_rev origin/master -- .DEPS.git  | sed -n /^commit/s/^.*\ //p`
+
+echo "Revision $shared_rev Clank commit: $clank_commit"
