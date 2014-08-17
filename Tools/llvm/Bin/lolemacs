@@ -1,0 +1,128 @@
+#!/bin/sh
+
+no_windows=
+target=llvm-build/bin/lldb
+binary=""
+plist_file=/tmp/lolemacsplist-$$
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname automatically creates an emacs wrapping (in gud mode) an lldb 
+targeting another program on the computer, attaches to it, and continues 
+it.  Arguments:
+	-nw	Runs the emacs in -nw mode, using whatever terminal 
+		it's in.  Without this script, the emacs is presumed
+		to be targetting an X session and is run in the background.
+	-t <target> The target to be debugged.  This is a regexp that will
+		be used to collect choices for presentation to the user
+		from a ps output.  Default is 'llvm-build/bin/lldb-3.5.0'.
+		If only one possibility is found in the ps output, it will
+		be used.
+	-b <binary> The binary file to use for debugging.  Defaults to initial 
+		argument in process output listing.  The script will error before
+		starting emacs if this file can't be found.  
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-nw] [-t <target>] [-b <binary>]";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -nw) 
+	no_windows=-nw;
+	;;
+    -t) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	target=$1;
+	shift;
+	;;
+    -b) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	binary=$1;
+	shift;
+	;;
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ "$no_windows" = "" -a "$DISPLAY" = "" ]; then
+    echo "Attempting to target a window manager but DISPLAY is not set." 1>&2;
+    exit 1;
+fi
+
+ps gxww -o "pid,stat,cputime,cmd" | grep "$target" | awk '$4 != "grep"'> $plist_file
+outlines=`wc -l < $plist_file`
+echo $outlines
+if [ "$outlines" = "" ]; then
+    echo 'Empty output from wc??' 1>&2;
+    exit 1;
+fi
+
+if [ $outlines -eq 0 ]; then
+    echo "No processes matched target $target." 1>&2;
+    exit 1;
+fi
+
+if [ $outlines -eq 1 ]; then
+    choice=0;
+else
+    (i=0; while read l; do echo -n "${i}) "; echo $l; i=`expr $i + 1`; done) < $plist_file
+    echo -n 'Which process would you like to debug? '
+    read choice
+    if [ $choice -lt 0 -o $choice -ge $outlines ]; then
+        echo "Invalid line chosen." 1>&2;
+	exit 1;
+    fi
+fi
+choice=`expr $choice + 1`
+
+process_id=`tail -n +$choice $plist_file | head -1 | awk '{print $1}'`
+if [ "$binary" = "" ]; then
+    binary=`tail -n +$choice $plist_file | head -1 | awk '{print $4}'`
+fi
+
+if [ ! -x $binary ]; then
+    echo "Binary '$binary' not found in process list." 1>&2;
+    exit 1;
+fi
+
+if [ "`echo $binary | dd count=1 bs=1 2>/dev/null`" != "/" ]; then
+    binary="$PWD/$binary";
+fi
+    
+if [ X"$no_windows" = X"-nw" ]; then
+    # In foreground, using the window
+    emacs -nw --eval '(lldb-auto-wrap "'"$binary"'" '$process_id')'
+else
+    # In background
+    emacs --eval '(lldb-auto-wrap "'"$binary"'" '$process_id')' &
+fi
+
