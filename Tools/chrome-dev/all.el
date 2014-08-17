@@ -7,14 +7,28 @@
 ;; Make sure objective C shows up before nroff :-}
 (setq auto-mode-alist (cons '("\\.mm" . objc-mode) auto-mode-alist))
 
+(defun editing-chrome-file-p ()
+  "Return t/nil depending on whether this is a file in a chromium
+repository."
+  (let* ((path (buffer-file-name)) (pathdir (file-name-directory path)))
+    (and path
+	(progn
+	  (while (and pathdir
+		      (not (equal "/" pathdir))
+		      (not (file-exists-p (concat pathdir "/.git"))))
+	    (setq pathdir (file-name-directory (directory-file-name pathdir))))
+	  (and (file-exists-p (concat pathdir "/.git"))
+	       (file-exists-p (concat pathdir "/chrome")))))))
+
 ;; Also make sure that when we save a C or python style file, we eliminate
 ;; trailing spaces.
 (let ((this-hook '(lambda ()
 		    (add-hook (make-local-variable 'before-save-hook)
 			      '(lambda ()
-				 (save-excursion
-				   (goto-char (point-min))
-				   (replace-regexp "[ 	][ 	]*$" "")))))))
+				 (if (editing-chrome-file-p)
+				     (save-excursion
+				       (goto-char (point-min))
+				       (replace-regexp "[ 	][ 	]*$" ""))))))))
   (add-hook 'c-mode-common-hook this-hook)
   (add-hook 'python-mode-hook this-hook))
 

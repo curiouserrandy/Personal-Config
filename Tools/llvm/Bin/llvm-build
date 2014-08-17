@@ -1,0 +1,62 @@
+#!/bin/bash
+
+sandbox_directory=$HOME/Sandboxen/llvm
+build_directory=$HOME/Sandboxen/llvm-build
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname automatically updates and builds LLVM.  Arguments:
+	-s <sandbox directory>	# Default $sandbox_directory
+	-b <build directory>	# Default $build_directory
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [-s <sandbox dir>] [-b <build dir>]";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -s) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	sandbox_directory="$1";
+	shift;
+	;;
+    -b) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	build_directory="$1";
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+cd $sandbox_directory
+git pull && cd tools/clang && git pull && cd ../lldb && git pull && cd $build_directory && ninja

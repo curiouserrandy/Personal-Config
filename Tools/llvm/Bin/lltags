@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname creates tags for an llvm{lldb} checkout.  It must be run 
+in the top level of the checkout, and expects to find dirs
+tools/{clang,lldb} and file LLVMBuild.txt.  It creates three tags 
+files:
+./TAGS: Everything but tools
+./tools/clang/TAGS: Everything under that directory.
+./tools/lldb/TAGS: Everything under that directory.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ ! -r LLVMBuild.txt ]; then
+    echo "Not in top level of an LLVM checkout." 1>&2;
+    exit 1;
+fi
+
+if [ ! -d tools/clang ]; then
+    echo "tools/clang not present." 1>&2;
+    exit 1;
+fi
+
+if [ ! -d tools/lldb ]; then
+    echo "tools/lldb not present." 1>&2;
+    exit 1;
+fi
+
+find . \( -type f \( -name '*.cpp' -o -name '*.h' \) -print \) -o -name tools -type d -prune | etags -
+cd tools/clang
+find . \( -type f \( -name '*.cpp' -o -name '*.h' \) -print \) | etags -
+cd ../lldb
+find . \( -type f \( -name '*.cpp' -o -name '*.h' \) -print \) | etags -
+

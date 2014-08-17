@@ -88,9 +88,9 @@ suffix_path_with_dirlist MANPATH /usr/man /usr/share/man
 export MANPATH
 
 # Not sure if this should have a default.  
-LD_LIBRARY_PATH=""
+# LD_LIBRARY_PATH=""
 #suffix_path_with_dirlist LD_LIBRARY_PATH /usr/lib /lib 
-export LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH
 
 # Some systems use LIBPATH rather than LD_LIBRARY_PATH, so replicate.
 export LIBPATH=$LD_LIBRARY_PATH
