@@ -88,4 +88,3 @@
 ;; Unilaterally enable winner mode.
 (winner-mode t)
 
-(shell)
