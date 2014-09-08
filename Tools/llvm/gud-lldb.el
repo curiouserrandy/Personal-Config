@@ -53,7 +53,9 @@ and source-file directory of your debugger."
   ;; from output so that the user doesn't have to deal with it?
   (progn
     (gud-call "settings set frame-format frame #${frame.index}: ${frame.pc}{ ${module.file.basename}{`${function.name}${function.pc-offset}}}{ at ${line.file.fullpath}:${line.number}}\\n")
-    (gud-call "settings set thread-format thread #${thread.index}: tid = ${thread.id}{, ${frame.pc}}{ ${module.file.basename}{`${function.name}${function.pc-offset}}}{ at ${line.file.fullpath}:${line.number}}{, stop reason = ${thread.stop-reason}}\\n"))
+    (gud-call "settings set thread-format thread #${thread.index}: tid = ${thread.id}{, ${frame.pc}}{ ${module.file.basename}{`${function.name}${function.pc-offset}}}{ at ${line.file.fullpath}:${line.number}}{, stop reason = ${thread.stop-reason}}\\n")
+    (gud-call "settings set stop-line-count-before 0")
+    (gud-call "settings set stop-line-count-after 0"))
 
   ;; Define all commands
   (gud-def gud-listb  "breakpoint list"
@@ -112,3 +114,5 @@ and source-file directory of your debugger."
 ;;;	* gud-tooltip-print-command
 ;;;	* Visibility of various menu items
 ;;;	* Documentation in comint-mode.  
+
+(provide 'gud-lldb)
