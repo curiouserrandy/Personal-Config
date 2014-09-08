@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a program that changes all instances of a particular 
+word in a git repository to a different word.  Arguments:
+	<from>		Word to search for
+	<to>		Word to change to.
+Note that this is only a textual change; no git magic is done (except
+to find the files to change).
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname <from> <to>";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 2 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+from="$1"
+to="$2"
+
+files=`git grep --name-only -w "$1"`
+sed -i 's/\([^A-Za-z_-]\)'"$1"'\([^A-Za-z_-]\)/\1'"$2"'\2/g' $files
