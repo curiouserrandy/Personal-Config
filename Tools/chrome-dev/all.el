@@ -99,19 +99,40 @@ bring each such chrome issue up in the browser."
 ]*\\([A-Za-z0-9_]*\\))"
   "Regexp to match tests.")
 
+(defun chrome-filepath-from-src ()
+  "Return the path to the current file from the 'src' directory."
+  (let* ((filepath (buffer-file-name))
+	 (filename (file-name-nondirectory filepath)))
+    (if (not (string-match "/src/\\(.*\\)$" filepath))
+	nil
+      (substring filepath (match-beginning 1)))))
+	
+(defun chrome-blame-file ()
+  "Visit the web based blame facility for the current file."
+  (interactive)
+  (let ((path-from-src (chrome-filepath-from-src))
+	(lineno (line-number-at-pos)))
+    (if (not path-from-src)
+	(error "Coudln't find /src directory in test file path %s."
+	       (buffer-file-name)))
+
+  (browse-url
+   (format "https://chromium.googlesource.com/chromium/src/+blame/master/%s#%d"
+	   path-from-src lineno))))
+
 (defun chrome-speciality-compile ()
   "If in a test, compile and run that test.  If not in a test, compile
 just the current file."
-  (let ((in-test t) testname filepath filename filepath
-		 dirdepth path-to-src path-from-src
-		 path-elements test_executable_name)
+  (let ((in-test t)
+	(path-from-src (chrome-filepath-from-src))
+	(filename (file-name-nondirectory (buffer-file-name)))
+	testname dirdepth path-to-src 
+	path-elements test_executable_name)
   (save-excursion
     ;; Figure out the path to the src; needed for both forks.
-    (setq filepath (buffer-file-name))
-    (setq filename (file-name-nondirectory filepath))
-    (if (not (string-match "/src/\\(.*\\)$" filepath))
-	(error "Coudln't find /src directory in test file path %s." filepath))
-    (setq path-from-src (substring filepath (match-beginning 1)))
+    (if (not path-from-src)
+	(error "Coudln't find /src directory in test file path %s."
+	       (buffer-file-name)))
     (setq path-elements (split-string path-from-src "/" t))
     (setq dirdepth (length path-elements))
     (setq path-to-src "")
