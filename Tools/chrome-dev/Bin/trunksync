@@ -5,8 +5,8 @@ progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
 $progname is a program to bring the masetr branch
-of the current git chrome repository to last known good status.
-If a number is provided on the command line, that is the revision to sync to.
+of the current git chrome repository to ToT.  If a number is provided on
+the command line, that is the revision (either SVN or pseudo) to sync to.
 Options:
 	-m		Only valid if done on a branch other than master.
 			After executing the base of the command, switch
@@ -16,9 +16,7 @@ Options:
 			master to the "git merge-base' of that branch
 			and the trunk line (i.e. it may move master
 			forward).
-	-t		Merge to top of tree rather than LKGR.
 	-G		Skip automatic gclient sync.
-	-q 		Just print LKGR and exit.
 	-b 		Also sync up blink repository.
 EOF
 helpString="`cat $tf`" ;
@@ -28,9 +26,7 @@ usageString="$progname [-m | -t | -M | -G | <revision number>]";
 # Parse all arguments.
 merge_to_base=no
 merge_to_original=no
-merge_to_tot=no
 do_gclient_sync=yes
-print_lkgr=no
 sync_blink=no
 while [ $# -ne 0 ]; do
     case $1 in 
@@ -40,10 +36,6 @@ while [ $# -ne 0 ]; do
     -m) merge_to_original=yes;
         ;;
     -G) do_gclient_sync=no;
-	;;
-    -t) merge_to_tot=yes;
-        ;;
-    -q) print_lkgr=yes;
 	;;
     -b) sync_blink=yes;
 	;;
@@ -82,9 +74,6 @@ rev_spec_count=0
 if [ "$merge_to_base" = "yes" ]; then
     rev_spec_count=`expr $rev_spec_count + 1`;
 fi
-if [ "$merge_to_tot" = "yes" ]; then
-    rev_spec_count=`expr $rev_spec_count + 1`;
-fi
 if [ $# -eq 1 ]; then
     rev_spec_count=`expr $rev_spec_count + 1`;
 fi
@@ -98,11 +87,6 @@ if [ "$do_gclient_sync" = "no" -a "$sync_blink" = "yes" ]; then
 fi
 if [ "$merge_to_original" = "yes" -a "$current_branch" = "master" ]; then
     echo "Can't merge trunk to original branch if original branch is master!" 1>&2;
-    exit 1;
-fi
-
-if [ "$print_lkgr" = "yes" -a \( "$merge_to_base" = "yes" -o "$merge_to_original" = "yes" -o "$go_gclient_sync" = "no" -o "$merge_to_tot" = "yes" \) ]; then
-    echo "-q must be specified by itself." 1>&2;
     exit 1;
 fi
 
@@ -150,50 +134,53 @@ if [ ! -r $gclient_root/src/DEPS ]; then
     exit 1;
 fi
 
-lkgr=`curl http://chromium-status.appspot.com/lkgr`
-if [ "$print_lkgr" = "yes" ]; then
-    echo "LKGR is $lkgr"
-    exit 0
-fi
-
 if ! git-treeclean; then
     exit 1;  # git-treeclean will have output error message.
 fi   
+
+## Map a commit to a revision.
+commit_to_rev () {
+    commit_msg=`git log -1 $1`;
+    rev=`echo $commit_msg | sed -n '/Cr-Commit-Position/s/^.*Cr-Commit-Position: refs\/heads\/master@{#\([0-9]*\)}.*$/\1/p'`
+    if [ X"$rev" = X"" ]; then
+	rev=`echo $commit_msg | sed -n '/Cr-Commit-Position/s/^.*git-svn-id: .*src@\([0-9]*\).*$/\1/p'`
+    fi
+    echo $rev;
+}
+
+rev_to_commit () {
+    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#$1}' --format='format:%H%n'`
+    if [ X"$commit" = X"" ]; then
+	commit=`git log --grep 'git-svn-id: .*src@290799.*$' --format='format:%H%n'`
+    fi
+    echo $commit;
+}
+
 set -e					# Shouldn't be needed, but better safe..
 git fetch --all
 
 if [ $# -eq 1 ]; then
-    lkgr=$1
+    if echo $1 | grep '[0-9]*' > /dev/null; then
+	# It's probably a revision
+	sync_commit=`rev_to_commit $1`
+    else
+	sync_commit=$1
+    fi
 elif [ "$merge_to_base" = "yes" ]; then
-    git fetch --all
-    merge_commit="`git merge-base HEAD $originbranch`";
-    lkgr=`git log -1 $merge_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
-    if [ "`echo $lkgr | wc -l`" -ne 1 -o "lkgr" = "" ]; then
-        echo "Problem with determining merge base.  Commit: $merge_commit, Revision: $lkgr" 1>&2
-	exit 1;
-    fi
-elif [ "$merge_to_tot" = "yes" ]; then
-    lkgr=`git log -1 $originbranch | sed -n '/git-svn-id/s/^.*@\([0-9]*\) .*$/\1/p'`
-    if [ X"$lkgr" = X"" ]; then
-	lkgr=`git log -1 $originbranch | sed -n '/SVN changes/s/^[ 	]*SVN changes up to revision \([0-9]*\)/\1/p'`;
-	if [ X"$lkgr" = X"" ]; then
-	    echo "Could not find top of tree SVN revision." 1>&2
-	    exit 1;
-	fi
-    fi
+    sync_commit="`git merge-base HEAD $originbranch`";
+else
+    sync_commit=origin/master;
 fi
-echo Syncing to revision $lkgr
-git svn fetch
-lkgr_git_commit=`git svn find-rev r$lkgr`
+sync_rev=`commit_to_rev $sync_commit`
+echo Syncing to revision $sync_rev
 
 if [ "$current_branch" = "master" ]; then
   # Turns out you can't force update the current branch.  Who knew?
-  git reset --hard $lkgr_git_commit
+  git reset --hard $sync_commit
 else
-  git branch -f master $lkgr_git_commit
+  git branch -f master $sync_commit
 fi
-echo Trunkbranch reset to SVN revision $lkgr
-
+echo Trunkbranch reset to \'revision\' $sync_rev
 
 merge_succeeded=0               # If we didn't do it, it suceeded
 if [ "$merge_to_original" = "yes" ]; then
@@ -245,7 +232,7 @@ if [ "$sync_blink" = "yes" ]; then
     cd $gclient_root/src
 fi
 
-CC=clang CXX=clang++ gclient sync -j12 -D $gclient_spec_arg
+gclient sync -j12 -D $gclient_spec_arg
 if [ $? -ne 0 ]; then
     echo "===> Gclient sync failed." 1>&2;
     exit 1;

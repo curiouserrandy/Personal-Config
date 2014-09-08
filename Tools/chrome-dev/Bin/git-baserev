@@ -66,12 +66,19 @@ echo -e 'Rev\tCL\t\tLast Modified\t\t\tBranch'
 while [ $# -ne 0 ]; do
     branch=$1;
     shift;
-    base_commit=`git merge-base $branch origin/git-svn`
+    base_commit=`git merge-base $branch origin/master`
     svn_rev=r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`
+    pseudo_rev=p`git log -1 $base_commit | sed -n '/Cr-Commit-Position/s/^.*refs\/heads\/master@{#\([0-9]*\)}/\1/p'`
+    if [ X"$pseudo_rev" = X"p" ]; then
+	rev=$svn_rev
+    else
+	rev=$pseudo_rev
+    fi
+
     base_time=`git log -1 --format=format:%ai $branch | awk '{print $1, $2, $3;}'`
     issue=`git config branch.$branch.rietveldissue`
     if [ X"$issue" = X"" ]; then
         issue="        "
     fi
-    echo -e "$svn_rev\t$issue\t$base_time\t$branch"
+    echo -e "$rev\t$issue\t$base_time\t$branch"
 done
