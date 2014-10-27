@@ -229,12 +229,6 @@ is nil, (point-min) or (point-max) will be used instead."
 	(goto-char (rstodo-piece-info-start nextpiece))
       (error "Couldn't find todo item."))))
   
-
-(defun rstodo-next-open-todo-item () (interactive) (rstodo-next-todo-item 1 t nil))
-(defun rstodo-prev-open-todo-item () (interactive) (rstodo-next-todo-item -1 t nil))
-(defun rstodo-next-active-todo-item () (interactive) (rstodo-next-todo-item 1 t t))
-(defun rstodo-prev-active-todo-item () (interactive) (rstodo-next-todo-item -1 t t))
-
 (defun rstodo-first-active-todo-item ()
   (interactive)
   "Move to the first todo item in the section that isn't done or dependent."
@@ -249,26 +243,6 @@ is nil, (point-min) or (point-max) will be used instead."
     (if (not first-active)
 	(message "Couldn't find active todo item in this section.")
       (goto-char (rstodo-piece-info-start first-active)))))
-
-(defun rstodo-last-active-todo-item ()
-  (interactive)
-  "Move to the last active todo item in this outline section."
-  (let* ((outl (rstodo-get-outline-info (point)))
-	 (lastpiece (rstodo-get-piece-info (rstodo-outline-info-end outl))))
-    (if (and (member (rstodo-piece-info-type lastpiece)
-		     '("todo" "copy" "note" "question"))
-	     (not (rstodo-piece-info-waitp lastpiece))
-	     (not (rstodo-piece-info-donep lastpiece)))
-	(goto-char (rstodo-piece-info-start lastpiece))
-      (let ((piece
-	     (rstodo-get-related-piece-info
-	      (rstodo-piece-info-start lastpiece)
-	      -1
-	      '("todo" "copy" "note" "question")
-	      nil nil
-	      (rstodo-outline-info-start outl)
-	      (rstodo-outline-info-end outl))))
-	(goto-char (rstodo-piece-info-start piece))))))
 
 ;;; Utility function for moving deleted stuff.
 (defun rstodo-collect-deleted-items (loc)
@@ -358,6 +332,7 @@ Throws an error if point is not on a todo item, or if there is no place to move 
     (goto-char p)
     (set-marker p nil)))
 
+;; Saving to make a subroutine.
 (defun rstodo-kill-todo-piece (loc)
   "Kill the todo piece which LOC is within."
   (interactive "d")
@@ -522,30 +497,12 @@ An outline topic is marked with a hotkey if it matches the regexp
 	    (error "Key '%s' not found bound to outline heading."
 		   (char-to-string char-read)))))))
 
-;;; TODO (next two functions): Need to error if todo mark is not set.
-(defun rstodo-region-to-todo-mark (begin end)
-  (interactive "r")
-  (save-excursion 
-    (kill-region begin end)
-    (goto-char (marker-position rstodo-todo-mark))
-    (yank)))
-
-(defun rstodo-exchange-point-and-todo-mark ()
-  (interactive)
-  (let ((pos (point)))
-    (goto-char (marker-position rstodo-todo-mark))
-    (set-mark pos)))
-
 (define-derived-mode rstodo-mode outline-mode "Todo"
   "Major mode for todo lists in Randy style.
 \\{rstodo-mode-map}"
   (setq outline-font-lock-faces
     [outline-2 outline-1 outline-3 outline-4
 	       outline-5 outline-6 outline-7 outline-8]))
-
-(fset 'rstodo-insert-prioritize
-   [return ?\C-p ?> ?> ?\S-  ?P ?r ?i ?o ?t ?i backspace backspace ?r ?i ?t ?i ?z ?e return return ?< ?< return ?\C-p ?\C-p return return ?\C-p])
-
 
 ;;; Take current todo item and put it in a project file; insert link
 ;;; to project file at current location.
@@ -557,44 +514,14 @@ An outline topic is marked with a hotkey if it matches the regexp
 ;;;	* Kill current todo item into project file.
 ;;;	* Insert link to project file in place.
 
-;;; Binding to C-c <blank>.  Outline stuff:
-;;;	C-a make all text visible
-;;;	C-b backward same level
-;;;	C-d hide subtree
-;;;	C-f forward same level
-;;;	C-n next visible heading
-;;;	C-p previous visible heading
-;;;	C-s show subtree
-;;;	C-t make all text invisible
-;;;	C-u up heading
-
-
-;;;	C-q make only the first N levels of headers visible
-;;;	TAB show children
-;;;	C-c make body invisible
-;;;	C-e make body visible
-;;;	C-l make descendent bodies invisible
-;;;	C-k make all subheadings visible
-
-;;; To bind:
-;;;	next-open-todo-item		right
-;;;	prev-open-todo-item		left
-;;;	next-active-todo-item		down
-;;;	prev-active-todo-item		up
-;;;	move-deleted-to-top		C-x
-;;;	move-item-up			^
-;;;	move-item-down			.
-(define-key rstodo-mode-map [?\C-c right] 'rstodo-next-active-todo-item)
-(define-key rstodo-mode-map [?\C-c left] 'rstodo-prev-active-todo-item)
-(define-key rstodo-mode-map [?\C-c down] 'rstodo-last-active-todo-item)
-(define-key rstodo-mode-map [?\C-c up] 'rstodo-first-active-todo-item)
 (define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-top)
-(define-key rstodo-mode-map "\C-c\C-k" 'rstodo-kill-todo-piece)
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
-(define-key rstodo-mode-map [f5] 'rstodo-next-open-todo-item)
-(define-key rstodo-mode-map [f6] 'rstodo-prev-open-todo-item)
+(define-key rstodo-mode-map [f5]
+  '(lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+(define-key rstodo-mode-map [f6]
+  '(lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
 (define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
