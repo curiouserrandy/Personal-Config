@@ -194,8 +194,8 @@ is nil, (point-min) or (point-max) will be used instead."
 		      ;; And then combine them with "\\(?:" .. "\\|" .. "\\)"
 		      "\\(?:"
 		      (mapconcat
-		       '(lambda (ty) (regexp-quote
-				      (car (rassoc ty rstodo-mark-name-association)))) 
+		       (lambda (ty) (regexp-quote
+				     (car (rassoc ty rstodo-mark-name-association)))) 
 		       type "\\|")
 		      "\\)"
 		      ;; Handle dependcy markers
@@ -430,7 +430,7 @@ An outline topic is marked with a hotkey if it matches the regexp
 	      (setq tmpkeylist (substring outline-heading
 					  (1+ (match-beginning 0))
 					  (1- (match-end 0))))
-	      (setq hotkeys (mapcar '(lambda (s) (elt s 0))
+	      (setq hotkeys (mapcar (lambda (s) (elt s 0))
 				    (split-string tmpkeylist ",")))
 	      (setq hotkey-outline-list
 		    (append hotkey-outline-list
@@ -443,12 +443,12 @@ An outline topic is marked with a hotkey if it matches the regexp
   (let ((hotkey-list (rstodo-collect-outline-hotkeys)))
     (mapconcat 'identity 
 	       (apply 'append
-		      (mapcar '(lambda (elt)
-				 (let ((line (nth 2 elt))
-					     (keys (nth 3 elt)))
-				   (mapcar '(lambda (key)
-					      (concat (string key) " --\t" line))
-					   keys)))
+		      (mapcar (lambda (elt)
+				(let ((line (nth 2 elt))
+				      (keys (nth 3 elt)))
+				  (mapcar (lambda (key)
+					    (concat (string key) " --\t" line))
+					  keys)))
 			      hotkey-list)) "\n")))
 
 ;;; Plan
@@ -519,20 +519,20 @@ An outline topic is marked with a hotkey if it matches the regexp
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
 (define-key rstodo-mode-map [f5]
-  '(lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+  (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
 (define-key rstodo-mode-map [f6]
-  '(lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+  (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
 (define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
 
 ;;; Reset the buffer back to specified layout. 
 ;;; With prefix argument, actually do a revert.
-(define-key rstodo-mode-map "\C-cr" '(lambda (really-revert)
-				       (interactive "P")
-				       (if really-revert
-					   (revert-buffer t t)
-					 (randy-explode-hook)
-					 (randy-implode-hook))))
+(define-key rstodo-mode-map "\C-cr" (lambda (really-revert)
+				      (interactive "P")
+				      (if really-revert
+					  (revert-buffer t t)
+					(randy-explode-hook)
+					(randy-implode-hook))))
 
 (provide 'rs-todo)
