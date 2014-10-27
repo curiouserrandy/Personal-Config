@@ -195,7 +195,7 @@ is nil, (point-min) or (point-max) will be used instead."
 		      "\\(?:"
 		      (mapconcat
 		       (lambda (ty) (regexp-quote
-				     (car (rassoc ty rstodo-mark-name-association)))) 
+				     (car (rassoc ty rstodo-mark-name-association))))
 		       type "\\|")
 		      "\\)"
 		      ;; Handle dependcy markers
