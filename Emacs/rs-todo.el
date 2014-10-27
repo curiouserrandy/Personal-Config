@@ -115,6 +115,41 @@ OTHERMARK is any character other than 'X' before the piece prefix."
 (defun rstodo-piece-info-waitp (pi) (nth 4 pi))
 (defun rstodo-piece-info-othermark (pi) (nth 5 pi))
 
+;; TODO(rdsmith): Replace all uses of get-piece-info with the below
+;; collection (specifically get-item-boundaries).
+(defun rstodo-beginning-of-item (loc)
+  "Returns the location of the beginning of the item at LOC, or nil if not in
+an item."
+  (save-excursion
+    (goto-char loc)
+    (rstodo-beginning-of-piece)
+    (if (looking-at (concat "\\(?:" rstodo-todo-type-regexp
+			    "\\|" rstodo-non-todo-type-regexp "\\)"))
+	(point)
+      nil)))
+
+(defun rs-todo-end-of-item (loc)
+  "Returns the location of the end of the item at LOC.
+This function assumes LOC is in an item; use rs-todo-beginning-of-item
+for detemrining item existence."
+  (save-excursion
+    (goto-char loc)
+    (rstodo-end-of-piece)
+    (point)))
+
+(defun rstodo-get-item-boundaries (loc)
+  "Return a two element list (START END) for the item identified by LOC.
+Note that a LOC at the very beginning of a piece (== START) will return
+that piece.  If location is not within a item (beginning of file or
+outline section), nil will be returned."
+  (save-excursion
+    (goto-char loc)
+    (let ((bounds ((rstodo-beginning-of-item) (rstodo-end-of-item))))
+      ;; nil if no start, otherwise bounds.
+      (and (car bounds) (bounds)))))
+
+;;;;;;;;;
+
 (defun rstodo-get-outline-info (loc)
   "Return a three element list (START END ELE) for the outline element that
 includes location LOC in the file.  ELE will be the text of the outline 
