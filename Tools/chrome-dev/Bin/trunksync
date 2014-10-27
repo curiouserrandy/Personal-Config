@@ -149,9 +149,9 @@ commit_to_rev () {
 }
 
 rev_to_commit () {
-    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#$1}' --format='format:%H%n'`
+    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$1"'}' --format='format:%H%n' origin/master`
     if [ X"$commit" = X"" ]; then
-	commit=`git log --grep 'git-svn-id: .*src@290799.*$' --format='format:%H%n'`
+	commit=`git log --grep 'git-svn-id: .*src@'"$commit"'.*$' --format='format:%H%n'`
     fi
     echo $commit;
 }
