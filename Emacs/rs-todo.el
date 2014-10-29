@@ -117,7 +117,7 @@ OTHERMARK is any character other than 'X' before the piece prefix."
 
 ;; TODO(rdsmith): Replace all uses of get-piece-info with the below
 ;; collection (specifically get-item-boundaries).
-(defun rstodo-beginning-of-item (loc)
+(defun rstodo-item-beginning (loc)
   "Returns the location of the beginning of the item at LOC, or nil if not in
 an item."
   (save-excursion
@@ -128,7 +128,7 @@ an item."
 	(point)
       nil)))
 
-(defun rs-todo-end-of-item (loc)
+(defun rstodo-item-end (loc)
   "Returns the location of the end of the item at LOC.
 This function assumes LOC is in an item; use rs-todo-beginning-of-item
 for detemrining item existence."
@@ -137,7 +137,7 @@ for detemrining item existence."
     (rstodo-end-of-piece)
     (point)))
 
-(defun rstodo-get-item-boundaries (loc)
+(defun rstodo-item-boundaries (loc)
   "Return a two element list (START END) for the item identified by LOC.
 Note that a LOC at the very beginning of a piece (== START) will return
 that piece.  If location is not within a item (beginning of file or
@@ -148,6 +148,46 @@ outline section), nil will be returned."
       ;; nil if no start, otherwise bounds.
       (and (car bounds) (bounds)))))
 
+(defun rstodo-item-type (loc)
+  "Return the type (from rstodo-mark-name-association) of the item at LOC."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (if (or (looking-at
+		    (concat ".?\\(" rstodo-todo-type-regexp-nomark "\\)"))
+		   (looking-at
+		    (concat "\\(" rstodo-non-todo-type-regexp "\\)")))
+	       (assoc (cdr
+		       (buffer-substring (match-beginning 1) (match-end 1))
+		       rstodo-mark-name-association))
+	     (error "Todo item at %d cannot be parsed!?" loc))))))
+	     
+(defun rstodo-item-mark (loc)
+  "Return the mark (if any) of the todo item at LOC."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (if (or (looking-at
+		    (concat "\\(.?\\)" rstodo-todo-type-regexp-nomark))
+		   (looking-at
+		    (concat "\\(\\)" rstodo-non-todo-type-regexp)))
+	       (buffer-substring (match-beginning 1) (match-end 1))
+	     (error "Todo item at %d cannot be parsed!?" loc))))))
+	     
+(defun rstodo-item-donep (loc)
+  "Return whether the item at LOC is completed."
+  (equal "X" (rstodo-get-mark loc)))
+
+(defun rstodo-item-waitp (loc)
+  "Return whether or not the todo item at LOC is waiting on something."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (looking-at (concat rstodo-todo-type-regexp-nomark
+			       "[ 	][ 	]*[(\\[]"))))))
 ;;;;;;;;;
 
 (defun rstodo-get-outline-info (loc)
@@ -518,19 +558,18 @@ An outline topic is marked with a hotkey if it matches the regexp
       (setq char-read (read-char "Section to visit: "))
       (delete-window (get-buffer-window cb))
       (kill-buffer cb))
-    (while hotkeys
-      (if (member char-read (nth 3 (car hotkeys)))
-	  (progn
-	    (goto-char (nth 0 (car hotkeys)))
-	    (show-entry)
-	    (recenter 0)
-	    (setq hotkeys nil)
-	    (end-of-line)
-	    (rstodo-first-active-todo-item))
-	(setq hotkeys (cdr hotkeys))
-	(if (not hotkeys)
-	    (error "Key '%s' not found bound to outline heading."
-		   (char-to-string char-read)))))))
+    (while (and hotkeys (not (member char-read (nth 3 (car hotkeys)))))
+      (setq hotkeys (cdr hotkeys)))
+    (if (not hotkeys)
+	(error "Key '%s' not found bound to outline heading."
+	       (char-to-string char-read)))
+    (goto-char (nth 0 (car hotkeys)))
+    (show-entry)
+    (recenter 0)
+    (end-of-line)
+    (rstodo-first-active-todo-item))
+  (message "At point %d" (point))
+)
 
 (define-derived-mode rstodo-mode outline-mode "Todo"
   "Major mode for todo lists in Randy style.
