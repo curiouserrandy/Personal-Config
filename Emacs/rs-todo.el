@@ -219,6 +219,69 @@ outline (same as pieces)."
 (defun rstodo-outline-info-end (oi) (nth 1 oi))
 (defun rstodo-outline-info-line (oi) (nth 2 oi))
 
+(defun rstodo-get-related-item-beginning (loc rel type done wait
+					      &optional lbound ubound)
+  "Return the beginning of the item at offset REL from the piece at LOC.
+TYPE, DONE, and WAIT specify the nature of the item being looked for;
+REL only counts items matching these criteria.  An REL of 0 refes to the
+current item, and it is an error in this case of TYPE/DONE/WAIT do
+not match the current item.  If the specified item is not found, NIL is 
+returned.  LBOUND/UBOUND specify search limits; 
+if either is nil, (point-{min,max}) will be used instead."
+  ;;; Cleanup args for function
+  (if (or (not type) (not (listp type)))
+      (setq type (list type)))
+  (if (or (not done) (not (listp done)))
+      (setq done (list done)))
+  (if (or (not wait) (not (listp wait)))
+      (setq wait (list wait)))
+  (if (not lbound) (setq lbound (point-min)))
+  (if (not ubound) (setq ubound (point-max)))
+
+  (let ((item-beg (rstodo-item-beginning loc))
+	(item-end (rstodo-item-end loc))
+	search-re)
+    (if (not item-beg) (error "Bad location provided to function."))
+    ;; TODO(randy): Check if this funtionality is needed and implement if so.
+    (if (equal rel 0)
+	(error "Rel 0 functionality not implemented."))
+
+    ;; Create regexp
+    (setq search-re
+	  (concat "^"
+		  ;; Done allow ^X, not done ^[^X ^I], both ^[^ ^I]
+		  ;; Writing this as ^\\(?:X\\|[^X ^I\\)
+		  "\\(?:"
+		  (if (member t done) "X")
+		  (if (and (member t done) (member nil done)) "\\|")
+		  (if (member nil done) "[^X 	]")
+		  "\\)"
+
+		  ;; Map types to prefix and quote.
+		  "\\(?:"
+		  (mapconcat
+		   (lambda (ty) (regexp-quote
+				 (car (rassoc ty rstodo-mark-name-association))))
+		   type "\\|")
+		  "\\)"
+
+		  "[ 	]+"
+		  
+		  ;; Check dependency marker.
+		  "\\(?:"
+		  (if (member t wait) "(")
+		  (if (and (member t wait) (member nil done)) "\\|")
+		  (if (member nil wait) "[^(]")
+		  "\\)"))
+    (save-excursion
+      (goto-char item-beg)
+      (if (> rel 0)
+	  (end-of-line)
+	(and (re-search-forward search-re ubound t rel)
+	     (rstodo-item-beginning (point)))
+	(and (re-search-backward search-re lbound t (- rel))
+	     (rstodo-item-beginning (point)))))))
+
 (defun rstodo-get-related-piece-info (loc rel type done wait &optional lbound ubound)
   "Return info for the piece specified relative to the piece at
 LOC.  TYPE, DONE, and WAIT specify the nature of the piece being
