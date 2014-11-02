@@ -213,6 +213,24 @@ outline (same as pieces)."
       (setq e (point))
       (list b e ele))))
 
+(defun rstodo-get-outline-beginning (loc)
+  "Return the beginning of the outline element that contains LOC.
+If LOC is before the first outline element, the return value
+will be nil."
+  (save-excursion
+    (goto-char loc)
+    (outline-previous-heading)
+    (if (outline-on-heading-p t)
+	(point)
+      nil)))
+
+(defun rstodo-get-outline-end (loc)
+  "Return the end of the outline element that contains LOC."
+  (save-excursion
+    (goto-char loc)
+    (outline-next-heading)
+    (point)))
+
 ;;; Accessors for DS returned by above
 (defun rstodo-outline-info-bounds (oi) (list (nth 0 oi) (nth 1 oi)))
 (defun rstodo-outline-info-start (oi) (nth 0 oi))
@@ -235,8 +253,8 @@ if either is nil, (point-{min,max}) will be used instead."
       (setq done (list done)))
   (if (or (not wait) (not (listp wait)))
       (setq wait (list wait)))
-  (if (not lbound) (setq lbound (point-min)))
-  (if (not ubound) (setq ubound (point-max)))
+  (if (not lbound) (setq lbound (rstodo-get-outline-beginning loc)))
+  (if (not ubound) (setq ubound (rstodo-get-outline-beginning loc)))
 
   (let ((item-beg (rstodo-item-beginning loc))
 	(item-end (rstodo-item-end loc))
@@ -293,8 +311,10 @@ rather than as matching nothing.
 REL specifies how many pieces of that type forward or back to move; note that
 a REL of 0 refers to the current piece, and it is an error in this case of
 TYPE/DONE/WAIT do not match the current piece.  If the specified piece is
-not found, NIL is returned.  LBOUND/UBOUND specify search limits; if either 
-is nil, (point-min) or (point-max) will be used instead."
+not found, NIL is returned.  
+
+LBOUND/UBOUND specify search limits; if either is nil, the beginning/end
+of the outline unit around point will be used insted."
   ;;; Cleanup args for function
   (if (or (not type) (not (listp type)))
       (setq type (list type)))
