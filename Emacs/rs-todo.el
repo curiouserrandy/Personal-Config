@@ -651,7 +651,7 @@ An outline topic is marked with a hotkey if it matches the regexp
     (recenter 0)
     (end-of-line)
     (rstodo-first-active-todo-item))
-  (message "At point %d" (point))
+  (message (concat (buffer-name (current-buffer)) ": At point %d") (point))
 )
 
 (define-derived-mode rstodo-mode outline-mode "Todo"
