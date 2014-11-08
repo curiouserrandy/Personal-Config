@@ -254,7 +254,7 @@ if either is nil, (point-{min,max}) will be used instead."
   (if (or (not wait) (not (listp wait)))
       (setq wait (list wait)))
   (if (not lbound) (setq lbound (rstodo-get-outline-beginning loc)))
-  (if (not ubound) (setq ubound (rstodo-get-outline-beginning loc)))
+  (if (not ubound) (setq ubound (rstodo-get-outline-end loc)))
 
   (let ((item-beg (rstodo-item-beginning loc))
 	(item-end (rstodo-item-end loc))
@@ -267,12 +267,12 @@ if either is nil, (point-{min,max}) will be used instead."
     ;; Create regexp
     (setq search-re
 	  (concat "^"
-		  ;; Done allow ^X, not done ^[^X ^I], both ^[^ ^I]
-		  ;; Writing this as ^\\(?:X\\|[^X ^I\\)
+		  ;; Done allow only ^X, not done ^[^X ^I]?, both ^[^ ^I]
+		  ;; Writing this as ^\\(?:X\\|[^X ^I]?\\)
 		  "\\(?:"
 		  (if (member t done) "X")
 		  (if (and (member t done) (member nil done)) "\\|")
-		  (if (member nil done) "[^X 	]")
+		  (if (member nil done) "[^X 	]?")
 		  "\\)"
 
 		  ;; Map types to prefix and quote.
@@ -294,9 +294,9 @@ if either is nil, (point-{min,max}) will be used instead."
     (save-excursion
       (goto-char item-beg)
       (if (> rel 0)
-	  (end-of-line)
-	(and (re-search-forward search-re ubound t rel)
-	     (rstodo-item-beginning (point)))
+	  (progn (end-of-line)
+		 (and (re-search-forward search-re ubound t rel)
+		      (rstodo-item-beginning (point))))
 	(and (re-search-backward search-re lbound t (- rel))
 	     (rstodo-item-beginning (point)))))))
 
@@ -376,15 +376,12 @@ of the outline unit around point will be used insted."
 (defun rstodo-next-todo-item (rel &optional skip-done skip-wait)
   "Move to the next todo item matching the given criteria."
   (let* ((myoutl (rstodo-get-outline-info (point)))
-	 (nextpiece
-	  (rstodo-get-related-piece-info
+	 (nextitem
+	  (rstodo-get-related-item-beginning
 	   (point) rel '("todo" "copy" "question" "note")
 	   (if skip-done nil '(t nil))
-	   (if skip-wait nil '(t nil))
-	   (rstodo-outline-info-start myoutl)
-	   (rstodo-outline-info-end myoutl))))
-    (if nextpiece
-	(goto-char (rstodo-piece-info-start nextpiece))
+	   (if skip-wait nil '(t nil)))))
+    (if nextitem (goto-char nextitem)
       (error "Couldn't find todo item."))))
   
 (defun rstodo-first-active-todo-item ()
@@ -676,9 +673,10 @@ An outline topic is marked with a hotkey if it matches the regexp
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
 (define-key rstodo-mode-map [f5]
-  (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+ (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
 (define-key rstodo-mode-map [f6]
-  (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+ (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+
 (define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
