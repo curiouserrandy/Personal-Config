@@ -239,14 +239,21 @@ will be nil."
 
 (defun rstodo-get-related-item-beginning (loc rel type done wait
 					      &optional lbound ubound)
-  "Return the beginning of the item at offset REL from the piece at LOC.
+  "Return the beginning of the item at offset REL from location LOC.
 TYPE, DONE, and WAIT specify the nature of the item being looked for;
-REL only counts items matching these criteria.  An REL of 0 refes to the
-current item, and it is an error in this case of TYPE/DONE/WAIT do
-not match the current item.  If the specified item is not found, NIL is 
-returned.  LBOUND/UBOUND specify search limits; 
-if either is nil, (point-{min,max}) will be used instead."
+REL only counts items matching these criteria.  
+
+If moving forward, the search begins from the end of the current line;
+if moving backwards, from the beginning.  This allows the function
+to work properly if at the beginning of an item.   A REL of
+0 is an invalid input.  
+
+If the specified item is not found, NIL is returned.
+LBOUND/UBOUND specify search limits; if either is
+nil, (point-{min,max}) will be used instead."
   ;;; Cleanup args for function
+  (if (equal rel 0)
+      (error "Relative location of 0 specified to rstodo-get-related-item-beginning"))
   (if (or (not type) (not (listp type)))
       (setq type (list type)))
   (if (or (not done) (not (listp done)))
@@ -256,14 +263,8 @@ if either is nil, (point-{min,max}) will be used instead."
   (if (not lbound) (setq lbound (rstodo-get-outline-beginning loc)))
   (if (not ubound) (setq ubound (rstodo-get-outline-end loc)))
 
-  (let ((item-beg (rstodo-item-beginning loc))
-	(item-end (rstodo-item-end loc))
-	search-re)
+  (let ((item-beg (rstodo-item-beginning loc)) search-re)
     (if (not item-beg) (error "Bad location provided to function."))
-    ;; TODO(randy): Check if this funtionality is needed and implement if so.
-    (if (equal rel 0)
-	(error "Rel 0 functionality not implemented."))
-
     ;; Create regexp
     (setq search-re
 	  (concat "^"
@@ -291,14 +292,18 @@ if either is nil, (point-{min,max}) will be used instead."
 		  (if (and (member t wait) (member nil done)) "\\|")
 		  (if (member nil wait) "[^(]")
 		  "\\)"))
+    ;;; ?? How does re-search-forward behave with -rel, where does point
+    ;;; go when complete.
+
     (save-excursion
-      (goto-char item-beg)
       (if (> rel 0)
 	  (progn (end-of-line)
-		 (and (re-search-forward search-re ubound t rel)
-		      (rstodo-item-beginning (point))))
-	(and (re-search-backward search-re lbound t (- rel))
-	     (rstodo-item-beginning (point)))))))
+		 (re-search-forward search-re ubound t rel)
+		 (beginning-of-line)
+		 (point))
+	(progn (beginning-of-line)
+	       (re-search-backward search-re lbound t (- rel))
+	       (point))))))
 
 (defun rstodo-get-related-piece-info (loc rel type done wait &optional lbound ubound)
   "Return info for the piece specified relative to the piece at
@@ -398,6 +403,18 @@ of the outline unit around point will be used insted."
     (if (not first-active)
 	(message "Couldn't find active todo item in this section.")
       (goto-char (rstodo-piece-info-start first-active)))))
+
+(defun rstodo-first-active-todo-item-1 ()
+  (interactive)
+  "Move to the first todo item in the section that isn't done or dependent."
+  (let* ((myoutl (rstodo-get-outline-info (point)))
+	 (first-active
+	  (rstodo-get-related-item-beginning 
+	   (rstodo-outline-info-start myoutl)
+	   1 '("todo" "copy" "question") nil nil)))
+    (if (not first-active)
+	(message "Couldn't find active todo item in this section.")
+      (goto-char first-active))))
 
 ;;; Utility function for moving deleted stuff.
 (defun rstodo-collect-deleted-items (loc)
@@ -647,7 +664,7 @@ An outline topic is marked with a hotkey if it matches the regexp
     (show-entry)
     (recenter 0)
     (end-of-line)
-    (rstodo-first-active-todo-item))
+    (rstodo-first-active-todo-item-1))
   (message (concat (buffer-name (current-buffer)) ": At point %d") (point))
 )
 
