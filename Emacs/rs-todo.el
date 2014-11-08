@@ -263,38 +263,33 @@ nil, (point-{min,max}) will be used instead."
   (if (not lbound) (setq lbound (rstodo-get-outline-beginning loc)))
   (if (not ubound) (setq ubound (rstodo-get-outline-end loc)))
 
-  (let ((item-beg (rstodo-item-beginning loc)) search-re)
-    (if (not item-beg) (error "Bad location provided to function."))
-    ;; Create regexp
-    (setq search-re
-	  (concat "^"
-		  ;; Done allow only ^X, not done ^[^X ^I]?, both ^[^ ^I]
-		  ;; Writing this as ^\\(?:X\\|[^X ^I]?\\)
-		  "\\(?:"
-		  (if (member t done) "X")
-		  (if (and (member t done) (member nil done)) "\\|")
-		  (if (member nil done) "[^X 	]?")
-		  "\\)"
+  ;; Create regexp
+  (let ((search-re
+	 (concat "^"
+		 ;; Done allow only ^X, not done ^[^X ^I]?, both ^[^ ^I]
+		 ;; Writing this as ^\\(?:X\\|[^X ^I]?\\)
+		 "\\(?:"
+		 (if (member t done) "X")
+		 (if (and (member t done) (member nil done)) "\\|")
+		 (if (member nil done) "[^X 	]?")
+		 "\\)"
 
-		  ;; Map types to prefix and quote.
-		  "\\(?:"
-		  (mapconcat
-		   (lambda (ty) (regexp-quote
-				 (car (rassoc ty rstodo-mark-name-association))))
-		   type "\\|")
-		  "\\)"
+		 ;; Map types to prefix and quote.
+		 "\\(?:"
+		 (mapconcat
+		  (lambda (ty) (regexp-quote
+				(car (rassoc ty rstodo-mark-name-association))))
+		  type "\\|")
+		 "\\)"
 
-		  "[ 	]+"
-		  
-		  ;; Check dependency marker.
-		  "\\(?:"
-		  (if (member t wait) "(")
-		  (if (and (member t wait) (member nil done)) "\\|")
-		  (if (member nil wait) "[^(]")
-		  "\\)"))
-    ;;; ?? How does re-search-forward behave with -rel, where does point
-    ;;; go when complete.
-
+		 "[ 	]+"
+		 
+		 ;; Check dependency marker.
+		 "\\(?:"
+		 (if (member t wait) "(")
+		 (if (and (member t wait) (member nil done)) "\\|")
+		 (if (member nil wait) "[^(]")
+		 "\\)")))
     (save-excursion
       (if (> rel 0)
 	  (progn (end-of-line)
@@ -394,12 +389,9 @@ of the outline unit around point will be used insted."
   "Move to the first todo item in the section that isn't done or dependent."
   (let* ((myoutl (rstodo-get-outline-info (point)))
 	 (first-active
-	  (rstodo-get-related-piece-info
+	  (rstodo-get-related-item-beginning 
 	   (rstodo-outline-info-start myoutl)
-	   1 '("todo" "copy" "question")
-	   nil nil
-	   (rstodo-outline-info-start myoutl)
-	   (rstodo-outline-info-end myoutl))))
+	   1 '("todo" "copy" "question"))))
     (if (not first-active)
 	(message "Couldn't find active todo item in this section.")
       (goto-char (rstodo-piece-info-start first-active)))))
