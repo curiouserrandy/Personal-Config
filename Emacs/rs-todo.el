@@ -391,18 +391,6 @@ of the outline unit around point will be used insted."
 	 (first-active
 	  (rstodo-get-related-item-beginning 
 	   (rstodo-outline-info-start myoutl)
-	   1 '("todo" "copy" "question"))))
-    (if (not first-active)
-	(message "Couldn't find active todo item in this section.")
-      (goto-char (rstodo-piece-info-start first-active)))))
-
-(defun rstodo-first-active-todo-item-1 ()
-  (interactive)
-  "Move to the first todo item in the section that isn't done or dependent."
-  (let* ((myoutl (rstodo-get-outline-info (point)))
-	 (first-active
-	  (rstodo-get-related-item-beginning 
-	   (rstodo-outline-info-start myoutl)
 	   1 '("todo" "copy" "question") nil nil)))
     (if (not first-active)
 	(message "Couldn't find active todo item in this section.")
@@ -656,7 +644,7 @@ An outline topic is marked with a hotkey if it matches the regexp
     (show-entry)
     (recenter 0)
     (end-of-line)
-    (rstodo-first-active-todo-item-1))
+    (rstodo-first-active-todo-item))
   (message (concat (buffer-name (current-buffer)) ": At point %d") (point))
 )
 
