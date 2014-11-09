@@ -293,12 +293,12 @@ nil, (point-{min,max}) will be used instead."
     (save-excursion
       (if (> rel 0)
 	  (progn (end-of-line)
-		 (re-search-forward search-re ubound t rel)
-		 (beginning-of-line)
-		 (point))
+		 (and (re-search-forward search-re ubound t rel)
+		      (progn (beginning-of-line)
+			     (point))))
 	(progn (beginning-of-line)
-	       (re-search-backward search-re lbound t (- rel))
-	       (point))))))
+	       (and (re-search-backward search-re lbound t (- rel))
+		    (point)))))))
 
 (defun rstodo-get-related-piece-info (loc rel type done wait &optional lbound ubound)
   "Return info for the piece specified relative to the piece at
