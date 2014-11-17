@@ -149,9 +149,9 @@ commit_to_rev () {
 }
 
 rev_to_commit () {
-    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#$1}' --format='format:%H%n'`
+    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$1"'}' --format='format:%H%n' origin/master`
     if [ X"$commit" = X"" ]; then
-	commit=`git log --grep 'git-svn-id: .*src@290799.*$' --format='format:%H%n'`
+	commit=`git log --grep 'git-svn-id: .*src@'"$1"'.*$' --format='format:%H%n' origin/master`
     fi
     echo $commit;
 }
@@ -163,6 +163,10 @@ if [ $# -eq 1 ]; then
     if echo $1 | grep '[0-9]*' > /dev/null; then
 	# It's probably a revision
 	sync_commit=`rev_to_commit $1`
+	if [ X"$sync_commit" = X"" ]; then
+	    echo "Empty commit returned from rev_to_commit!?" 1>&2;
+	    exit 1;
+	fi
     else
 	sync_commit=$1
     fi
