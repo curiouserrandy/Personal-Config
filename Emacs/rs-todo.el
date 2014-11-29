@@ -425,6 +425,35 @@ returning them as a concatenated string."
 	      (concat (apply 'delete-and-extract-region ditem) output-string))))
     output-string))
 
+;;; TODO(rdsmith): Test the next three functions!
+(defun rstodo-remove-todo-item (loc)
+  "Remove the todo item LOC is within, returning its text.
+The beginning of the item counts as within."
+  (let ((item-beginning (rstodo-get-item-beginning loc))
+	(item-end (rstodo-get-item-ending loc))
+	contents)
+    (if (not item-beginning)
+	(error "Location %d isn't within an item" loc))
+    (setq contents (buffer-substring item-beginning item-end))
+    (delete-region item-beginning item-end)
+    contents))
+
+(defun rstodo-collect-deleted-items-1 (loc)
+  (let* ((outline-info (rstodo-get-outline-info loc))
+	 (outline-beginning (rstodo-outline-info-start outline-info))
+	 (output-string "")
+	 tmp)
+    (while
+	(setq tmp 
+	      (rstodo-get-related-item-beginning
+	       outline-beginning 1 ("todo" "copy" "question") t '(t nil)))
+      (setq output-string (concat output-string (rstodo-remove-todo-item tmp))))
+    output-string))
+
+(defun rstodo-kill-deleted-items (loc)
+  "Kill all deleted items (i.e. put them all in the kill ring)."
+  (kill-new (rstodo-collect-deleted-items-1 loc)))
+
 (defun rstodo-move-deleted-to-top (loc)
   "Move all deleted items in the outline area containing LOC to the top of that outline area."
   (interactive "d")
