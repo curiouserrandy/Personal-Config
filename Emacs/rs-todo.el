@@ -429,8 +429,8 @@ returning them as a concatenated string."
 (defun rstodo-remove-todo-item (loc)
   "Remove the todo item LOC is within, returning its text.
 The beginning of the item counts as within."
-  (let ((item-beginning (rstodo-get-item-beginning loc))
-	(item-end (rstodo-get-item-ending loc))
+  (let ((item-beginning (rstodo-item-beginning loc))
+	(item-end (rstodo-item-end loc))
 	contents)
     (if (not item-beginning)
 	(error "Location %d isn't within an item" loc))
@@ -576,6 +576,63 @@ rstodo-move-todo-piece-to-mark."
       (setq buf (current-buffer)))
   (set-marker rstodo-todo-mark loc buf)
   (message "Todo mark set."))
+
+(defconst rstodo-hotkey-regexp-1 "\\[\\([a-zA-Z0-9]\\)\\]"
+  "Regular expression for finding hotkeys in outline topic headings.")
+
+(defun rstodo-hotkey-outline-info-list ()
+  "Return a list of information about each tagged outline header in the buffer.
+A list member will look like '(tag beginning end header-string)."
+  (let ((tagged-outline-list nil)
+	(tagged-outline-regexp (concat "^" outline-regexp 
+				       "[ 	]*\\(.*?\\)[ 	]*"
+				       rstodo-hotkey-regexp-1
+				       "[ 	]*[\\-\\+]?[ 	]*$")))
+    (setq rs-tmp tagged-outline-regexp)
+    (outline-map-region
+     '(lambda ()
+       (if (looking-at tagged-outline-regexp)
+	   (let ((tag (buffer-substring-no-properties (match-beginning 2)
+						      (match-end 2)))
+		 (heading (buffer-substring-no-properties (match-beginning 1)
+							  (match-end 1))))
+	   (setq tagged-outline-list
+		 (cons (list tag (point)
+			     (save-excursion (outline-next-heading) (point))
+			     heading)
+		       tagged-outline-list)))))
+     (point-min) (point-max))
+    (sort tagged-outline-list
+	  '(lambda (a b) (string< (car a) (car b))))
+    tagged-outline-list))
+
+(defun rstodo-hotkey-outline-info (key)
+  (assoc key (rstodo-tagged-outline-info-list)))
+
+(defun rstodo-move-current-todo-item-to-hotkey (key)
+  (interactive "cDestination Section: ")
+  (setq key (make-string 1 key))
+  (let ((target-section (rstodo-hotkey-outline-info key)) m)
+    (if (not target-section)
+	(let* ((header (read-from-minibuffer "Section heading: "))
+	       (level (save-excursion
+			(outline-back-to-heading t)
+			(funcall outline-level)))
+	       (full-line (concat (make-string (1+ level) ?*)
+				  " " header " [" key "]" [10])))
+	  (save-excursion
+	    (outline-next-heading)
+	    (insert full-line))
+	  (setq target-section (rstodo-hotkey-outline-info key))
+	  (if (not target-section)
+	      (error "Can't happen--just created target section."))))
+    (setq m (copy-marker (nth 1 target-section)))
+    (let ((todo-contents (rstodo-remove-todo-item (point))))
+      (save-excursion
+	(goto-char m)
+	(forward-line 1)
+	(insert todo-contents)))
+    (set-marker m nil)))
 
 (defun rstodo-collect-outline-topics ()
   "Return a list of information about each outline topic in the current buffer.
