@@ -603,11 +603,11 @@ A list member will look like '(tag beginning end header-string)."
 		       tagged-outline-list)))))
      (point-min) (point-max))
     (sort tagged-outline-list
-	  '(lambda (a b) (string< (car a) (car b))))
+	  #'(lambda (a b) (string< (car a) (car b))))
     tagged-outline-list))
 
 (defun rstodo-hotkey-outline-info (key)
-  (assoc key (rstodo-tagged-outline-info-list)))
+  (assoc key (rstodo-hotkey-outline-info-list)))
 
 (defun rstodo-move-current-todo-item-to-hotkey (key)
   (interactive "cDestination Section: ")
@@ -734,6 +734,17 @@ An outline topic is marked with a hotkey if it matches the regexp
   (message (concat (buffer-name (current-buffer)) ": At point %d") (point))
 )
 
+(defun rstodo-setup-cheatsheet-buffer ()
+  "Setup the buffer containing the cheetsheet.  
+Returns buffer; does not display it."
+  (save-excursion
+    (let ((cb (get-buffer-create "*cheatsheet*"))
+	  (cheatsheet (rstodo-outline-hotkey-cheatsheet)))
+      (set-buffer cb)
+      (delete-region (point-min) (point-max))
+      (insert cheatsheet)
+      cb)))
+
 (define-derived-mode rstodo-mode outline-mode "Todo"
   "Major mode for todo lists in Randy style.
 \\{rstodo-mode-map}"
@@ -772,5 +783,29 @@ An outline topic is marked with a hotkey if it matches the regexp
 					  (revert-buffer t t)
 					(randy-explode-hook)
 					(randy-implode-hook))))
+
+(define-derived-mode rstodo-hotkey-mode rstodo-mode "Todo *Hotkey*"
+  "Mode in which keys auto-move the current todo item to that heading.")
+
+(defun rstodo-move-item-to-self-section ()
+  (interactive)
+  (if (not (equal (length (this-command-keys)) 1))
+      (error (concat "this-command-keys has length greater than 1: "
+		     this-command-keys)))
+  (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
+  (rstodo-setup-cheatsheet-buffer))
+
+(define-key rstodo-hotkey-mode-map [remap self-insert-command]
+  'rstodo-move-item-to-self-section)
+
+(define-key rstodo-hotkey-mode-map "\C-c#" 'rstodo-mode)
+
+(define-key rstodo-mode-map "\C-c\C-r"
+  #'(lambda ()
+      (interactive)
+      (let ((cb (rstodo-setup-cheatsheet-buffer)))
+	(switch-to-buffer-other-window cb t)
+	(other-window 1)
+	(rstodo-hotkey-mode))))
 
 (provide 'rs-todo)
