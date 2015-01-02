@@ -798,7 +798,17 @@ Returns buffer; does not display it."
 (define-key rstodo-hotkey-mode-map [remap self-insert-command]
   'rstodo-move-item-to-self-section)
 
-(define-key rstodo-hotkey-mode-map "\C-c#" 'rstodo-mode)
+;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
+;;; have a "show-entry" terminating them.  This is a hack to get around 
+;;; the fact that I hide-body when entering outline mode (see rs-outline.el).  
+;;; The right solution here is to make hotkey mode a minor mode rather than 
+;;; a major one, so the major mode doesn't change.
+
+(define-key rstodo-hotkey-mode-map "\C-c#"
+  #'(lambda ()
+      (interactive)
+      (rstodo-mode)
+      (show-entry)))
 
 (define-key rstodo-mode-map "\C-c\C-r"
   #'(lambda ()
@@ -806,6 +816,7 @@ Returns buffer; does not display it."
       (let ((cb (rstodo-setup-cheatsheet-buffer)))
 	(switch-to-buffer-other-window cb t)
 	(other-window 1)
-	(rstodo-hotkey-mode))))
+	(rstodo-hotkey-mode)
+	(show-entry))))
 
 (provide 'rs-todo)
