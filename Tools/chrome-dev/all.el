@@ -36,7 +36,7 @@ repository."
       (max large-file-warning-threshold (* 25 1024 1024))) ;For TAGS file.
 
 (defconst chrome-issue-list-url-format-string
-    "http://code.google.com/p/chromium/issues/list?can=1&q=%s&colspec=ID+Stars+Pri+Area+Feature+Type+Status+Summary+Modified+Owner+Mstone+OS&x=mstone&y=area&cells=tiles"
+    "http://code.google.com/p/chromium/issues/list?can=1&q=%s&colspec=ID+Stars+Pri+Area+Feature+Type+Status+Summary+Modified+Owner+M+OS&x=mstone&y=area&cells=tiles"
     "String to use for displaying sets of issues in the chrome issue tracker in list form.")
 
 (defun chrome-issue-list-url (issue-list)
@@ -44,8 +44,8 @@ repository."
 ISSUES is a list of integer values."
   (format chrome-issue-list-url-format-string
 	  (mapconcat 'identity
-		     (mapcar '(lambda (issue) (concat "id:"
-						      (number-to-string issue)))
+		     (mapcar (lambda (issue) (concat "id:"
+						     (number-to-string issue)))
 			     issue-list)
 		     "+OR+")))
 
