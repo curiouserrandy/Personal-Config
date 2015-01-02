@@ -807,6 +807,10 @@ Returns buffer; does not display it."
 (define-key rstodo-hotkey-mode-map "\C-c#"
   #'(lambda ()
       (interactive)
+      (let* ((csb (get-buffer "*cheatsheet*"))
+	     (csbw (and csb (get-buffer-window csb))))
+	(if csbw (delete-window csbw))
+	(if csb (kill-buffer csb)))
       (rstodo-mode)
       (show-entry)))
 
