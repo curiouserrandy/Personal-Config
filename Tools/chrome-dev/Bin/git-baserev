@@ -68,7 +68,7 @@ while [ $# -ne 0 ]; do
     shift;
     base_commit=`git merge-base $branch origin/master`
     svn_rev=r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`
-    pseudo_rev=p`git log -1 $base_commit | sed -n '/Cr-Commit-Position/s/^.*refs\/heads\/master@{#\([0-9]*\)}/\1/p'`
+    pseudo_rev=p`git log -1 $base_commit | sed -n '/Cr-Commit-Position/s/^.*refs\/heads\/master@{#\([0-9]*\)}/\1/p' | tail -1`
     if [ X"$pseudo_rev" = X"p" ]; then
 	rev=$svn_rev
     else
