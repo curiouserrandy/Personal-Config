@@ -6,13 +6,7 @@ prefix_path_with_dirlist PATH ~/Sandboxen/depot_tools	# There's a gcl in Google 
 prefix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
 
 # Location of patches repository
-if [ "$config_os" = "CYGWIN" ]; then
-    chrome_patches=//filer/home/rdsmith/Repositories/ChromePatches.git
-elif [ "$config_host" = "rdsmith-macbookpro" ]; then
-    chrome_patches=ssh://astibar.cam.corp.google.com/home/rdsmith/Repositories/ChromePatches.git
-else
-    chrome_patches=/home/rdsmith/Repositories/ChromePatches.git
-fi
+chrome_patches=sso://user/rdsmith/ChromePatches.git
 
 # Useful shell variables
 if [ "$config_os" = "CYGWIN" ]; then
