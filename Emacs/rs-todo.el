@@ -588,23 +588,22 @@ A list member will look like '(tag beginning end header-string)."
 				       "[ 	]*\\(.*?\\)[ 	]*"
 				       rstodo-hotkey-regexp-1
 				       "[ 	]*[\\-\\+]?[ 	]*$")))
-    (setq rs-tmp tagged-outline-regexp)
     (outline-map-region
      '(lambda ()
-       (if (looking-at tagged-outline-regexp)
-	   (let ((tag (buffer-substring-no-properties (match-beginning 2)
-						      (match-end 2)))
-		 (heading (buffer-substring-no-properties (match-beginning 1)
-							  (match-end 1))))
-	   (setq tagged-outline-list
-		 (cons (list tag (point)
-			     (save-excursion (outline-next-heading) (point))
-			     heading)
-		       tagged-outline-list)))))
+	(if (looking-at tagged-outline-regexp)
+	    (let ((tag (buffer-substring-no-properties (match-beginning 2)
+						       (match-end 2)))
+		  (heading (buffer-substring-no-properties (match-beginning 1)
+							   (match-end 1))))
+	      (setq tagged-outline-list
+		    (cons (list tag (point)
+				(save-excursion (outline-next-heading) (point))
+				heading)
+			  tagged-outline-list)))))
      (point-min) (point-max))
+    ;; TODO(rdmsith): ??? Sort is not doing nothing nor sorting ???
     (sort tagged-outline-list
-	  #'(lambda (a b) (string< (car a) (car b))))
-    tagged-outline-list))
+	  #'(lambda (a b) (string< (car a) (car b))))))
 
 (defun rstodo-hotkey-outline-info (key)
   (assoc key (rstodo-hotkey-outline-info-list)))
@@ -612,6 +611,7 @@ A list member will look like '(tag beginning end header-string)."
 (defun rstodo-move-current-todo-item-to-hotkey (key)
   (interactive "cDestination Section: ")
   (setq key (make-string 1 key))
+  (message key)
   (let ((target-section (rstodo-hotkey-outline-info key)) m)
     (if (not target-section)
 	(let* ((header (read-from-minibuffer "Section heading: "))
@@ -794,6 +794,10 @@ Returns buffer; does not display it."
 		     this-command-keys)))
   (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
   (rstodo-setup-cheatsheet-buffer))
+
+(defun test-function ()
+  (interactive)
+  (message (this-command-keys)))
 
 (define-key rstodo-hotkey-mode-map [remap self-insert-command]
   'rstodo-move-item-to-self-section)
