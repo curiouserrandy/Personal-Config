@@ -10,3 +10,7 @@
 	mergeoptions = --no-edit
 [branch]
 	autosetupmerge=always
+[google]
+	lastUpdateCheck = 20150729000000
+[push]
+	default = simple
