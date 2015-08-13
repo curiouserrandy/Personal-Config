@@ -13,9 +13,14 @@ fi
 # (single word) commands that are executed in order and their output
 # concatenated to make the shell prompt.
 
+pwd_at_last_prompt=
+
 last_two_elements_of_pwd () {
     hd=~
-    echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'
+    if [ X"$pwd_at_last_prompt" != X"$PWD" ]; then 
+      echo $PWD | sed 's;^'"$hd"';~;' | sed 's;^..*/\([^/]*/[^/]*\);../\1;'
+    fi
+    pwd_at_last_prompt=$PWD;
 }
 
 short_host () {
@@ -24,7 +29,6 @@ short_host () {
 	
 shell_prompt_commands="short_host last_two_elements_of_pwd $shell_prompt_commands"
 
-				 
 reset_shell_prompt () {
     res=""
     for f in $shell_prompt_commands; do
@@ -32,6 +36,8 @@ reset_shell_prompt () {
     done
     PS1="$res $pchar "
 }
+
+export PROMPT_COMMAND=reset_shell_prompt
 
 # Replace an element of the path with a different element.
 # Useful when you're working in parallel trees.
@@ -77,41 +83,6 @@ save_environ () {
     envdefs $* >> ~/.bash_save
 }
 
-# Actual prompt fiddling; only do if the shell is interactive.
-
-if [ "$PS1" != "" ]; then
-    function cd () {
-      if test $# -eq 2 ; then
-        massage_path $1 $2;
-        cd $massage_path_result;
-      else
-        builtin cd "$@";
-        reset_shell_prompt
-      fi
-    }
-    
-    function pushd () {
-      builtin pushd $*
-      reset_shell_prompt
-    }
-    
-    function popd () {
-      builtin popd $*
-      reset_shell_prompt
-    }
-    
-    reset_shell_prompt
-    
-    # Terminal setup.
-    if [ "$TERM" = "dialup" -o "$TERM" = "network" ]; then
-        # This seems to work for my usual.
-        eval `tset -sQ ?vt100`
-    fi
-    
-    # Set terminal characteristics correctly
-    stty intr '^C' erase '^?'
-fi
-    
 # Read in my aliases
 . $config_files_directory/aliases.bf
 
