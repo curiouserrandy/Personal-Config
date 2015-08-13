@@ -1,42 +1,84 @@
 http://en.wikipedia.org/wiki/Class_diagram
 
 -- Types of relationship:
+   	  whole -> referenced_part		# Raw pointer
+	      [dir=back, arrowhead=none, arrowtail=odiamond];
+
+	  whole -> owned_part		# Member of scoped_ptr<>
+	      [dir=back, arrowhead=none, arrowtail=diamond];
+	  
+	  derived_class -> base_class
+ 	      [dir=back, arrowhead=none, arrowtail=empty];
+
+	  # May want to put inside rank=same subgraph.
+	  factory -> generated_object [arrowhead=veevee, weight=0];
+
+	  whole -> reference_counted_semi_owned_part
+	      [dir=back, arrowhead=none, arrowtail=diamond, color=red];
+
 	* Association [line]: Weakest form of connection between objects;
 	  represented by a line.  May be annotated by numbers on
 	  either side, and a name for the association and each end.
 
-	  a -> b [headlabel="0..*", taillabel="1..*", label="label",
+	  a -> b [headlabel="0..*", taillabel="1..*",
+	          label="associated with",
 	          arrowhead="none"];
 	  // Multiple head/tail labels on each side for name+association?
 
-	* Aggregation [open diamond towards whole]: Represents a "has
-	  a" or whole/part relationship.
-	  part -> whole [arrowhead="odiamond"];
+-- Types of objects:
+	pure_ABC [style=dotted];
+	mixed_ABC [style=dashed];
+	template_class [shape=diamond]; # Link will name parameter(s)
 
-	* Composition [solid diamond towards whole]: Aggregation with
-	  lifecycle matching (owner destruction->child destruction)
-	  implications.
-	  part -> whole [arrowhead="diamond"];
+-- Legend:
+
+subgraph cluster_legend {
+   	  whole -> referenced_part		# Raw pointer
+	      [dir=back, arrowhead=none, arrowtail=odiamond];
+
+	  whole -> owned_part		# Member of scoped_ptr<>
+	      [dir=back, arrowhead=none, arrowtail=diamond];
 	  
-	* Generalization/specialization [Arrow towards supertype/more
-	  abstract type]: Inheritance in class diagrams.
+	  derived_class -> base_class
+ 	      [dir=back, arrowhead=none, arrowtail=empty];
 
-	  subtype -> supertype [arrowhead="empty"];
+	  # May want to put inside rank=same subgraph.
+	  factory -> generated_object [arrowhead=veevee, weight=0];
 
-	* Realization [Generalization with dotted line]:
-	  Implementation of an interface.
-
-	  subtype -> supertype[style=dashed, arrowhead="empty"];
-
-	* Dependency
-	  supertype -> subtype [style=dashed];
-
-	## My invention, because I needed it.
-	## TODO: Find a way to make this not fit into rank order.
-	* Generated
-	  ## May want to add weight=0, inside rank=same subgraph.
-	  factory -> object [arrowhead=veevee];
+	  whole -> reference_counted_semi_owned_part
+	      [dir=back, arrowhead=none, arrowtail=diamond, color=red];
+    
+	  a -> b [headlabel="0..*", taillabel="1..*",
+	          label="associated with",
+	          arrowhead="none"];
+	pure_ABC [style=dotted];
+	mixed_ABC [style=dashed];
+	template_class [shape=diamond]; # Link will name parameter(s)
+};
 
 -- Representing maps: Try representing them as a cluster subgraph
    (subgraph cluster_a), and drawing lines to the cluster.  
+
+## Making the following modifications, mostly oriented at C++ and how
+   it's used in the Chromium code base:
+	* No distinction among inheritance from an interface and
+   	  inheritance from a class; both are solid line with empty
+   	  arrow.
+	* "Pure" ABCs (no non-pure virtual methods or data members)
+   	  will have a dotted outline.  "Mixed" ABCs (can't be
+   	  instantiated because of pure virtual methods but still have
+   	  concrete methods or data members) will have a dashed
+   	  outline.
+	* "Generator" classes/Factories will be connected to the
+   	  abstract type they generate by a solid line with a double
+   	  arrowhead.
+	* scoped_refptr<> will be treated as a ownership, but with a
+   	  red line to indicate "questionable" ownership.
+
+## Tactics:
+	* Assume graphs are built top to bottom (default).
+	* Want base classes below derived classes and class members
+   	  below classes.  This will result in some reversals of how
+   	  things normally work.
+
 
