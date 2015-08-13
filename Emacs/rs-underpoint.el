@@ -4,24 +4,28 @@ Optionally specify an alternate syntax table in SYNTAB to define words.
 Optionally specify a word separator WORDSEP.  If specified, the function
 will return a list of words connected by the separator character.
 may return either a single word or a list of two words (the second
-following the word point is on separated from it by WORDSEP)."
-  (let* ((buffer-syntax-table (syntax-table))
-	(local-syntax-table (or syntab buffer-syntax-table))
-	word1 wordaft)
-    (save-excursion
-      (set-syntax-table local-syntax-table)
-      (setq word1 (buffer-substring (progn (forward-word -1) (point))
-				    (progn (forward-word 1) (point))))
-      (if (equal (char-after (point)) wordsep)
-	  (progn
-	    (forward-char 1)
-	    (setq wordaft (buffer-substring (point)
-					    (progn (forward-word 1)
-						   (point))))))
-      (set-syntax-table buffer-syntax-table)
-      (if wordaft
-	  (list word1 wordaft)
-	word1))))
+following the word point is on separated from it by WORDSEP).
+
+If the mark is active, returns the selected text."
+  (if (region-active-p)
+      (buffer-substring (region-beginning) (region-end))
+    (let* ((buffer-syntax-table (syntax-table))
+	   (local-syntax-table (or syntab buffer-syntax-table))
+	   word1 wordaft)
+      (save-excursion
+	(set-syntax-table local-syntax-table)
+	(setq word1 (buffer-substring (progn (forward-word -1) (point))
+				      (progn (forward-word 1) (point))))
+	(if (equal (char-after (point)) wordsep)
+	    (progn
+	      (forward-char 1)
+	      (setq wordaft (buffer-substring (point)
+					      (progn (forward-word 1)
+						     (point))))))
+	(set-syntax-table buffer-syntax-table)
+	(if wordaft
+	    (list word1 wordaft)
+	  word1)))))
 
 (defconst randy-find-file-under-point-syntab
   (let ((syntab (make-syntax-table c-mode-syntax-table)))
