@@ -4,22 +4,38 @@ export GIT_PAGER=""
 
 unset -f git
 
-git_binary_location=`type -p git`
-
 git_branch () {
-    if $git_binary_location branch > /dev/null 2>&1 ; then
-        br=`$git_binary_location branch 2>&1 | sed -n '/^\*/s/^..//p'`
+    if git branch > /dev/null 2>&1 ; then
+        br=`git branch 2>&1 | sed -n '/^\*/s/^..//p'`
         echo " [$br]"
     fi
 }
 
-if ! echo $shell_prompt_commands | tr ' ' '\012' | grep git_branch > /dev/null; then
-    shell_prompt_commands="$shell_prompt_commands git_branch"
-fi
+last_heads_ref=
+last_git_pwd=
 
-git() {
-    $git_binary_location "$@"
-    result=$?
-    reset_shell_prompt
-    return $result
+git_branch_for_prompt () {
+    if [ X"$last_git_pwd" != "$PWD" ]; then
+	last_heads_ref=
+	last_git_pwd=$PWD    
+	while true; do
+	    if [ -d ./.git ]; then
+	        last_heads_ref=$PWD/.git/HEAD
+		break;
+	    fi
+	    if [ X"$PWD" == X"/" ]; then
+	        break;
+	    fi
+	    cd ..
+	done
+	cd "$last_git_pwd"
+    fi
+    if [ X"$last_heads_ref" != X"" ]; then
+        echo -n " [";
+	sed 's;ref:[ 	    ]*refs/heads/;;' $last_heads_ref | tr -d '\012'
+	echo -n "] ";
+    fi
 }
+
+suffix_val_to_var_if_not_present git_branch_for_prompt shell_prompt_commands
+		

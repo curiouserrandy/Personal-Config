@@ -1,2 +1,2 @@
-export GYP_GENERATORS=ninja
+export GYP_GENERATORS=ninja,xcode-ninja
 

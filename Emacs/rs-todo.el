@@ -115,6 +115,81 @@ OTHERMARK is any character other than 'X' before the piece prefix."
 (defun rstodo-piece-info-waitp (pi) (nth 4 pi))
 (defun rstodo-piece-info-othermark (pi) (nth 5 pi))
 
+;; TODO(rdsmith): Replace all uses of get-piece-info with the below
+;; collection (specifically get-item-boundaries).
+(defun rstodo-item-beginning (loc)
+  "Returns the location of the beginning of the item at LOC, or nil if not in
+an item."
+  (save-excursion
+    (goto-char loc)
+    (rstodo-beginning-of-piece)
+    (if (looking-at (concat "\\(?:" rstodo-todo-type-regexp
+			    "\\|" rstodo-non-todo-type-regexp "\\)"))
+	(point)
+      nil)))
+
+(defun rstodo-item-end (loc)
+  "Returns the location of the end of the item at LOC.
+This function assumes LOC is in an item; use rs-todo-beginning-of-item
+for detemrining item existence."
+  (save-excursion
+    (goto-char loc)
+    (rstodo-end-of-piece)
+    (point)))
+
+(defun rstodo-item-boundaries (loc)
+  "Return a two element list (START END) for the item identified by LOC.
+Note that a LOC at the very beginning of a piece (== START) will return
+that piece.  If location is not within a item (beginning of file or
+outline section), nil will be returned."
+  (save-excursion
+    (goto-char loc)
+    (let ((bounds ((rstodo-beginning-of-item) (rstodo-end-of-item))))
+      ;; nil if no start, otherwise bounds.
+      (and (car bounds) (bounds)))))
+
+(defun rstodo-item-type (loc)
+  "Return the type (from rstodo-mark-name-association) of the item at LOC."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (if (or (looking-at
+		    (concat ".?\\(" rstodo-todo-type-regexp-nomark "\\)"))
+		   (looking-at
+		    (concat "\\(" rstodo-non-todo-type-regexp "\\)")))
+	       (assoc (cdr
+		       (buffer-substring (match-beginning 1) (match-end 1))
+		       rstodo-mark-name-association))
+	     (error "Todo item at %d cannot be parsed!?" loc))))))
+	     
+(defun rstodo-item-mark (loc)
+  "Return the mark (if any) of the todo item at LOC."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (if (or (looking-at
+		    (concat "\\(.?\\)" rstodo-todo-type-regexp-nomark))
+		   (looking-at
+		    (concat "\\(\\)" rstodo-non-todo-type-regexp)))
+	       (buffer-substring (match-beginning 1) (match-end 1))
+	     (error "Todo item at %d cannot be parsed!?" loc))))))
+	     
+(defun rstodo-item-donep (loc)
+  "Return whether the item at LOC is completed."
+  (equal "X" (rstodo-get-mark loc)))
+
+(defun rstodo-item-waitp (loc)
+  "Return whether or not the todo item at LOC is waiting on something."
+  (let ((start (rstodo-beginning-of-item loc)))
+    (and start
+	 (save-excursion
+	   (goto-char start)
+	   (looking-at (concat rstodo-todo-type-regexp-nomark
+			       "[ 	][ 	]*[(\\[]"))))))
+;;;;;;;;;
+
 (defun rstodo-get-outline-info (loc)
   "Return a three element list (START END ELE) for the outline element that
 includes location LOC in the file.  ELE will be the text of the outline 
@@ -138,11 +213,92 @@ outline (same as pieces)."
       (setq e (point))
       (list b e ele))))
 
+(defun rstodo-get-outline-beginning (loc)
+  "Return the beginning of the outline element that contains LOC.
+If LOC is before the first outline element, the return value
+will be nil."
+  (save-excursion
+    (goto-char loc)
+    (outline-previous-heading)
+    (if (outline-on-heading-p t)
+	(point)
+      nil)))
+
+(defun rstodo-get-outline-end (loc)
+  "Return the end of the outline element that contains LOC."
+  (save-excursion
+    (goto-char loc)
+    (outline-next-heading)
+    (point)))
+
 ;;; Accessors for DS returned by above
 (defun rstodo-outline-info-bounds (oi) (list (nth 0 oi) (nth 1 oi)))
 (defun rstodo-outline-info-start (oi) (nth 0 oi))
 (defun rstodo-outline-info-end (oi) (nth 1 oi))
 (defun rstodo-outline-info-line (oi) (nth 2 oi))
+
+(defun rstodo-get-related-item-beginning (loc rel type done wait
+					      &optional lbound ubound)
+  "Return the beginning of the item at offset REL from location LOC.
+TYPE, DONE, and WAIT specify the nature of the item being looked for;
+REL only counts items matching these criteria.  
+
+If moving forward, the search begins from the end of the current line;
+if moving backwards, from the beginning.  This allows the function
+to work properly if at the beginning of an item.   A REL of
+0 is an invalid input.  
+
+If the specified item is not found, NIL is returned.
+LBOUND/UBOUND specify search limits; if either is
+nil, (point-{min,max}) will be used instead."
+  ;;; Cleanup args for function
+  (if (equal rel 0)
+      (error "Relative location of 0 specified to rstodo-get-related-item-beginning"))
+  (if (or (not type) (not (listp type)))
+      (setq type (list type)))
+  (if (or (not done) (not (listp done)))
+      (setq done (list done)))
+  (if (or (not wait) (not (listp wait)))
+      (setq wait (list wait)))
+  (if (not lbound) (setq lbound (rstodo-get-outline-beginning loc)))
+  (if (not ubound) (setq ubound (rstodo-get-outline-end loc)))
+
+  ;; Create regexp
+  (let ((search-re
+	 (concat "^"
+		 ;; Done allow only ^X, not done ^[^X ^I]?, both ^[^ ^I]
+		 ;; Writing this as ^\\(?:X\\|[^X ^I]?\\)
+		 "\\(?:"
+		 (if (member t done) "X")
+		 (if (and (member t done) (member nil done)) "\\|")
+		 (if (member nil done) "[^X 	]?")
+		 "\\)"
+
+		 ;; Map types to prefix and quote.
+		 "\\(?:"
+		 (mapconcat
+		  (lambda (ty) (regexp-quote
+				(car (rassoc ty rstodo-mark-name-association))))
+		  type "\\|")
+		 "\\)"
+
+		 "[ 	]+"
+		 
+		 ;; Check dependency marker.
+		 "\\(?:"
+		 (if (member t wait) "(")
+		 (if (and (member t wait) (member nil done)) "\\|")
+		 (if (member nil wait) "[^(]")
+		 "\\)")))
+    (save-excursion
+      (if (> rel 0)
+	  (progn (end-of-line)
+		 (and (re-search-forward search-re ubound t rel)
+		      (progn (beginning-of-line)
+			     (point))))
+	(progn (beginning-of-line)
+	       (and (re-search-backward search-re lbound t (- rel))
+		    (point)))))))
 
 (defun rstodo-get-related-piece-info (loc rel type done wait &optional lbound ubound)
   "Return info for the piece specified relative to the piece at
@@ -155,8 +311,10 @@ rather than as matching nothing.
 REL specifies how many pieces of that type forward or back to move; note that
 a REL of 0 refers to the current piece, and it is an error in this case of
 TYPE/DONE/WAIT do not match the current piece.  If the specified piece is
-not found, NIL is returned.  LBOUND/UBOUND specify search limits; if either 
-is nil, (point-min) or (point-max) will be used instead."
+not found, NIL is returned.  
+
+LBOUND/UBOUND specify search limits; if either is nil, the beginning/end
+of the outline unit around point will be used insted."
   ;;; Cleanup args for function
   (if (or (not type) (not (listp type)))
       (setq type (list type)))
@@ -194,8 +352,8 @@ is nil, (point-min) or (point-max) will be used instead."
 		      ;; And then combine them with "\\(?:" .. "\\|" .. "\\)"
 		      "\\(?:"
 		      (mapconcat
-		       '(lambda (ty) (regexp-quote
-				      (car (rassoc ty rstodo-mark-name-association)))) 
+		       (lambda (ty) (regexp-quote
+				     (car (rassoc ty rstodo-mark-name-association))))
 		       type "\\|")
 		      "\\)"
 		      ;; Handle dependcy markers
@@ -218,57 +376,25 @@ is nil, (point-min) or (point-max) will be used instead."
 (defun rstodo-next-todo-item (rel &optional skip-done skip-wait)
   "Move to the next todo item matching the given criteria."
   (let* ((myoutl (rstodo-get-outline-info (point)))
-	 (nextpiece
-	  (rstodo-get-related-piece-info
+	 (nextitem
+	  (rstodo-get-related-item-beginning
 	   (point) rel '("todo" "copy" "question" "note")
 	   (if skip-done nil '(t nil))
-	   (if skip-wait nil '(t nil))
-	   (rstodo-outline-info-start myoutl)
-	   (rstodo-outline-info-end myoutl))))
-    (if nextpiece
-	(goto-char (rstodo-piece-info-start nextpiece))
+	   (if skip-wait nil '(t nil)))))
+    (if nextitem (goto-char nextitem)
       (error "Couldn't find todo item."))))
   
-
-(defun rstodo-next-open-todo-item () (interactive) (rstodo-next-todo-item 1 t nil))
-(defun rstodo-prev-open-todo-item () (interactive) (rstodo-next-todo-item -1 t nil))
-(defun rstodo-next-active-todo-item () (interactive) (rstodo-next-todo-item 1 t t))
-(defun rstodo-prev-active-todo-item () (interactive) (rstodo-next-todo-item -1 t t))
-
 (defun rstodo-first-active-todo-item ()
   (interactive)
   "Move to the first todo item in the section that isn't done or dependent."
   (let* ((myoutl (rstodo-get-outline-info (point)))
 	 (first-active
-	  (rstodo-get-related-piece-info
+	  (rstodo-get-related-item-beginning 
 	   (rstodo-outline-info-start myoutl)
-	   1 '("todo" "copy" "question")
-	   nil nil
-	   (rstodo-outline-info-start myoutl)
-	   (rstodo-outline-info-end myoutl))))
+	   1 '("todo" "copy" "question") nil nil)))
     (if (not first-active)
 	(message "Couldn't find active todo item in this section.")
-      (goto-char (rstodo-piece-info-start first-active)))))
-
-(defun rstodo-last-active-todo-item ()
-  (interactive)
-  "Move to the last active todo item in this outline section."
-  (let* ((outl (rstodo-get-outline-info (point)))
-	 (lastpiece (rstodo-get-piece-info (rstodo-outline-info-end outl))))
-    (if (and (member (rstodo-piece-info-type lastpiece)
-		     '("todo" "copy" "note" "question"))
-	     (not (rstodo-piece-info-waitp lastpiece))
-	     (not (rstodo-piece-info-donep lastpiece)))
-	(goto-char (rstodo-piece-info-start lastpiece))
-      (let ((piece
-	     (rstodo-get-related-piece-info
-	      (rstodo-piece-info-start lastpiece)
-	      -1
-	      '("todo" "copy" "note" "question")
-	      nil nil
-	      (rstodo-outline-info-start outl)
-	      (rstodo-outline-info-end outl))))
-	(goto-char (rstodo-piece-info-start piece))))))
+      (goto-char first-active))))
 
 ;;; Utility function for moving deleted stuff.
 (defun rstodo-collect-deleted-items (loc)
@@ -298,6 +424,35 @@ returning them as a concatenated string."
 	(setq output-string 
 	      (concat (apply 'delete-and-extract-region ditem) output-string))))
     output-string))
+
+;;; TODO(rdsmith): Test the next three functions!
+(defun rstodo-remove-todo-item (loc)
+  "Remove the todo item LOC is within, returning its text.
+The beginning of the item counts as within."
+  (let ((item-beginning (rstodo-item-beginning loc))
+	(item-end (rstodo-item-end loc))
+	contents)
+    (if (not item-beginning)
+	(error "Location %d isn't within an item" loc))
+    (setq contents (buffer-substring item-beginning item-end))
+    (delete-region item-beginning item-end)
+    contents))
+
+(defun rstodo-collect-deleted-items-1 (loc)
+  (let* ((outline-info (rstodo-get-outline-info loc))
+	 (outline-beginning (rstodo-outline-info-start outline-info))
+	 (output-string "")
+	 tmp)
+    (while
+	(setq tmp 
+	      (rstodo-get-related-item-beginning
+	       outline-beginning 1 ("todo" "copy" "question") t '(t nil)))
+      (setq output-string (concat output-string (rstodo-remove-todo-item tmp))))
+    output-string))
+
+(defun rstodo-kill-deleted-items (loc)
+  "Kill all deleted items (i.e. put them all in the kill ring)."
+  (kill-new (rstodo-collect-deleted-items-1 loc)))
 
 (defun rstodo-move-deleted-to-top (loc)
   "Move all deleted items in the outline area containing LOC to the top of that outline area."
@@ -358,6 +513,7 @@ Throws an error if point is not on a todo item, or if there is no place to move 
     (goto-char p)
     (set-marker p nil)))
 
+;; Saving to make a subroutine.
 (defun rstodo-kill-todo-piece (loc)
   "Kill the todo piece which LOC is within."
   (interactive "d")
@@ -421,6 +577,63 @@ rstodo-move-todo-piece-to-mark."
   (set-marker rstodo-todo-mark loc buf)
   (message "Todo mark set."))
 
+(defconst rstodo-hotkey-regexp-1 "\\[\\([a-zA-Z0-9]\\)\\]"
+  "Regular expression for finding hotkeys in outline topic headings.")
+
+(defun rstodo-hotkey-outline-info-list ()
+  "Return a list of information about each tagged outline header in the buffer.
+A list member will look like '(tag beginning end header-string)."
+  (let ((tagged-outline-list nil)
+	(tagged-outline-regexp (concat "^" outline-regexp 
+				       "[ 	]*\\(.*?\\)[ 	]*"
+				       rstodo-hotkey-regexp-1
+				       "[ 	]*[\\-\\+]?[ 	]*$")))
+    (setq rs-tmp tagged-outline-regexp)
+    (outline-map-region
+     '(lambda ()
+       (if (looking-at tagged-outline-regexp)
+	   (let ((tag (buffer-substring-no-properties (match-beginning 2)
+						      (match-end 2)))
+		 (heading (buffer-substring-no-properties (match-beginning 1)
+							  (match-end 1))))
+	   (setq tagged-outline-list
+		 (cons (list tag (point)
+			     (save-excursion (outline-next-heading) (point))
+			     heading)
+		       tagged-outline-list)))))
+     (point-min) (point-max))
+    (sort tagged-outline-list
+	  #'(lambda (a b) (string< (car a) (car b))))
+    tagged-outline-list))
+
+(defun rstodo-hotkey-outline-info (key)
+  (assoc key (rstodo-hotkey-outline-info-list)))
+
+(defun rstodo-move-current-todo-item-to-hotkey (key)
+  (interactive "cDestination Section: ")
+  (setq key (make-string 1 key))
+  (let ((target-section (rstodo-hotkey-outline-info key)) m)
+    (if (not target-section)
+	(let* ((header (read-from-minibuffer "Section heading: "))
+	       (level (save-excursion
+			(outline-back-to-heading t)
+			(funcall outline-level)))
+	       (full-line (concat (make-string (1+ level) ?*)
+				  " " header " [" key "]" [10])))
+	  (save-excursion
+	    (outline-next-heading)
+	    (insert full-line))
+	  (setq target-section (rstodo-hotkey-outline-info key))
+	  (if (not target-section)
+	      (error "Can't happen--just created target section."))))
+    (setq m (copy-marker (nth 1 target-section)))
+    (let ((todo-contents (rstodo-remove-todo-item (point))))
+      (save-excursion
+	(goto-char m)
+	(forward-line 1)
+	(insert todo-contents)))
+    (set-marker m nil)))
+
 (defun rstodo-collect-outline-topics ()
   "Return a list of information about each outline topic in the current buffer.
  (XXX specify format.)"
@@ -455,7 +668,7 @@ An outline topic is marked with a hotkey if it matches the regexp
 	      (setq tmpkeylist (substring outline-heading
 					  (1+ (match-beginning 0))
 					  (1- (match-end 0))))
-	      (setq hotkeys (mapcar '(lambda (s) (elt s 0))
+	      (setq hotkeys (mapcar (lambda (s) (elt s 0))
 				    (split-string tmpkeylist ",")))
 	      (setq hotkey-outline-list
 		    (append hotkey-outline-list
@@ -468,12 +681,12 @@ An outline topic is marked with a hotkey if it matches the regexp
   (let ((hotkey-list (rstodo-collect-outline-hotkeys)))
     (mapconcat 'identity 
 	       (apply 'append
-		      (mapcar '(lambda (elt)
-				 (let ((line (nth 2 elt))
-					     (keys (nth 3 elt)))
-				   (mapcar '(lambda (key)
-					      (concat (string key) " --\t" line))
-					   keys)))
+		      (mapcar (lambda (elt)
+				(let ((line (nth 2 elt))
+				      (keys (nth 3 elt)))
+				  (mapcar (lambda (key)
+					    (concat (string key) " --\t" line))
+					  keys)))
 			      hotkey-list)) "\n")))
 
 ;;; Plan
@@ -508,33 +721,29 @@ An outline topic is marked with a hotkey if it matches the regexp
       (setq char-read (read-char "Section to visit: "))
       (delete-window (get-buffer-window cb))
       (kill-buffer cb))
-    (while hotkeys
-      (if (member char-read (nth 3 (car hotkeys)))
-	  (progn
-	    (goto-char (nth 0 (car hotkeys)))
-	    (show-entry)
-	    (recenter 0)
-	    (setq hotkeys nil)
-	    (end-of-line)
-	    (rstodo-first-active-todo-item))
-	(setq hotkeys (cdr hotkeys))
-	(if (not hotkeys)
-	    (error "Key '%s' not found bound to outline heading."
-		   (char-to-string char-read)))))))
+    (while (and hotkeys (not (member char-read (nth 3 (car hotkeys)))))
+      (setq hotkeys (cdr hotkeys)))
+    (if (not hotkeys)
+	(error "Key '%s' not found bound to outline heading."
+	       (char-to-string char-read)))
+    (goto-char (nth 0 (car hotkeys)))
+    (show-entry)
+    (recenter 0)
+    (end-of-line)
+    (rstodo-first-active-todo-item))
+  (message (concat (buffer-name (current-buffer)) ": At point %d") (point))
+)
 
-;;; TODO (next two functions): Need to error if todo mark is not set.
-(defun rstodo-region-to-todo-mark (begin end)
-  (interactive "r")
-  (save-excursion 
-    (kill-region begin end)
-    (goto-char (marker-position rstodo-todo-mark))
-    (yank)))
-
-(defun rstodo-exchange-point-and-todo-mark ()
-  (interactive)
-  (let ((pos (point)))
-    (goto-char (marker-position rstodo-todo-mark))
-    (set-mark pos)))
+(defun rstodo-setup-cheatsheet-buffer ()
+  "Setup the buffer containing the cheetsheet.  
+Returns buffer; does not display it."
+  (save-excursion
+    (let ((cb (get-buffer-create "*cheatsheet*"))
+	  (cheatsheet (rstodo-outline-hotkey-cheatsheet)))
+      (set-buffer cb)
+      (delete-region (point-min) (point-max))
+      (insert cheatsheet)
+      cb)))
 
 (define-derived-mode rstodo-mode outline-mode "Todo"
   "Major mode for todo lists in Randy style.
@@ -542,10 +751,6 @@ An outline topic is marked with a hotkey if it matches the regexp
   (setq outline-font-lock-faces
     [outline-2 outline-1 outline-3 outline-4
 	       outline-5 outline-6 outline-7 outline-8]))
-
-(fset 'rstodo-insert-prioritize
-   [return ?\C-p ?> ?> ?\S-  ?P ?r ?i ?o ?t ?i backspace backspace ?r ?i ?t ?i ?z ?e return return ?< ?< return ?\C-p ?\C-p return return ?\C-p])
-
 
 ;;; Take current todo item and put it in a project file; insert link
 ;;; to project file at current location.
@@ -557,55 +762,65 @@ An outline topic is marked with a hotkey if it matches the regexp
 ;;;	* Kill current todo item into project file.
 ;;;	* Insert link to project file in place.
 
-;;; Binding to C-c <blank>.  Outline stuff:
-;;;	C-a make all text visible
-;;;	C-b backward same level
-;;;	C-d hide subtree
-;;;	C-f forward same level
-;;;	C-n next visible heading
-;;;	C-p previous visible heading
-;;;	C-s show subtree
-;;;	C-t make all text invisible
-;;;	C-u up heading
-
-
-;;;	C-q make only the first N levels of headers visible
-;;;	TAB show children
-;;;	C-c make body invisible
-;;;	C-e make body visible
-;;;	C-l make descendent bodies invisible
-;;;	C-k make all subheadings visible
-
-;;; To bind:
-;;;	next-open-todo-item		right
-;;;	prev-open-todo-item		left
-;;;	next-active-todo-item		down
-;;;	prev-active-todo-item		up
-;;;	move-deleted-to-top		C-x
-;;;	move-item-up			^
-;;;	move-item-down			.
-(define-key rstodo-mode-map [?\C-c right] 'rstodo-next-active-todo-item)
-(define-key rstodo-mode-map [?\C-c left] 'rstodo-prev-active-todo-item)
-(define-key rstodo-mode-map [?\C-c down] 'rstodo-last-active-todo-item)
-(define-key rstodo-mode-map [?\C-c up] 'rstodo-first-active-todo-item)
 (define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-top)
-(define-key rstodo-mode-map "\C-c\C-k" 'rstodo-kill-todo-piece)
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
-(define-key rstodo-mode-map [f5] 'rstodo-next-open-todo-item)
-(define-key rstodo-mode-map [f6] 'rstodo-prev-open-todo-item)
+(define-key rstodo-mode-map [f5]
+ (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+(define-key rstodo-mode-map [f6]
+ (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+
 (define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
 
 ;;; Reset the buffer back to specified layout. 
 ;;; With prefix argument, actually do a revert.
-(define-key rstodo-mode-map "\C-cr" '(lambda (really-revert)
-				       (interactive "P")
-				       (if really-revert
-					   (revert-buffer t t)
-					 (randy-explode-hook)
-					 (randy-implode-hook))))
+(define-key rstodo-mode-map "\C-cr" (lambda (really-revert)
+				      (interactive "P")
+				      (if really-revert
+					  (revert-buffer t t)
+					(randy-explode-hook)
+					(randy-implode-hook))))
+
+(define-derived-mode rstodo-hotkey-mode rstodo-mode "Todo *Hotkey*"
+  "Mode in which keys auto-move the current todo item to that heading.")
+
+(defun rstodo-move-item-to-self-section ()
+  (interactive)
+  (if (not (equal (length (this-command-keys)) 1))
+      (error (concat "this-command-keys has length greater than 1: "
+		     this-command-keys)))
+  (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
+  (rstodo-setup-cheatsheet-buffer))
+
+(define-key rstodo-hotkey-mode-map [remap self-insert-command]
+  'rstodo-move-item-to-self-section)
+
+;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
+;;; have a "show-entry" terminating them.  This is a hack to get around 
+;;; the fact that I hide-body when entering outline mode (see rs-outline.el).  
+;;; The right solution here is to make hotkey mode a minor mode rather than 
+;;; a major one, so the major mode doesn't change.
+
+(define-key rstodo-hotkey-mode-map "\C-c#"
+  #'(lambda ()
+      (interactive)
+      (let* ((csb (get-buffer "*cheatsheet*"))
+	     (csbw (and csb (get-buffer-window csb))))
+	(if csbw (delete-window csbw))
+	(if csb (kill-buffer csb)))
+      (rstodo-mode)
+      (show-entry)))
+
+(define-key rstodo-mode-map "\C-c\C-r"
+  #'(lambda ()
+      (interactive)
+      (let ((cb (rstodo-setup-cheatsheet-buffer)))
+	(switch-to-buffer-other-window cb t)
+	(other-window 1)
+	(rstodo-hotkey-mode)
+	(show-entry))))
 
 (provide 'rs-todo)
