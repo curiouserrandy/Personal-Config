@@ -43,6 +43,8 @@ while [ $# -ne 0 ]; do
 	echo "$helpString" 1>&2;
 	exit 1;
 	;;
+    -X) set -x;
+	;;
     --) shift;		# Everything after this point is taken as
 	break;		# regular args.
 	;;
@@ -149,9 +151,9 @@ commit_to_rev () {
 }
 
 rev_to_commit () {
-    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$1"'}' --format='format:%H%n' origin/master`
+    commit=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$1"'}' --format='format:%H%n' origin/master | tail -1`
     if [ X"$commit" = X"" ]; then
-	commit=`git log --grep 'git-svn-id: .*src@'"$commit"'.*$' --format='format:%H%n'`
+	commit=`git log --grep 'git-svn-id: .*src@'"$commit"'.*$' --format='format:%H%n' | tail -1` 
     fi
     echo $commit;
 }

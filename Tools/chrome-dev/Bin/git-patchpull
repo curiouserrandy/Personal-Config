@@ -62,7 +62,7 @@ if [ "$target_branch" = "origin/trunk" -o \
 fi
 
 ## TODO?: Fetch directly into target branch.  Will fail if not a fast forward,
-## but won't mess up current checkuot (which is probably what I want).
+## but won't mess up current checkout (which is probably what I want).
 git fetch $chrome_patches $target_branch:
 if [ "$delete_local_patch" = "yes" ]; then
     git checkout trunk
