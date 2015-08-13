@@ -4,13 +4,13 @@
 progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
-$progname pushes the specified patch (or the current branch if none
+$progname pushes the specified branches (or the current branch if none
 specified on the command line) from the central patch repository.  Flags:
 	-d 		Delete the central copy of the branch before push.
 EOF
 helpString="`cat $tf`" ;
 rm -f $tf;
-usageString="$progname [-d] [<branch name>]";
+usageString="$progname [-d] [<branch1> <branch2> ...]";
 
 force=
 # Parse all arguments.
@@ -37,40 +37,36 @@ while [ $# -ne 0 ]; do
     shift;
 done
 
-# Check non-flag arguments.
-if [ $# -gt 1 ]; then
-    echo "Usage: $usageString" 1>&2;
-    exit 1;
-fi
-
 current_branch=`git branch | awk '$1 == "*" {print $2;}'`
 
-if [ $# -gt 0 ]; then
-    target_branch=$1
-else
-    target_branch=$current_branch
+if [ $# -eq 0 ]; then
+    set $current_branch
 fi
 
-## If we're pushing a branch other than the current, we don't care if the 
-## tree is dirty.
-if [ "$target_branch" = "$current_branch" ]; then
-    if ! git-treeclean ; then 
-        exit 1				# Error message already output
+while [ $# -ne 0 ]; do
+    target_branch=$1;
+    shift;
+
+    ## If we're pushing a branch other than the current, we don't care if the 
+    ## tree is dirty.
+    if [ "$target_branch" = "$current_branch" ]; then
+	if ! git-treeclean ; then 
+	    exit 1				# Error message already output
+	fi
     fi
-fi
 
-if [ "$target_branch" = "origin/trunk" -o \
-     "$target_branch" = "trunk" -o \
-     "$target_branch" = "master" ]; then
-    echo "Not on a development branch: $target_branch" 1>&2
-    exit 1
-fi
+    if [ "$target_branch" = "origin/trunk" -o \
+	 "$target_branch" = "trunk" -o \
+	 "$target_branch" = "master" ]; then
+	echo "Not on a development branch: $target_branch" 1>&2
+	exit 1
+    fi
 
-if ! git branch | sed 's/^..//' | grep -w "$target_branch" > /dev/null; then
-  echo "Specified branch $target_branch not in repository." 1>&2;
-  exit 1
-fi
+    if ! git branch | sed 's/^..//' | grep -w "$target_branch" > /dev/null; then
+      echo "Specified branch $target_branch not in repository." 1>&2;
+      exit 1
+    fi
 
-git push $force $chrome_patches $target_branch:$target_branch
-     
+    git push $force $chrome_patches $target_branch:$target_branch
+done     
      
