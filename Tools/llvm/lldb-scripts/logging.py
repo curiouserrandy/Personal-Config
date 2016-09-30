@@ -57,14 +57,4 @@ def log_line(debugger, command, result, internal_dict):
         "logging.log(frame, bp_loc, " + args_ns.variables.repr() + ")\n" +
         "return False")
 
-    function_iterator += 1
-    globals()["__auto_logger__%d" % function_iterator] =
-        lambda frame, bp_loc, d: logging.log(frame, bp_loc, args_ns.variables)
-
-    debugger.HandleCommand(
-        "breakpoint set -f %s -l %d" % (args_ns.filename, args_ns.lineno))
-    debugger.HandleCommand(
-        "breakpoint command add --python-function logging.__auto_logger__%d"
-        % function_iterator)
-
 lldb.debugger.HandleCommand('command script add -f logging.log_line trace')
