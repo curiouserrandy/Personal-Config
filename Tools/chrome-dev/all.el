@@ -7,6 +7,9 @@
 ;; Make sure objective C shows up before nroff :-}
 (setq auto-mode-alist (cons '("\\.mm" . objc-mode) auto-mode-alist))
 
+;; Make sure C++ shows up before C for .h files.
+(setq auto-mode-alist (cons '("\\.h" . c++-mode) auto-mode-alist))
+
 (defun editing-chrome-file-p ()
   "Return t/nil depending on whether this is a file in a chromium
 repository."
@@ -61,7 +64,9 @@ ISSUES is a list of integer values."
       (setq issue-list (car issue-list))) ; List as the first arg
   (while issue-list
     (let ((this-issue (car issue-list)))
-      (chrome-visit-issue this-issue)
+      (if (stringp this-issue)
+	  (chrome-visit-issue this-issue)
+	(browse-url (format "http://crbug.com/%d" this-issue)))
       (setq issue-list (cdr issue-list)))))
 
 (defun chrome-visit-issue-range (start end)
@@ -71,15 +76,27 @@ ISSUES is a list of integer values."
       (setq bugid (+ bugid 1)))
     (chrome-visit-issue-list issue-list)))
 
-(defun chrome-visit-issue (issue)
+(defun chrome-visit-issue (target)
   (interactive
-   (list (string-to-number (randy-word-under-point))))
-  (if (< issue 1000000)
-      ;; Bug
-      (browse-url (format "http://crbug.com/%d" issue))
-    ;; CL
-    (browse-url (format "http://codereview.chromium.org/%d" issue))))
+   (let ((syntax-table (make-syntax-table c-mode-syntax-table)))
+     (modify-syntax-entry ?_ "w" syntax-table)
+     (list (randy-word-under-point syntax-table))))
+  (cond
+   ;; CL
+   ((string-match "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9]" target)
+    (browse-url (format "http://codereview.chromium.org/%d"
+			(string-to-number target))))
 
+   ;; Bug
+   ((string-match "^[0-9]*$" target)
+    (browse-url (format "http://crbug.com/%d" (string-to-number target))))
+
+   ;; WPT result
+   ((string-match
+     "^[0-9][0-9][0-9][0-9][0-9][0-9]_.._."
+     target)
+    (browse-url (format "http://www.webpagetest.org/result/%s" target)))
+   (t (error "Could not match target %s" target))))
 
 (defun chrome-visit-issues-mentioned-in-file ()
   "Scan through the file looking for lines of the form '^\*+ \d+:' and
@@ -186,12 +203,12 @@ just the current file."
 
 	  ;; Compile and run the sucker.
 	  (compile (concat "cd " path-to-src
-			   "; chrmake " test_executable_name
-			   " && out/Debug/" test_executable_name
+			   "; ninja -C out/Default -j 100 " test_executable_name
+			   " && out/Default/" test_executable_name
 			   " --gtest_filter=*" testname "*"))
 	  )
       ;; (not in-test)
-      (compile (concat "cd " path-to-src "; chrmake ../../"
+      (compile (concat "cd " path-to-src "; ninja -C out/Default ../../"
 		       path-from-src "^"))))))
 
 (defconst chrome-codesearch-search-template
