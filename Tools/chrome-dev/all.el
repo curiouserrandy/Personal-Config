@@ -188,7 +188,7 @@ just the current file."
 	  (compile (concat "cd " path-to-src
 			   "; chrmake " test_executable_name
 			   " && out/Debug/" test_executable_name
-			   " --gtest_filter=" testname))
+			   " --gtest_filter=*" testname "*"))
 	  )
       ;; (not in-test)
       (compile (concat "cd " path-to-src "; chrmake ../../"
