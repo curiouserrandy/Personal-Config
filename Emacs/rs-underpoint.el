@@ -14,8 +14,9 @@ If the mark is active, returns the selected text."
 	   word1 wordaft)
       (save-excursion
 	(set-syntax-table local-syntax-table)
-	(setq word1 (buffer-substring (progn (forward-word -1) (point))
-				      (progn (forward-word 1) (point))))
+	(setq word1 (buffer-substring-no-properties
+		     (progn (forward-word -1) (point))
+		     (progn (forward-word 1) (point))))
 	(if (equal (char-after (point)) wordsep)
 	    (progn
 	      (forward-char 1)
