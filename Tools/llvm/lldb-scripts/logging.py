@@ -54,7 +54,7 @@ def log_line(debugger, command, result, internal_dict):
     bp = debugger.GetSelectedTarget().BreakpointCreateByLocation(
        args_ns.filename, args_ns.lineno)
     bp.SetScriptCallbackBody(
-        "logging.log(frame, bp_loc, " + args_ns.variables.repr() + ")\n" +
+        "logging.log(frame, bp_loc, " + `args_ns.variables` + ")\n" +
         "return False")
 
 lldb.debugger.HandleCommand('command script add -f logging.log_line trace')
