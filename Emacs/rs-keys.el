@@ -81,6 +81,7 @@
 ;;; Other non-control keys following \C-c
 (define-key mode-specific-map ">" '(lambda () (interactive) (randy-shift-font 1)))
 (define-key mode-specific-map "<" '(lambda () (interactive) (randy-shift-font -1)))
+(define-key mode-specific-map "^" 'randy-visit-corresponding-source-file)
 (define-key mode-specific-map "%" 'query-replace-regexp)
 
 ;;; Control keys following \C-c

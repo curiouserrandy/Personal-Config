@@ -77,6 +77,7 @@
 (randy-init-from "Emacs/rs-persist")
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
+(randy-init-from "Emacs/rs-programs")
 (randy-init-from "Emacs/rs-server")
 (randy-init-from "Emacs/rs-man")
 (randy-init-from "post-system")
