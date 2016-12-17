@@ -46,4 +46,4 @@ from="$1"
 to="$2"
 
 files=`git grep --name-only -w "$1"`
-sed -i 's/\([^A-Za-z_-]\)'"$1"'\([^A-Za-z_-]\)/\1'"$2"'\2/g' $files
+sed -i -e 's/[[:<:]]'"$1"'[[:>:]]/'"$2"'/g' $files
