@@ -3,6 +3,7 @@ import lldb
 import shlex
 
 def log(frame, bp_loc, variables):
+    "Expects variables to be a list of strings whose values should be printed"
     result = ""
     result += "Logging: "
     result += bp_loc.GetAddress().GetFunction().GetName()
@@ -54,7 +55,7 @@ def log_line(debugger, command, result, internal_dict):
     bp = debugger.GetSelectedTarget().BreakpointCreateByLocation(
        args_ns.filename, args_ns.lineno)
     bp.SetScriptCallbackBody(
-        "logging.log(frame, bp_loc, " + `args_ns.variables` + ")\n" +
-        "return False")
+        "  logging.log(frame, bp_loc, " + `args_ns.variables` + ")\n" +
+        "  return False")
 
 lldb.debugger.HandleCommand('command script add -f logging.log_line trace')
