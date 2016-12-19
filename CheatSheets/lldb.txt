@@ -1,0 +1,109 @@
+# ~/.lldbinit read at startup.
+# load-cwd-lldbinit: Variable that allows reading of .lldbinit files
+# from cwd.
+
+# Interesting (only interesting subcommands are listed):
+  breakpoint        
+      clear -l <l#> -f <fn>
+      command
+          add [-F <python-function] [-o <one-line-command>] [-e t/f] <bpid>
+	  delete <bpid>
+	  list
+      delete [-f] <bpid>
+      disable 
+      enable <bpid> ...
+      list  
+      modify <change options>
+      name 
+          add
+	  delete
+	  list
+      set -l <l#> -n <fnname> -F <fullname> -M <method> -b <fnname> (many more)
+  command           
+      alias
+      delete
+      history
+      regex
+      script
+          add
+	  clear
+	  delete
+	  import <fnname> ...
+      source [options] <fnname>
+  disassemble       
+  expression        
+  frame             
+  language          
+  log               
+  memory            
+  plugin            
+  process           
+  platform          
+  script            
+  settings          
+  thread            
+  watchpoint        
+
+# Aliases
+  add-dsym  -- ('target symbols add')
+  attach    -- ('_regexp-attach')
+  b         -- ('_regexp-break')
+  bt        -- ('_regexp-bt')
+  c         -- ('process continue')
+  call      -- ('expression --')
+  continue  -- ('process continue')
+  detach    -- ('process detach')
+  di        -- ('disassemble')
+  dis       -- ('disassemble')
+  display   -- ('_regexp-display')
+  down      -- ('_regexp-down')
+  env       -- ('_regexp-env')
+  exit      -- ('quit')
+  f         -- ('frame select')
+  file      -- ('target create')
+  finish    -- ('thread step-out')
+  image     -- ('target modules')
+  j         -- ('_regexp-jump')
+  jump      -- ('_regexp-jump')
+  kill      -- ('process kill')
+  l         -- ('_regexp-list')
+  list      -- ('_regexp-list')
+  n         -- ('thread step-over')
+  next      -- ('thread step-over')
+  nexti     -- ('thread step-inst-over')
+  ni        -- ('thread step-inst-over')
+  p         -- ('expression --')
+  parray    -- ('expression -Z %1   --')
+  po        -- Evaluate an expression on the current thread.  Displays any
+  poarray   -- ('expression -O -Z %1    --')
+  print     -- ('expression --')
+  q         -- ('quit')
+  r         -- ('process launch -X true --')
+  rbreak    -- ('breakpoint set -r %1')
+  repl      -- ('expression -r  -- ')
+  run       -- ('process launch -X true --')
+  s         -- ('thread step-in')
+  si        -- ('thread step-inst')
+  sif       -- Step through the current block, stopping if you step directly
+  step      -- ('thread step-in')
+  stepi     -- ('thread step-inst')
+  t         -- ('thread select')
+  tbreak    -- ('_regexp-tbreak')
+  undisplay -- ('_regexp-undisplay')
+  up        -- ('_regexp-up')
+  x         -- ('memory read')
+
+# Uninteresting commands
+  apropos           
+  bugreport         
+  gdb-remote        
+  gui               
+  help              
+  kdp-remote        
+  quit              
+  register          
+  source            
+  target            
+  type              
+  version           
+
