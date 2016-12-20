@@ -1,3 +1,5 @@
+(require 'cc-mode)
+
 (defun randy-word-under-point (&optional syntab wordsep)
   "Return a string which is the word underneath point in the current buffer.
 Optionally specify an alternate syntax table in SYNTAB to define words.
