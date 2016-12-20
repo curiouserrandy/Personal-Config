@@ -30,8 +30,10 @@
 	  (if (file-exists-p elcfile)
 	      (randy-assert-file-ok elcfile))
 	  (if (file-newer-than-file-p elfile elcfile)
-	      (byte-compile-file elfile))
-	  (load elcfile)))))
+	      (if (byte-compile-file elfile)
+		  (load elcfile)
+		(load elfile))
+	    (load elcfile))))))
 
 ;;; Backwards compatibility.
 (defvar randy-configuration-directory (getenv "config_files_directory")
