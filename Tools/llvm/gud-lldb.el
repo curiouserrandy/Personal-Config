@@ -21,10 +21,10 @@
     ;; Process all copmlete markers in this chunk
     (while (or
 	    ;; thread/process stop.
-	    (string-match " at \\([^:\n]*\\):\\([0-9]*\\), stop reason = .*\n"
+	    (string-match " at \([^:\n]*\):\([0-9]*\), stop reason = .*\015?\n"
 			  gud-marker-acc start)
 	    ;; frame up/down
-	    (string-match "frame.* at \\([^:\n]*\\):\\([0-9]*\\)\n"
+	    (string-match "frame.* at \\([^:\n]*\\):\\([0-9]*\\)\015?\n"
 			  gud-marker-acc start))
       (setq gud-last-frame
             (cons (match-string 1 gud-marker-acc)
