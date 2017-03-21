@@ -26,9 +26,9 @@
   "Return the current configuration of the emacs frames as a frame config.
 Only include in it frame properties in randy-interesting-frame-properties."
   ;; For each set of parameters
-  (mapcar '(lambda (fc) 
+  (mapcar #'(lambda (fc) 
 	     ;; Pull out just the interesting values
-	     (mapcar '(lambda (prop) (assoc prop fc))
+	     (mapcar #'(lambda (prop) (assoc prop fc))
 		     randy-interesting-frame-properties))
 	  (mapcar 'frame-parameters (frame-list))))
   
@@ -85,7 +85,7 @@ the current displays list of names."
 	(error "Couldn't find config for name %s" name))
     (sort (randy-current-display-list)
 	  ;; name is < everything; everything else is equal
-	  '(lambda (a b) (equal (car a) name)))))
+	  #'(lambda (a b) (equal (car a) name)))))
 
 ;;; UI Functions 
 (defun randy-save-current-config (non-default)
