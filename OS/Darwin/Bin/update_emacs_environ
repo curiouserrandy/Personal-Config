@@ -19,6 +19,7 @@ goodEnvironVars = (
 	'LOGNAME',
 	'MANPATH',
 	'PATH',
+        'GOMA_OAUTH2_CONFIG_FILE',
 	'config_arch',
 	'config_domain',
 	'config_files_directory',

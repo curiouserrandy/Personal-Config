@@ -1,3 +1,5 @@
+(require 'cc-mode)
+
 (defun randy-word-under-point (&optional syntab wordsep)
   "Return a string which is the word underneath point in the current buffer.
 Optionally specify an alternate syntax table in SYNTAB to define words.
@@ -14,8 +16,9 @@ If the mark is active, returns the selected text."
 	   word1 wordaft)
       (save-excursion
 	(set-syntax-table local-syntax-table)
-	(setq word1 (buffer-substring (progn (forward-word -1) (point))
-				      (progn (forward-word 1) (point))))
+	(setq word1 (buffer-substring-no-properties
+		     (progn (forward-word -1) (point))
+		     (progn (forward-word 1) (point))))
 	(if (equal (char-after (point)) wordsep)
 	    (progn
 	      (forward-char 1)

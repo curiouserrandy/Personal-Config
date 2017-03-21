@@ -5,6 +5,12 @@ prefix_path_with_dirlist PATH ~/Sandboxen/depot_tools	# There's a gcl in Google 
 ## Must be "prefix" so that we get the right binaries even on mac.
 prefix_val_to_var ../../third_party/llvm-build/Release+Asserts/bin PATH
 
+## Use the locally build version of lldb first, then beta version of lldb;
+## change the latter when the standard default
+## install of Xcode includes lld version > 360.1.32.
+prefix_val_to_var /Library/Developer/CommandLineTools/usr/bin/ PATH
+prefix_val_to_var $HOME/Sandboxen/llvm-build/bin/ PATH
+
 # Location of patches repository
 chrome_patches=sso://user/rdsmith/ChromePatches.git
 

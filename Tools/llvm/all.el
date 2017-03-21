@@ -9,3 +9,11 @@ and source-file directory of your debugger."
   (lldb (concat "lldb " binary))
   (gud-call (concat "attach " (int-to-string proc_id)))
   (gud-call "continue"))
+
+;; Location of new lldb.
+(setq exec-path
+      (append (list 
+       (concat (getenv "HOME") "/Sandboxen/llvm-build/bin")
+       "/Library/Developer/CommandLineTools/usr/bin/"
+       )
+	      exec-path))

@@ -24,8 +24,6 @@
 				  (dired-get-marked-files t current-prefix-arg))))))))
 
 ;;; The "official" user customization keys; \C-c[a-z]
-;;; a
-;;; b
 (if (featurep 'chrome-dev)
     (progn
       (define-key mode-specific-map "a" 'chrome-blame-file)
@@ -59,15 +57,12 @@
 				    (setq truncate-lines
 				     (not truncate-lines))))
 (define-key mode-specific-map "m" 'randy-format-man-page)
-(if (featurep 'rs-netapp)
-    (define-key mode-specific-map "n" 'randy-find-burt))
 (define-key mode-specific-map "o" 'overwrite-mode)
 (define-key mode-specific-map "p" 'copy-rectangle-to-register)
 (define-key mode-specific-map "q" 'auto-fill-mode)
-
 (define-key mode-specific-map "r"
   '(lambda () (interactive) (revert-buffer t t)))
-(define-key mode-specific-map "s" 'randy-change-default-sandbox)
+;; s
 (define-key mode-specific-map "t" 'randy-query-change-name); pneumonic: t-xlate
 (define-key mode-specific-map "u" 'randy-uniquename-buffer)
 (define-key mode-specific-map "v" 'set-vi-type-indent)
@@ -77,8 +72,6 @@
       (define-key mode-specific-map "xs" 'randy-save-current-config)
       (define-key mode-specific-map "xr" 'randy-restore-config)
       (define-key mode-specific-map "xd" 'randy-delete-named-config)))
-  
-;;; x
 ;;; y
 (define-key mode-specific-map "z" 'randy-greplist-sandbox-file)
 (add-hook 'rstodo-mode-hook
@@ -88,7 +81,7 @@
 ;;; Other non-control keys following \C-c
 (define-key mode-specific-map ">" '(lambda () (interactive) (randy-shift-font 1)))
 (define-key mode-specific-map "<" '(lambda () (interactive) (randy-shift-font -1)))
-(define-key mode-specific-map "^" 'randy-set-window-height)
+(define-key mode-specific-map "^" 'randy-visit-corresponding-source-file)
 (define-key mode-specific-map "%" 'query-replace-regexp)
 
 ;;; Control keys following \C-c

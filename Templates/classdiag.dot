@@ -1,6 +1,4 @@
-digraph ExampleGraph {
-    node [shape=box];
-
+digraph ExampleDiagram {
     subgraph cluster_legend {
         label="Legend";
 

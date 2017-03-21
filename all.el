@@ -30,8 +30,10 @@
 	  (if (file-exists-p elcfile)
 	      (randy-assert-file-ok elcfile))
 	  (if (file-newer-than-file-p elfile elcfile)
-	      (byte-compile-file elfile))
-	  (load elcfile)))))
+	      (if (byte-compile-file elfile)
+		  (load elcfile)
+		(load elfile))
+	    (load elcfile))))))
 
 ;;; Backwards compatibility.
 (defvar randy-configuration-directory (getenv "config_files_directory")
@@ -77,6 +79,7 @@
 (randy-init-from "Emacs/rs-persist")
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
+(randy-init-from "Emacs/rs-programs")
 (randy-init-from "Emacs/rs-server")
 (randy-init-from "Emacs/rs-man")
 (randy-init-from "post-system")

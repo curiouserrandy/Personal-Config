@@ -795,10 +795,6 @@ Returns buffer; does not display it."
   (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
   (rstodo-setup-cheatsheet-buffer))
 
-(defun test-function ()
-  (interactive)
-  (message (this-command-keys)))
-
 (define-key rstodo-hotkey-mode-map [remap self-insert-command]
   'rstodo-move-item-to-self-section)
 
