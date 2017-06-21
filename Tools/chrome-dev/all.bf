@@ -50,3 +50,8 @@ if [ "$config_os" = "Linux" ]; then
   }
 fi
 
+# Goma functions
+ensure_goma () 
+{ 
+    python ~/goma/goma_ctl.py ensure_start
+}
