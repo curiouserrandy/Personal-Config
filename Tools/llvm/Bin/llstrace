@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Wrap LLDB binary in an strace script
+
+lldb_binary=/usr/local/google/home/rdsmith/Sandboxen/llvm-build/bin/lldb
+
+strace -T -t -r  -o ~/tmp/lldb-strace.out $lldb_binary "$@"
+

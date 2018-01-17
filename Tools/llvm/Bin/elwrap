@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+set arg1 [lindex $argv 0]
+set arg2 [lindex $argv 1]
+
+spawn $arg1 -S $arg2
+expect "Time to exit now"
+send "process kill"
+sleep 2
+send "quit"
+sleep 2
+wait
