@@ -28,6 +28,7 @@ Options:
 	-1		Confirm that the :1 X display is available, and
 			use DISPLAY=:1.0 for the command (but not for the
 			Xterm above).
+	-i <file>	Provide <file> as stdin to the command.
 	-D		Turn on command echoing.
 EOF
 helpString="`cat $tf`" ;
@@ -39,6 +40,7 @@ outfile=""
 geometry=""
 append="no"
 one="no"
+inputfile="/dev/stdin"
 while [ $# -ne 0 ]; do
     case $1 in 
     -x*) 
@@ -47,6 +49,10 @@ while [ $# -ne 0 ]; do
 	    geometry=$default_geometry
 	fi
 	;;
+    -i)
+        inputfile=$2;
+        shift;
+        ;;
     -o) 
 	if [ $# -lt 2 ]; then
 	    echo "Usage: $usageString" 1>&2;
@@ -108,15 +114,18 @@ if [ "$append" = "no" ]; then
 fi
 
 echo "Executing command: $@" >> $outfile
-if [ X"$one" = X"yes" ]; then
-    (export DISPLAY=:1.0; date; perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; date; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
-else
-    (date; perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; date; echo Job terminated, exit status: $? ) >> $outfile 2>&1 &
-fi
-
-perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""
-
-# Invoke xfollower if wanted
+# Invoke xfollower if wanted.  Done here so reset of DISPLAY below won't
+# be effected.
 if [ X"$geometry" != X"" ]; then
     xterm -geometry $geometry -e tail -f $outfile &
 fi
+
+
+if [ X"$one" = X"yes" ]; then
+  export DISPLAY=:1.0;
+fi
+
+(date; perl -e "print 'Job process group: ', getpgrp(\$\$), \"\n\"" ; "$@"; date; echo Job terminated, exit status: $? ) >> $outfile 2>&1 < $inputfile &
+
+perl -e "print 'Job procees group: ', getpgrp($!), \"\n\""
+
