@@ -47,7 +47,7 @@ else
     sandbox_dir=$1
 fi
 
-if [ ! -d $sandbox_dir/.git ]; then
+if ! git status -uno > /dev/null 2>&1 ; then
     echo "$sandbox_dir not a git repository." 1>&2;
     exit 1;
 fi

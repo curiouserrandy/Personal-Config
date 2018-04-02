@@ -2,15 +2,18 @@
 
 num_lines=10
 
+#DEBUG='echo -n'
+DEBUG=true
+
 # Setup the help and usage messages
 progname=`basename $0`
 tf=/tmp/$$.helpfile
 cat > $tf <<EOF
-$progname is determines the svn revision that a chromium branch is based on 
+$progname determines the pseudo-revision that a chromium branch is based on 
 and outputs that along with the last time the branch was modified. 
-It does this by finding the most recent revision on origin/git-svn that 
+It does this by finding the most recent revision on origin/master that 
 the branch is derived from, and parsing it's revision spec.  
-By default it outputs the 10 most recently modified branches, with base 
+By default it outputs the $num_lines most recently modified branches, with base 
 revision.  If given arguments, it outputs the branches listed as arguments
 along with the master branch.
 Note that this will sometimes be inaccurate if a branch was created in 
@@ -71,15 +74,31 @@ if [ X"$branches" = X"" ]; then
       if [[ '*' = $branch_name ]]; then branch_name=$branch2; fi;
       echo \`git log -1 --format=format:%ai $branch_name --\` $branch_name ;
     done) | sort -nr | head -n $num_lines | awk '{print $4;}'`
+    current_branch=`git branch | awk '{if ($1 == "*") { print $2; }}'`
+fi
+
+current_branch=`git branch | awk '{if ($1 == "*") { print $2; }}'`
+if git-treeclean > /dev/null; then
+    branch_state='-'
+else
+    branch_state='#'
 fi
 
 set $branches
-echo -e 'Rev\tCL\t\tLast Modified\t\t\tBranch'
+echo -e '  Rev\tCL\t\tLast Modified\t\t\tBranch'
 while [ $# -ne 0 ]; do
+    $DEBUG " " $LINENO " " 
     branch=$1;
     shift;
+    if [ "$branch" = "$current_branch" ]; then
+	bs="$branch_state"
+    else
+	bs=" "
+    fi
     base_commit=`git merge-base $branch origin/master`
+    $DEBUG " " $LINENO " " 
     svn_rev=r`git log -1 $base_commit | sed -n '/git-svn-id/s/^.*@\([0-9]*\).*$/\1/p'`
+    $DEBUG " " $LINENO " " 
     pseudo_rev=p`git log -1 $base_commit | sed -n '/Cr-Commit-Position/s/^.*refs\/heads\/master@{#\([0-9]*\)}/\1/p' | tail -1`
     if [ X"$pseudo_rev" = X"p" ]; then
 	rev=$svn_rev
@@ -87,10 +106,32 @@ while [ $# -ne 0 ]; do
 	rev=$pseudo_rev
     fi
 
-    base_time=`git log -1 --format=format:%ai $branch | awk '{print $1, $2, $3;}'`
+    $DEBUG " " $LINENO " " 
+    base_time=`git log -1 --format=format:%ai $branch | sed -E 's/[0-9]{4}-([0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}):[0-9]{2} [+-][0-9]{4}/\1/'`
+
+    $DEBUG " " $LINENO " " 
     issue=`git config branch.$branch.rietveldissue`
     if [ X"$issue" = X"" ]; then
-        issue="        "
+	issue="g`git config branch.$branch.gerritissue` "
+	if [ X"$issue" = X"g " ]; then
+	    issue="        "
+	fi
     fi
-    echo -e "$rev\t$issue\t$base_time\t$branch"
+
+    upstream=
+    if [ X"$branch" != X"master" ]; then
+	$DEBUG " " $LINENO " " 
+        upstream=`git config branch.$branch.merge`
+    fi
+    if [ X"$upstream" != X"" ]; then
+	$DEBUG " " $LINENO " " 
+	upstream=`echo $upstream | sed 's;refs/heads/;;'`
+	if [ "`git merge-base $upstream $branch`" != "`git log -1 --format=format:%H $upstream`" ]; then
+	    upstream="#$upstream";
+	fi
+	$DEBUG " " $LINENO " " 
+	upstream="[$upstream]";
+    fi
+
+    echo -e "$bs $rev\t$issue\t$base_time\t$branch$upstream"
 done
