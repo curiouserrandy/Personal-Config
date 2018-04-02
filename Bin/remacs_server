@@ -1,0 +1,42 @@
+#!/bin/bash
+
+source ~/.bashrc
+
+$checkout=""
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -c)
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+        checkout="$2";
+	shift;
+	break;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ X"$checkout" = X"" ]; then
+    emacs "$@"
+else
+    if [ X"$CHECKOUT_DIR" = X"" ]; then
+	echo "CHECKOUT_DIR envvar is not defined." 1>&2;
+	exit 1;
+    fi
+
+    co_dir="$CHECKOUT_DIR/$checkout";
+
+    emacs -eval '(randy-change-default-sandbox "'"$co_dir"'")' "$@"
+fi
+

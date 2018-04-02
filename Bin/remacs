@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a simple script to ssh start an emacs session on a remote
+machine with a pointer back to the local machines display.
+Arguments:
+	-m <machine>: Name of the machine to ssh to.  Required.
+	-c <checkout>: Name of checkout to open.  
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname -m <machine> [-c <checkout>]";
+
+# Parse all arguments.
+machine=""
+checkout=""
+while [ $# -ne 0 ]; do
+    -m) 
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	machine=$2;
+	shift;
+	break;
+	;;
+    -c)
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+        checkout="-c $2";
+	shift;
+	break;
+	;;
+    case $1 in 
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+if [ X"$machine" = X"" ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi 
+
+ssh -fY $machine remacs_server $checkout "$@"
+
+
