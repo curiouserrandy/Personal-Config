@@ -131,10 +131,6 @@ symfind () {
 }
 
 
-remacs () {
-    rsh -n $1 PATH=/bin:/usr/bin:/usr/local/bin:/usr/X11/bin emacs -font 7x14 -display $DISPLAY &
-}
-
 # Give me just the path.
 alias which="type -path"
 
