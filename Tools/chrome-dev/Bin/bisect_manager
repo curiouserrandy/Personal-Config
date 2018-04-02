@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a script for bisecting errors in chrome tests.  Given a start and
+end revision and a specific test, it confirms that the test fails on the end
+revision, passes on the start one, and bisects the failure between the two.
+Args:
+	[-w|-c|-b]	Required, indicates which of webkit_layout_tests,
+			content_browsertests, or browser_tests should be used
+			for testing.
+ 	-r rev-rev	Revision range.  Required.
+	<test names>	Name of test or tests to run.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname (-w|-c|-b) -r beg-end <test names>";
+
+# Parse all arguments.
+test=""
+rev1=
+rev2=
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -w) 
+	target="webkit_layout_tests"
+	test="../../third_party/WebKit/Tools/Scripts/run-webkit-tests --seed 4 --no-show-results  --clobber-old-results --exit-after-n-failures 5000 --exit-after-n-crashes-or-timeouts 100 --debug-rwt-logging --results-directory ~/tmp/layout-test-results --additional-driver-flag=--enable-network-service --write-full-results-to ~/tmp/layout-test-results/output.json "
+	;;
+    -c)
+    	target="content_browsertests"
+	test="content_browsertests --gtest_filter="
+	colonifiy_test_names=yes;
+	;;
+    -b)
+    	target="browser_tests"
+	test="browser_tests --gtest_filter="
+	colonifiy_test_names=yes;
+	;;
+    -r)
+	if [ $# -lt 2 ]; then
+	    echo "Usage: $usageString" 1>&2;
+	    exit 1;
+	fi
+	case $2 in
+	*-*)
+	    rev1=`echo $2 | sed 's/-.*$//'`
+	    rev2=`echo $2 | sed 's/^.*-//'`
+	    ;;
+	*)
+	    echo "$helpString" 2>&2;
+	    exit 1;
+	    ;;
+	esac
+	shift;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+if [ "$target" = "" -o "$rev1" = "" -o "$rev2" = "" ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+# Check non-flag arguments.
+if [ $# -eq 0 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+test_list=""
+for i in "$@"; do
+    if [ "$test_list" = "" ]; then
+        test_list="$1";
+    else
+        if [ "$colonify_arguments" = "yes" ]; then
+            test_list="$test_list":
+        else
+            test_list="$test_list ";
+        fi
+        test_list="$test_list""$i";
+    fi
+done
+
+git fetch --all
+grev1=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$rev1"'}' --format='format:%H%n' origin/master | tail -1`
+if [ $? != 0 ]; then
+    echo "Problem with converting revision $rev1 to a git commit" 1>&2;
+    exit 1;
+fi    
+
+grev2=`git log --grep 'Cr-Commit-Position: refs/heads/master@{#'"$rev2"'}' --format='format:%H%n' origin/master | tail -1`
+if [ $? != 0 ]; then
+    echo "Problem with converting revision $rev2 to a git commit" 1>&2;
+    exit 1;
+fi    
+
+git checkout $grev1
+bisect_test -t $target -R $test $test_list
+if [ $? != 0]; then
+    echo "Initial commit unexpectedly fails test." 1>&2;
+    exit 1;
+fi
+
+git checkout $grev2
+bisect_test -t $target -R $test $test_list
+if [ $? = 0 ]; then
+    echo "Final commit unexpectedly passes test." 1>&2;
+    exit 1;
+fi
+
+git bisect start $grev2 $grev1 
+git bisect run bisect_test -t $target -R $test $test_list
