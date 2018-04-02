@@ -87,6 +87,13 @@ ISSUES is a list of integer values."
     (browse-url (format "http://codereview.chromium.org/%d"
 			(string-to-number target))))
 
+   ;; Gerrit CL
+   ((string-match "^g[0-9][0-9][0-9][0-9][0-9][0-9]" target)
+    (let ((url (format "https://chromium-review.googlesource.com/%d"
+			(string-to-number (substring target 1)))))
+      (message url)
+      (browse-url url)))
+
    ;; Bug
    ((string-match "^[0-9]*$" target)
     (browse-url (format "http://crbug.com/%d" (string-to-number target))))
@@ -197,6 +204,12 @@ just the current file."
 		 ((and (string-match "_unittest.cc$" filename)
 		       (equal (car path-elements) "components"))
 		  "components_unittests")
+		 ((and (string-match "_test.cc$" filename)
+		       (equal (car path-elements) "net"))
+		  "net_unittests")
+		 ((and (string-match "_unittest.cc$" filename)
+		       (equal (car path-elements) "services"))
+		  "services_unittests")
 		 (t nil)))
 	  (if (not test_executable_name)
 	      (error "Coudln't interpret test name %s." (buffer-file-name)))
@@ -208,7 +221,7 @@ just the current file."
 			   " --gtest_filter=*" testname "*"))
 	  )
       ;; (not in-test)
-      (compile (concat "cd " path-to-src "; ninja -C out/Default ../../"
+      (compile (concat "cd " path-to-src "; ninja -C out/Default -j 100 ../../"
 		       path-from-src "^"))))))
 
 (defconst chrome-codesearch-search-template
