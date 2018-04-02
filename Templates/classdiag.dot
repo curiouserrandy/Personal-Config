@@ -1,27 +1,38 @@
 digraph ExampleDiagram {
     subgraph cluster_legend {
-        label="Legend";
+	      label="legend";
+	    a;
+	    factory;
+	    derived_class;
+	    pure_ABC [style=dotted];
+	    mixed_ABC [style=dashed];
+	    template_class [shape=diamond]; # Link will name parameter(s)
 
-	## UML
-	SubClass -> BaseClass [arrowhead="empty"];
-	SubClass -> Interface [arrowhead="empty", style=dashed];
-	Part -> Whole [arrowhead="diamond", label="ownership"];
-	Part -> Whole [arrowhead="odiamond", label="part/whole (not owned)"];
-	A -> B [arrowhead="none", headlabel="?..?", taillabel="?..?",
-		label="association"];
-        Interface [label="Interface / ABC", style=dashed];
+	    whole;
 
-	## My invention/for chrome
-	IOThread [style=filled, fillcolor=lightblue, label="IO Thread"];
-	FileThread [style=filled, fillcolor=brown, label="File Thread"];
-	UIThread [style=filled, fillcolor=green, label="UI Thread"];
-	DBThread [style=filled, fillcolor=gray, label="DB Thread"];
-	MultiThread [style=filled, fillcolor=red, label="Multithreaded"];
-	Class1Legend [label="Class"]
-	RefCounted [color=red, label="Ref Counted Member"];
-	RefCounted -> Class1Legend [arrowhead=diamond, color=red];
+	      whole -> referenced_part		# Raw pointer
+		  [dir=back, arrowhead=none, arrowtail=odiamond];
 
-	Factory -> object [arrowhead=veevee];
+	      whole -> owned_part		# Member or scoped_ptr<>
+		  [dir=back, arrowhead=none, arrowtail=diamond];
+
+	      whole -> reference_counted_semi_owned_part
+		  [dir=back, arrowhead=none, arrowtail=diamond, color=red];
+
+	      derived_class -> base_class
+		  [dir=both, arrowhead=empty, arrowtail=none];
+
+	      derived_class -> pure_ABC
+		  [dir=both, arrowhead=empty, arrowtail=none, style=dashed];
+
+	      # May want to put inside rank=same subgraph.
+	      factory -> generated_object [arrowhead=veevee, weight=0];
+
+	      a -> b [headlabel="0..*", taillabel="1..*",
+		      label="associated with",
+		      arrowhead="none"];
+
+
     };
 
     ## Templates from above (that have legend labels)
