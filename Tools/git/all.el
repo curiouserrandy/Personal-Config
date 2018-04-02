@@ -1,13 +1,14 @@
 (require 'rs-grepplusplus)
 
 (defun git-top-directory (dir)
-  "Return the most recent ancestor of dir with a .git subdirectory in it."
+  "Return the most recent ancestor of dir that is the top of a git tree.
+This is tested for by checking for .git, either as a repo or a file."
   (let (lastdir)
     (while (not (or (equal dir lastdir)
-		    (file-directory-p (concat dir "/.git"))))
+		    (file-readable-p (concat dir "/.git"))))
       (setq lastdir dir)
       (setq dir (file-name-directory (directory-file-name dir))))
-    (and (file-directory-p (concat dir "/.git")) dir)))
+    (and (file-readable-p (concat dir "/.git")) dir)))
 
 ;; Only provide these capabilities if git is present on the system.
 (if (executable-find "git")
