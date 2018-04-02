@@ -91,3 +91,5 @@
 ;; Unilaterally enable winner mode.
 (winner-mode t)
 
+;; Unilaterally enable global auto-revert mode.
+(global-auto-revert-mode 1)
