@@ -4,7 +4,6 @@
 	deltaBaseCacheLimit = 1G
 [user]
 	name = Randy Smith
-	email = rdsmith@chromium.org
 [merge]
 	conflictstyle=diff3
 	mergeoptions = --no-edit
