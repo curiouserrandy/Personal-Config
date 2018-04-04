@@ -18,6 +18,7 @@ usageString="$progname -m <machine> [-c <checkout>]";
 machine=""
 checkout=""
 while [ $# -ne 0 ]; do
+    case $1 in 
     -m) 
 	if [ $# -lt 2 ]; then
 	    echo "Usage: $usageString" 1>&2;
@@ -36,7 +37,6 @@ while [ $# -ne 0 ]; do
 	shift;
 	break;
 	;;
-    case $1 in 
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
@@ -53,12 +53,6 @@ while [ $# -ne 0 ]; do
     esac
     shift;
 done
-
-# Check non-flag arguments.
-if [ $# -ne 1 ]; then
-    echo "Usage: $usageString" 1>&2;
-    exit 1;
-fi
 
 if [ X"$machine" = X"" ]; then
     echo "Usage: $usageString" 1>&2;
