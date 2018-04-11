@@ -1,0 +1,96 @@
+#!/bin/bash 
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname merges the branch upstream from the named branch into the named
+branch.  However, it does this in reverse: It checks out the upstream branch
+in --detach mode, merges the named branch into it, and then force sets the
+named branch to the current HEAD.  If there is a large difference between
+the named and upstream branches and the merge starts from a checkout close
+to the upstream branch, this results in many fewer files being touched,
+which results in a much faster following incremental build. 
+In git terms, this script is equivalent to:
+	git checkout --detach <upstream>
+	git merge <named>
+	git branch -f <named> HEAD
+	git checkout <named>
+If the merge fails, resolve the conflicts and commit the merge, then do
+	$progname --continue <branch>
+This will execute just the last two commands above.
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname [--continue] <branch to merge>";
+
+# Parse all arguments.
+skip_to_branch=no;
+while [ $# -ne 0 ]; do
+    case $1 in 
+    --continue) 
+	skip_to_branch=yes;
+	;;
+    # Repeat as needed.
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+
+branchname=$1;
+
+if [ X"$branchname" = X"$master" ]; then
+    echo "Can't merge master off of upstream." 1>&2;
+    exit 1;
+fi
+
+upstream=`git config branch.$branchname.merge | sed 's;refs/heads/;;'`
+
+if [ X"$upstream" = X"" ]; then
+    echo "Branch $branchname has no upstream" 1>&2;
+    exit 1;
+fi
+
+if [ X"$skip_to_branch" != X"yes" ]; then
+    if ! git treeclean ; then
+	echo "Tree dirty; cannot checkout upstream." 1>&2;
+	exit 1;
+    fi	
+
+    git checkout --detach $upstream
+    git merge $branchname
+    if [ $? -ne 0 ]; then
+	echo "Merge failed.  " 1>&2;
+	echo "If this was due to a merge conflict, resolve, commit, and " 1>&2;
+	echo "execute $progname --continue $branchname." 1>&2;
+	echo "Otherwise, figure out what went wrong and fix it :-}." 1>&2;
+	exit 1;
+    fi
+fi
+
+if ! git treeclean ; then
+    echo "Merge not complete; finish and use git-revmerge --continue." 1>&2;
+    exit 1;
+fi
+
+git branch -f $branchname HEAD
+git checkout $branchname
+
