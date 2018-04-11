@@ -10,7 +10,7 @@
 ;;; Global maps (i.e things I should't be doing :-})
 (define-key esc-map ":" 'goto-line)
 (define-key esc-map "?" 'what-line)
-(define-key esc-map "+" 'pop-tag-mark)	;Deprecate--it's on M-*
+;;(define-key esc-map "+" 'pop-tag-mark)	;Deprecate--it's on M-*
 (define-key global-map "\C-z" nil)	;Causes too much grief.
 (if (equal "Darwin" randy-configuration-os)
     (progn
@@ -48,18 +48,14 @@
     ;; Git overrides; better functionality.
     (define-key mode-specific-map "i" 'randy-run-git-grep)
   (define-key mode-specific-map "i" 'randy-run-glimpse))
-(define-key mode-specific-map "j" 'randy-run-egrep-recursively)
-(add-hook 'comint-mode-hook
-	  '(lambda ()
-	     (define-key comint-mode-map "\C-ck\C-a" 'randy-telnet-send-break)
-	     (define-key comint-mode-map "\C-ck\C-c" 'randy-telnet-quit)))
-(define-key mode-specific-map "l" '(lambda () (interactive)
-				    (setq truncate-lines
-				     (not truncate-lines))))
-(define-key mode-specific-map "m" 'randy-format-man-page)
-(define-key mode-specific-map "o" 'overwrite-mode)
+;; j
+;; k
+;; l  (Used to be truncate-lines toggle)
+;; m
+;; n
+;; o
 (define-key mode-specific-map "p" 'copy-rectangle-to-register)
-(define-key mode-specific-map "q" 'auto-fill-mode)
+;; q
 (define-key mode-specific-map "r"
   '(lambda () (interactive) (revert-buffer t t)))
 ;; s
@@ -72,36 +68,22 @@
       (define-key mode-specific-map "xs" 'randy-save-current-config)
       (define-key mode-specific-map "xr" 'randy-restore-config)
       (define-key mode-specific-map "xd" 'randy-delete-named-config)))
-;;; y
-(define-key mode-specific-map "z" 'randy-greplist-sandbox-file)
+;; y
+;; z
 (add-hook 'rstodo-mode-hook
 	  '(lambda ()
 	     (define-key outline-mode-map "\C-cz" 'rstodo-insert-prioritize)))
 
 ;;; Other non-control keys following \C-c
-(define-key mode-specific-map ">" '(lambda () (interactive) (randy-shift-font 1)))
-(define-key mode-specific-map "<" '(lambda () (interactive) (randy-shift-font -1)))
 (define-key mode-specific-map "^" 'randy-visit-corresponding-source-file)
 (define-key mode-specific-map "%" 'query-replace-regexp)
 
 ;;; Control keys following \C-c
-;; (define-key mode-specific-map "\C-?" 'backward-kill-sexp)
-;; (define-key mode-specific-map "\C-k" 'kill-sexp)
-;; (define-key mode-specific-map "." 'find-yacc-tag)
-(if (featurep 'rs-comint)
-    (add-hook 'comint-mode-hook
-	      '(lambda () 
-		 (define-key comint-mode-map "\C-c\C-c" 'send-unbuffered-break)
-		 (define-key comint-mode-map "\C-c\C-q" 'randy-send-unbuffered-string))))
-(add-hook 'mail-mode-hook
-	  '(lambda () 
-	     (define-key mail-mode-map "\C-c\C-r" 'randy-include-signature)))
 (if (featurep 'chrome-dev)
     (define-key mode-specific-map [?\C-.] 'chrome-codesearch))
 
 ;; Move iconification off of S-m; I hit it too often.
 (global-set-key [(super ?m)] 'undefined)
-(define-key mode-specific-map "\C-m" 'iconify-frame)
 
 ;;; Function key definitions
 (define-key global-map '[f12] 'quoted-tab)
