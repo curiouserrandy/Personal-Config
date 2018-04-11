@@ -26,7 +26,6 @@ while [ $# -ne 0 ]; do
 	fi
 	machine=$2;
 	shift;
-	break;
 	;;
     -c)
 	if [ $# -lt 2 ]; then
@@ -35,21 +34,19 @@ while [ $# -ne 0 ]; do
 	fi
         checkout="-c $2";
 	shift;
-	break;
 	;;
     -h|-\?)
 	echo "$helpString" 1>&2;
 	exit 1;
 	;;
     --) shift;		# Everything after this point is taken as
-	break;		# regular args.
+			# regular args.
 	;;
     -*)
 	echo "Usage: $usageString" 1>&2;
 	exit 1;
 	;;
-    *)  break;
-	;;
+    *) ;;
     esac
     shift;
 done
