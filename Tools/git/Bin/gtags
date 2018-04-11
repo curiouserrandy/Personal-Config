@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Create a first pass attempt of tags for an arbitrary git checkout.
+# May later add the ability to customize (or may just try to make general
+# everything I need for my current project :-}).
+
+while [ X`pwd` != X'/' ]; do
+  if [ -r .git ]; then
+    break;
+  fi
+done
+
+if [ X`pwd` = X'/' ]; then
+  echo "No .git checkout root found." 2>&1;
+  exit 1;
+fi  
+
+rm -f TAGS
+
+# Objective C
+git ls-files -- '*.mm' | etags -l objc -
+
+# C++ files
+git ls-tree -r --name-only HEAD | egrep '\.(h|cc|cpp?|cxx|hpp|hxx|i|m|inc|inl)$' | etags -a -
+
+# Proto files
+# TODO: Get enums and constants in too?  Strangely enough, they go in
+# if the regex isn't there.
+git ls-files -- '*.proto' | etags -a --regex='/[ 	]*\(service\|message\)[ 	]*\([A-Za-z0-9_]+\)/\2/' -
+
+
