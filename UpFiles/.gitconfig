@@ -2,6 +2,10 @@
 	pager=
 	excludesfile=~/.gitignore
 	deltaBaseCacheLimit = 1G
+[difftool "meld"]
+	path=/Applications/Meld.app/Contents/MacOS/Meld
+[difftool "kdiff3"]
+	path=/Applications/kdiff3.app/Contents/MacOS/kdiff3
 [user]
 	name = Randy Smith
 [merge]
