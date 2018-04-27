@@ -41,7 +41,7 @@ fi
 docker_arg=$1;
 
 # Is docker available on the path?
-if ! hash docker ; then
+if ! hash docker 2>/dev/null; then
     echo "Docker not installed" 1>&2;
     exit 1;
 fi
@@ -65,11 +65,9 @@ fi
 case $docker_arg in
     check)
 	./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
-	break;
 	;;
     fix)
 	./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
-	break;
 	;;
 esac
 
