@@ -93,3 +93,6 @@
 
 ;; Unilaterally enable global auto-revert mode.
 (global-auto-revert-mode 1)
+
+;; Unilaterally track to first error in compilation buffer
+(setq compilation-scroll-output 'first-error)
