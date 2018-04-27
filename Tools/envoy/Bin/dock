@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname uses docker to execute specific portions of the envoy workflow.  
+Possible arguments:
+	check		Check formatting on the current branch
+	fix		Fix formatting on the current branch
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname <subfunction>";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+# Check non-flag arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $usageString" 1>&2;
+    exit 1;
+fi
+docker_arg=$1;
+
+# Is docker available on the path?
+if ! hash docker ; then
+    echo "Docker not installed" 1>&2;
+    exit 1;
+fi
+
+# Are we at top .git level?
+while [ ! -r .git -a `pwd` != '/' ]; do
+    cd ..
+done
+if [ ! -r .git ]; then
+    echo "Not in a git repository." 1>&2;
+    exit 1;
+fi
+
+# In an envoy repository?
+if [ ! -r ci/run_envoy_docker.sh ]; then
+    exit "Not in an envoy git repository." 1>&2;
+    exit 1;
+fi
+    
+# Ok, give it a try
+case $docker_arg in
+    check)
+	./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+	break;
+	;;
+    fix)
+	./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+	break;
+	;;
+esac
+
+	
