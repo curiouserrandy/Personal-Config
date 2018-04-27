@@ -79,8 +79,8 @@
 (define-key mode-specific-map "%" 'query-replace-regexp)
 
 ;;; Control keys following \C-c
-(if (featurep 'chrome-dev)
-    (define-key mode-specific-map [?\C-.] 'chrome-codesearch))
+(if (featurep 'envoy-dev)
+    (define-key mode-specific-map [?\C-.] 'envoy-codesearch))
 
 ;; Move iconification off of S-m; I hit it too often.
 (global-set-key [(super ?m)] 'undefined)
