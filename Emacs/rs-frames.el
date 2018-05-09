@@ -51,6 +51,9 @@ look like one of the alists."
       (let ((fp (car frames-properties-list)))
 	(setq nextframe (next-frame aframe))
 	(setq frames-properties-list (cdr frames-properties-list))
+	;; Twice in case the portion of screen coming from had different
+	;; restrictions than the portion being moved to.
+	(modify-frame-parameters aframe fp)
 	(modify-frame-parameters aframe fp)
 	(setq aframe nextframe)
 	))))
@@ -105,17 +108,26 @@ The results of saving with a name of \"default\" are undefined."
     (if (not non-default)
 	(randy-make-named-config-default name))))
 
-(defun randy-restore-config (name)
-  "Restore the default config for this display.  With prefix arg, prompt
-for a named config."
+(setq randy-current-config-index 0)
+
+(defun randy-restore-cycle-config (name)
+  "Cycle through all frame configs.
+With prefix arg, prompt for a named config."
   (interactive
    (list
-    (if current-prefix-arg 
+    (and current-prefix-arg 
 	(completing-read "Configuration to restore: "
-			 (mapcar 'car (randy-current-display-list)) nil t)
-      (car (car (randy-current-display-list))))))
-   (randy-force-frame-config (cdr (assoc name (randy-current-display-list)))))
-
+			 (mapcar 'car (randy-current-display-list)) nil t))))
+   (message "executing function")
+   (if name
+       (randy-force-frame-config (cdr (assoc name (randy-current-display-list))))
+     (setq randy-current-config-index (+ 1 randy-current-config-index))
+     (if (>= randy-current-config-index (length (randy-current-display-list)))
+	 (setq randy-current-config-index 0))
+     (message "Config index %d " randy-current-config-index)
+     (randy-force-frame-config (cdr (nth randy-current-config-index
+					 (randy-current-display-list))))))
+  
 (defun randy-delete-named-config (name &optional display-id)
   "Delete a previous saved config."
   (interactive
@@ -128,13 +140,11 @@ for a named config."
     (if key				;Handle non-existence name
 	(setcdr display-entry (assq-delete-all key (cdr display-entry))))))
 
-
-
 ;;; Startup.  
 ;;; If there's a default config for the current display, restore it
 (let ((display-entry
        (assoc (randy-current-display-config) randy-frame-configs-list)))
   (if (car (cdr display-entry))		;Checking for list of configs
-      (randy-restore-config (car (car (cdr display-entry))))))
+      (randy-restore-cycle-config (car (car (cdr display-entry))))))
 
 (provide 'rs-frames)

@@ -66,7 +66,7 @@
 (if (featurep 'rs-frames)
     (progn
       (define-key mode-specific-map "xs" 'randy-save-current-config)
-      (define-key mode-specific-map "xr" 'randy-restore-config)
+      (define-key mode-specific-map "xr" 'randy-restore-cycle-config)
       (define-key mode-specific-map "xd" 'randy-delete-named-config)))
 ;; y
 ;; z
@@ -87,7 +87,7 @@
 
 ;;; Function key definitions
 (define-key global-map '[f12] 'quoted-tab)
-(define-key global-map '[f11] 'randy-restore-config)
+(define-key global-map '[f11] 'randy-restore-cycle-config)
 (define-key global-map '[f9] 'next-error)
 
 ;;; Mouse key defns
