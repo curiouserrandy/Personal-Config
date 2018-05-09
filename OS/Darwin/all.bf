@@ -1,6 +1,6 @@
 # /opt/local/bin goes earlier because it sometimes has new versions for
 # things that are in the system directories.
-prefix_path_with_dirlist PATH /opt/local/bin 
+prefix_path_with_dirlist PATH /opt/local/bin /opt/local/libexec/gnubin
 suffix_path_with_dirlist PATH /Developer/Tools/ /opt/local/sbin
 suffix_path_with_dirlist MANPATH /opt/local/man
 suffix_path_with_dirlist MANPATH /Applications/Xcode.app/Contents/Developer/usr/share/man
