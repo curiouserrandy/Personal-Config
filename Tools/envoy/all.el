@@ -1,6 +1,8 @@
 ;; Try and setup C++ bindings properly for envoy
 (require 'google-c-style)
 (require 'rs-underpoint)
+(require 'compile)
+
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 
 ;; Make sure C++ shows up before C for .h files.
@@ -19,5 +21,11 @@
 		 (randy-word-under-point)
 		 nil nil envoy-codesearch-history)))
   (browse-url (format envoy-codesearch-search-template search-string)))
+
+;; Make all bazel errors informational.
+;; TODO: Arguably this should be bazel, not envoy; move if that's ever relevant.
+(setq compilation-error-regexp-alist
+      (cons '("\\([^ 	]+\\(\\.bzl\\|/BUILD\\)\\):\\([0-9]+\\):\\([0-9]+\\):" 1 3 4 0)
+	    compilation-error-regexp-alist))
 
 (provide 'envoy-dev)
