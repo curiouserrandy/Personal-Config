@@ -28,4 +28,6 @@
       (cons '("\\([^ 	]+\\(\\.bzl\\|/BUILD\\)\\):\\([0-9]+\\):\\([0-9]+\\):" 1 3 4 0)
 	    compilation-error-regexp-alist))
 
+(setq compilation-skip-visited t)
+
 (provide 'envoy-dev)
