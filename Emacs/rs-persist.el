@@ -31,9 +31,10 @@
   (setq rs-persist-variable-list
 	(delete-dups (cons var rs-persist-variable-list))))
 
-(add-hook 'kill-emacs-hook
-	  (lambda () (rs-save-variables
-		      rs-persist-variable-list rs-persist-file)))
+(defun rs-persist-listed-variables ()
+  (rs-save-variables rs-persist-variable-list rs-persist-file))
+
+(add-hook 'kill-emacs-hook 'rs-persist-listed-variables)
 
 (if (file-readable-p rs-persist-file)
     (load-file rs-persist-file))
