@@ -49,7 +49,8 @@
     (define-key mode-specific-map "i" 'randy-run-git-grep)
   (define-key mode-specific-map "i" 'randy-run-glimpse))
 ;; j
-;; k
+(if (featurep 'rs-google-envoy)
+    (define-key mode-specific-map "k" 'randy-find-checkout))
 ;; l  (Used to be truncate-lines toggle)
 ;; m
 ;; n
