@@ -1,0 +1,10 @@
+#!/bin/bash
+
+ENV_TEMP=$(mktemp -t "bazel-test-lldb-env.XXXXXXX")
+
+export -p > $ENV_TEMP
+
+echo "Environment in $ENV_TEMP"
+echo "Directory: " `pwd`
+echo $@
+exit 1
