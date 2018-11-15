@@ -70,12 +70,14 @@
 (randy-init-from "pre-system")
 
 ;;; Read in everything the shell initiatlization has told us to
+;(message (getenv "emacs_init_list"))
 (let* ((files (or (getenv "emacs_init_list") ""))
        (file-list (split-string files ":")))
   (while file-list
+    ;(message (concat "Initializing from " (car file-list)))
+    ;(message "Length of list: %d" (length file-list))
     (randy-init-directly (car file-list))
     (setq file-list (cdr file-list))))
-
 (randy-init-from "Emacs/rs-persist")
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
