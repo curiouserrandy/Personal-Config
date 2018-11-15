@@ -88,8 +88,13 @@
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
 
-;; Unilaterally setup emacs server; I think this is an ok place for that.
-(rs-server-start)			;Sets EDITOR in the environment.
+;; Start emacs server if not running as daemon.
+;; rs-server-start sets an emacs-specific environmental
+;; variable for EDITOR.  We avoid doing this if run as
+;; a daemon, taking that as a request that there be only
+;; one emacs on this machine.
+(if (not (daemonp))
+    (rs-server-start))			;Sets EDITOR in the environment.
 
 ;; Unilaterally enable winner mode.
 (winner-mode t)
