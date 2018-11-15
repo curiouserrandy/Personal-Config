@@ -79,6 +79,7 @@
     (randy-init-directly (car file-list))
     (setq file-list (cdr file-list))))
 (randy-init-from "Emacs/rs-persist")
+(randy-init-from "Emacs/rs-dirhist")
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
 (randy-init-from "Emacs/rs-programs")
