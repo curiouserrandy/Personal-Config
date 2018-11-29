@@ -35,6 +35,7 @@
   (rs-save-variables rs-persist-variable-list rs-persist-file))
 
 (add-hook 'kill-emacs-hook 'rs-persist-listed-variables)
+(run-at-time 120 120 'rs-persist-listed-variables)
 
 (if (file-readable-p rs-persist-file)
     (load-file rs-persist-file))
@@ -45,9 +46,7 @@
 ;;; Commented out during testing.
 ; (if (not (memq 'rs-persist-variable-list rs-persist-variable-list))
 ;	 (rs-persist-variable 'rs-persist-variable-list))
-
+;;; Yeah, I'm torn on the above; I want to adapt when I change around
+;;; my initialization context.
 	
-	
-;; This file may be working; try it on something hard and then enable.
-
 (provide 'rs-persist)
