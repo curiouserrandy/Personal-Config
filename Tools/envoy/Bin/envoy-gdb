@@ -1,0 +1,4 @@
+#!/bin/bash
+
+source ~/tmp/envoy-gdb-env.sh
+gdb -i=mi -x ~/tmp/envoy-gdb-args.gdb -ex run
