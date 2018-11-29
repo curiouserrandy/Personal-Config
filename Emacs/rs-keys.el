@@ -105,5 +105,9 @@
 (defun randy-gdb-mode-hook-function ()
     (define-key (current-local-map) "\C-c\C-q" 'randy-send-unbuffered-string))
 
+;; Making available for remote executions that may need it.
+(defun randy-flip-meta ()
+  (interactive)
+  (progn (setq x-meta-keysym 'alt) (setq x-alt-keysym 'meta)))
 
 
