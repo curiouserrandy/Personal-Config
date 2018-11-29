@@ -1,10 +1,23 @@
 #!/bin/bash
 
-ENV_TEMP=$(mktemp -t "bazel-test-lldb-env.XXXXXXX")
+ENV_TEMP=$HOME/tmp/envoy-gdb-env.sh
+ARGS_TEMP=$HOME/tmp/envoy-gdb-args.gdb
 
 export -p > $ENV_TEMP
 
 echo "Environment in $ENV_TEMP"
 echo "Directory: " `pwd`
 echo $@
+
+prog=$1
+shift
+echo "file $prog" > $ARGS_TEMP
+echo "set args $@" >> $ARGS_TEMP
+echo "dir $HOME/Checkouts/envoy" >> $ARGS_TEMP
+
+## TODO: Can I make the directory automatic?  If I do an emacs hack.
+echo "=="
+echo "== To run under gdb under emacs, go to the above directory and execute:"
+echo "	envoy-gdb"
+
 exit 1
