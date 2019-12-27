@@ -77,12 +77,25 @@ With prefix arg, find it in the other window."
      ((looking-at "\\(https?\\|ftp\\|file\\):[^\] 	
 ]*")
       (let ((urlname (buffer-substring (match-beginning 0) (match-end 0))))
-	
 	(if (string-match "\\.$" urlname)
 	    (setq urlname (substring urlname 0 -1)))
 	(if (string-match ")$" urlname)
 	    (setq urlname (substring urlname 0 -1)))
+	(if (string-match ":$" urlname)
+	    (setq urlname (substring urlname 0 -1)))
 	(message "Opening URL: %s" urlname)
+	(browse-url urlname)))
+     ;; Special case go links
+     ((looking-at "\\(go/[^/ 	]*\\)")
+      (let ((urlname (concat "http://" (buffer-substring
+					(match-beginning 0) (match-end 0)))))
+	(if (string-match "\\.$" urlname)
+	    (setq urlname (substring urlname 0 -1)))
+	(if (string-match ")$" urlname)
+	    (setq urlname (substring urlname 0 -1)))
+	(if (string-match ":$" urlname)
+	    (setq urlname (substring urlname 0 -1)))
+	(message "Opening go link: %s" urlname)
 	(browse-url urlname)))
      ;; Generic file on local file system
      ((looking-at "\\([-a-zA-Z0-9._+/~]+\\)\\(:\\([0-9]+\\)\\)?")
