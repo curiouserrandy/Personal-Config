@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+    echo "$0 needs two arguments: <from>-><to>" 1&>2;
+    exit 1;
+fi
+
+files=`hg status --rev p4head | grep '^[AM]' | awk '{print $2;}'`
+#sed -i -e 's;\b'"$1"'\b;'"$2"';g' $files
+sed -i -e 's;'"$1"';'"$2"';g' $files
