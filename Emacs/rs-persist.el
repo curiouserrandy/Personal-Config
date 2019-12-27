@@ -18,7 +18,9 @@
 		 (error "Entry %s in varlist is not a symbol." nextvar))
 	(setq varlist (cdr varlist))
 	(insert (rs-varcreate-string nextvar))))
-    (save-buffer)))
+    (save-buffer)
+    (kill-buffer)			; Hack to deal with races between emacxen
+    ))
 
 (defun rs-varcreate-string (var)
   (concat "(setq " (symbol-name var) " (quote "
@@ -35,6 +37,8 @@
   (rs-save-variables rs-persist-variable-list rs-persist-file))
 
 (add-hook 'kill-emacs-hook 'rs-persist-listed-variables)
+;;; TODO(rdsmith): Don't save if nothing's changed.  (Better fix
+;;; to multiple emacsen racing.)
 (run-at-time 120 120 'rs-persist-listed-variables)
 
 (if (file-readable-p rs-persist-file)
