@@ -24,15 +24,13 @@
 				  (dired-get-marked-files t current-prefix-arg))))))))
 
 ;;; The "official" user customization keys; \C-c[a-z]
-(if (featurep 'chrome-dev)
+(define-key mode-specific-map "c" 'compile)
+(if (featurep 'randy-citc)
     (progn
-      (define-key mode-specific-map "a" 'chrome-blame-file)
-      (define-key mode-specific-map "b" 'chrome-visit-issue)
-      (define-key mode-specific-map "c" 
+      (define-key mode-specific-map "C" 
 	'(lambda () (interactive) (if current-prefix-arg
-				      (chrome-speciality-compile)
-				    (call-interactively 'compile)))))
-  (define-key mode-specific-map "c" 'compile))
+				      (randy-buildclean-blaze-compile-current-file)
+				    (randy-blaze-compile-current-file))))))
 
 (add-hook 'shell-mode-hook
 	  '(lambda () (define-key shell-mode-map "\C-cd"
