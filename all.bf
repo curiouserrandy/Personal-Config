@@ -4,3 +4,5 @@ init_from $config_files_directory/Tools/python
 init_from $config_files_directory/Tools/Backup
 init_from $config_files_directory/Tools/llvm
 init_from $config_files_directory/Tools/mercurial
+init_from $config_files_directory/Tools/envoy
+

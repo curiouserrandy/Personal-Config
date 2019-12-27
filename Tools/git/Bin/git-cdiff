@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <commit> [<file1> <file2> ...]" 1>$2;
+    exit 1;
+fi    
+
+commit="$1"
+shift;
+
+if [ $# -eq 0 ]; then
+    git diff "$commit"~1 "$commit"
+else
+    git diff "$commit"~1 "$commit" -- "$@"
+fi

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Setup the help and usage messages
+progname=`basename $0`
+tf=/tmp/$$.helpfile
+cat > $tf <<EOF
+$progname is a log variant that shows abbv hash, date, size, & subject.
+Size is number of LOC added + # LOC deleted.  
+EOF
+helpString="`cat $tf`" ;
+rm -f $tf;
+usageString="$progname <commit range>";
+
+# Parse all arguments.
+while [ $# -ne 0 ]; do
+    case $1 in 
+    -h|-\?)
+	echo "$helpString" 1>&2;
+	exit 1;
+	;;
+    --) shift;		# Everything after this point is taken as
+	break;		# regular args.
+	;;
+    -*)
+	echo "Usage: $usageString" 1>&2;
+	exit 1;
+	;;
+    *)  break;
+	;;
+    esac
+    shift;
+done
+
+commits=`git log --format=format:%h "$@"`
+
+for c in $commits; do
+  size=`git diff --numstat $c~1 $c | awk '{total += $1 + $2} END {print total}'`
+  echo -n $c: $size 
+  git log -1 --format=format:" %cd %s"
+done

@@ -1,3 +1,4 @@
+// -*- backup-by-copying: t -*- 
 digraph ExampleDiagram {
     subgraph cluster_legend {
 	      label="legend";

@@ -5,7 +5,13 @@
   "File in which to persist variables.")
 
 (defvar rs-persist-variable-list nil
-  "List of variables to save on emacs exit.")
+  "List of variables to persist (via regular saving or on exit)")
+
+(defvar rs-persist-last-saved-symbols nil
+  "List of variables saved on last save.")
+  
+(defvar rs-persist-last-saved-values nil
+  "List of values saved on last save.")
 
 (defun rs-save-variables (varlist file)
   (save-excursion
@@ -32,6 +38,20 @@
   (interactive "SSymbol to persist: ")
   (setq rs-persist-variable-list
 	(delete-dups (cons var rs-persist-variable-list))))
+
+(defun rs-vars-changed ()
+  (not (and (equal rs-persist-last-saved-symbols rs-persist-variable-list)
+	    (equal rs-persist-last-saved-values
+		   (mapcar symbol-value rs-persist-variable-list)))))
+
+(defun new-rs-persist-listed-variables ()
+  (if (rs-vars-changed)
+      (progn
+	(rs-save-variables rs-persist-variable-list rs-persist-file)
+	(setq rs-persist-last-saved-symbols
+	      (copy-tree rs-persist-variable-list))
+	(setq rs-persist-last-saved-values
+	      (mapcar symbol-value rs-persist-variable-list)))))
 
 (defun rs-persist-listed-variables ()
   (rs-save-variables rs-persist-variable-list rs-persist-file))

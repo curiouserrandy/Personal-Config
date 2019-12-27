@@ -1,0 +1,39 @@
+## Array formulas:
+	* If a formula returns an array at top (cell) level, and the
+	  formula isn't wrapped in an ARRAYFORMULA() only the first
+	  element of the array will be shown in the value of the cell.
+	  When that cell is referenced, the scalar is returned.
+	  It seems as if what's actually happening is that normal
+	  operations only return scalars if the formula isn't wrapped
+	  in an array formula.
+	* To create or concatenate arrays, you surround with {} and
+	  then ";" concatentes vertically, "," horizontally
+	* ArrayFormula() forces the interpretation of the operations
+	  within the context as array operations.  I don't believe
+	  that there's any limit to the depth; once you're in an AF()
+	  you're doing things in the (semi- :-}) obvious array
+	  fashion.  The things below that only occur within the scope
+	  of an ArrayFormula() are marked [AF].
+	* Elements in an array: counta() (count() only counts numeric
+	  values). 
+	* [AF] Auto-mapped Arithmetic between a vector and a matrix:
+	  {U2:V2} - {R2:S8}
+	* [AF] Creating array values.  These are all range(n)
+		* =ROW(offset(A1,,,#n))
+		  The row of each elemnet in a #n length vertical vector
+		* =ROW(Index(A:A,1):Index(A:A,#n))
+		  Index is documented as returning the contents of a
+	  	  cell at a specific offset within a range, but it
+	  	  looks from the above that it's actually returning a
+	  	  reference to the cell, which can then be used in a
+	  	  range expression.  I.e. the above is equivelent to
+	  	  Row(A1:An). 
+	* Array of zeros or ones
+	        =0*row(offset(A1,,,#n))
+		=1+0*row(offset(A1,,,#n))
+	* Slicing.  Several sub-ideal options:
+		* ARRAYCONSTRAIN: restricts to upper left.
+		* Index(): value of 0 means "whole row" (or column)
+		* Filter: Need to construct the proper corresponding
+	  	  row/column set of boolean values, but that would do
+	  	  it.  Most flexible, but a bit annoying. 

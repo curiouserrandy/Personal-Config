@@ -17,5 +17,3 @@
 	lastUpdateCheck = 20151104000000
 [push]
 	default = simple
-[http]
-	cookiefile = /Users/rdsmith/.gitcookies

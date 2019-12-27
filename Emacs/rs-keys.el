@@ -32,6 +32,10 @@
 				      (randy-buildclean-blaze-compile-current-file)
 				    (randy-blaze-compile-current-file))))))
 
+(if (featurep 'rs-google-envoy)
+    (progn
+      (define-key mode-specific-map "b" 'envoy-visit-speciality)))
+
 (add-hook 'shell-mode-hook
 	  '(lambda () (define-key shell-mode-map "\C-cd"
 			'randy-shell-cd-directory-other-window)))
