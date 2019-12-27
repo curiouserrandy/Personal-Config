@@ -42,8 +42,5 @@ if [ $# -ne 2 ]; then
     exit 1;
 fi
 
-from="$1"
-to="$2"
-
 files=`git grep --name-only -w "$1"`
-sed -i -e 's;[[:<:]]'"$1"'[[:>:]];'"$2"';g' $files
+sed -i -e 's;\b'"$1"'\b;'"$2"';g' $files
