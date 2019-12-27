@@ -373,12 +373,13 @@ of the outline unit around point will be used insted."
 
 ;;; ------------  Use Case Implementation ----------------
 
-(defun rstodo-next-todo-item (rel &optional skip-done skip-wait)
+(defun rstodo-next-todo-item (rel &optional skip-done skip-wait skip-note)
   "Move to the next todo item matching the given criteria."
   (let* ((myoutl (rstodo-get-outline-info (point)))
-	 (nextitem
+	 (nextitem 
 	  (rstodo-get-related-item-beginning
-	   (point) rel '("todo" "copy" "question" "note")
+	   (point) rel (append '("todo" "copy" "question")
+			       (if skip-note '() '("note")))
 	   (if skip-done nil '(t nil))
 	   (if skip-wait nil '(t nil)))))
     (if nextitem (goto-char nextitem)
@@ -768,8 +769,12 @@ Returns buffer; does not display it."
 
 (define-key rstodo-mode-map [f5]
  (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+(define-key rstodo-mode-map [M-f5] 
+ (lambda () (interactive) (rstodo-next-todo-item 1 t nil t)))
 (define-key rstodo-mode-map [f6]
  (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+(define-key rstodo-mode-map [M-f6] 
+ (lambda () (interactive) (rstodo-next-todo-item -1 t nil t)))
 
 (define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
 (define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
