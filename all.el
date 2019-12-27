@@ -70,13 +70,16 @@
 (randy-init-from "pre-system")
 
 ;;; Read in everything the shell initiatlization has told us to
+;(message (getenv "emacs_init_list"))
 (let* ((files (or (getenv "emacs_init_list") ""))
        (file-list (split-string files ":")))
   (while file-list
+    ;(message (concat "Initializing from " (car file-list)))
+    ;(message "Length of list: %d" (length file-list))
     (randy-init-directly (car file-list))
     (setq file-list (cdr file-list))))
-
 (randy-init-from "Emacs/rs-persist")
+(randy-init-from "Emacs/rs-dirhist")
 (randy-init-from "Emacs/rs-frames")
 (randy-init-from "Emacs/rs-compile")
 (randy-init-from "Emacs/rs-programs")
@@ -85,8 +88,13 @@
 (randy-init-from "post-system")
 (randy-init-from "Emacs/rs-keys")	; Keyboard mappings
 
-;; Unilaterally setup emacs server; I think this is an ok place for that.
-(rs-server-start)			;Sets EDITOR in the environment.
+;; Start emacs server if not running as daemon.
+;; rs-server-start sets an emacs-specific environmental
+;; variable for EDITOR.  We avoid doing this if run as
+;; a daemon, taking that as a request that there be only
+;; one emacs on this machine.
+(if (not (daemonp))
+    (rs-server-start))			;Sets EDITOR in the environment.
 
 ;; Unilaterally enable winner mode.
 (winner-mode t)

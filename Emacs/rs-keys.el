@@ -56,7 +56,8 @@
 (if (featurep 'rs-google-envoy)
     (define-key mode-specific-map "k" 'randy-find-checkout))
 ;; l  (Used to be truncate-lines toggle)
-;; m
+(if (featurep 'rs-dirhist)
+    (define-key mode-specific-map "m" 'randy-rotate-dired-history))
 ;; n
 ;; o
 (define-key mode-specific-map "p" 'copy-rectangle-to-register)
@@ -108,5 +109,9 @@
 (defun randy-gdb-mode-hook-function ()
     (define-key (current-local-map) "\C-c\C-q" 'randy-send-unbuffered-string))
 
+;; Making available for remote executions that may need it.
+(defun randy-flip-meta ()
+  (interactive)
+  (progn (setq x-meta-keysym 'alt) (setq x-alt-keysym 'meta)))
 
 
