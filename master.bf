@@ -107,6 +107,7 @@ suffix_path_with_dirlist MANPATH /usr/local/share/man /opt/local/man /opt/local/
 
 # Do the configuration initialization
 init_from_recurse $config_files_directory
+init_from_recurse $config_files_directory/../Proprietary-Config
 
 # Do project-specific configuration
 
