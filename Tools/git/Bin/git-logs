@@ -36,5 +36,5 @@ commits=`git log --format=format:%h "$@"`
 for c in $commits; do
   size=`git diff --numstat $c~1 $c | awk '{total += $1 + $2} END {print total}'`
   echo -n $c: $size 
-  git log -1 --format=format:" %cd %s"
+  git log -1 --format=tformat:" %cd %s" $c
 done
