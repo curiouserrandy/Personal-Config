@@ -38,5 +38,5 @@ git_branch_for_prompt () {
     fi
 }
 
-suffix_val_to_var_if_not_present git_branch shell_prompt_commands
+suffix_val_to_var_if_not_present git_branch_for_prompt shell_prompt_commands
 		
