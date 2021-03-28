@@ -1,3 +1,6 @@
+d3.create("<element type>"): Creates the html element and returns a
+selection including it.  
+
 
 {d3,sel}.select{,All}(<selector>):
 	Select the first/all element(s) in the document/under the object that
