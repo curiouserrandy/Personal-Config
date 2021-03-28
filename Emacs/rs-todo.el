@@ -1,5 +1,16 @@
 ;;; Functions for manipulating outline files used as todo files.
 
+;;; Current hotkey bindings:
+;;	* ^C ^R to enter
+;;	* <letter>: Move todo item to section
+;;	* <del>: Delete todo item under point
+;;	* <backspace>: Mark done
+;;	* F5: Next todo item
+;;	* F9: Move item to todo mark.
+;;	* ^C# to exit.
+;;; I think ^C^R would be more natural for exit, and F5 and F9 really
+;;; should be next to each other.  
+
 ;;; See notes in Todomode.txt for design and format spec.
 
 (require 'rs-outline)
@@ -789,6 +800,17 @@ Returns buffer; does not display it."
 					(randy-explode-hook)
 					(randy-implode-hook))))
 
+(defun rstodo-extract-piece (loc)
+  "Delete the piece at loc and return it from this function"
+  (apply 'delete-and-extract-region
+	 (rstodo-piece-info-bounds (rstodo-get-piece-info loc))))
+
+(defun rstodo-mark-piece-done (loc)
+  "Mark the piece at loc as done."
+  (save-excursion
+    (goto-char (rstodo-piece-info-start (rstodo-get-piece-info loc)))
+    (insert "X")))
+
 (define-derived-mode rstodo-hotkey-mode rstodo-mode "Todo *Hotkey*"
   "Mode in which keys auto-move the current todo item to that heading.")
 
@@ -802,6 +824,17 @@ Returns buffer; does not display it."
 
 (define-key rstodo-hotkey-mode-map [remap self-insert-command]
   'rstodo-move-item-to-self-section)
+
+(define-key rstodo-hotkey-mode-map (kbd "<deletechar>")
+  #'(lambda ()
+      (interactive)
+      (rstodo-extract-piece (point))))
+
+(define-key rstodo-hotkey-mode-map [backspace]
+  #'(lambda ()
+      (interactive)
+      (rstodo-mark-piece-done (point))
+      (rstodo-next-todo-item 1)))
 
 ;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
 ;;; have a "show-entry" terminating them.  This is a hack to get around 
