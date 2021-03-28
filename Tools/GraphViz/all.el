@@ -1,0 +1,12 @@
+(defun randy-mac-display-dot-inline ()
+  (interactive)
+  (save-excursion
+    (let (start end)
+      (re-search-backward "^digraph")
+      (setq start (point))
+      (forward-sexp 3)
+      (forward-line)
+      (beginning-of-line)
+      (setq end (point))
+      (write-region start end (concat (getenv "HOME") "/tmp/xxx.dot"))
+      (shell-command "open ~/tmp/xxx.dot"))))
