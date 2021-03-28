@@ -1,0 +1,19 @@
+-- d3.csvParse(...) -> dsvFormat(",").parse(string[, row])
+
+This function assumes the first line is a set of headers, and creates
+objects with those headers as field names.  Objects can be tranformed
+on input by function row.
+
+https://github.com/d3/d3-dsv/blob/master/README.md#dsv_parse
+
+-- d3.csv(input, [init][,row]) -> d3.dsv(",", input[, init][, row])
+   -> d3.dsvFormat(",").parse(fetch(intput, init)[,row]
+
+-- d3.csvParseRows -> d3.dsvFormat(",").parseRows(string[, row])
+
+Creates an array of arrays.  [,row] can be used for conversions on in
+input.
+
+-- d3.autoType: Option for <row> above, auto-infers types.
+
+
