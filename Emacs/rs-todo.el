@@ -478,6 +478,17 @@ The beginning of the item counts as within."
       (setq deleted-items (rstodo-collect-deleted-items loc))
       (insert deleted-items))))
 
+(defun rstodo-move-deleted-to-end (loc)
+  "Move all deleted items in the outline area containing LOC to the end of that outline area."
+  (interactive "d")
+  (save-excursion
+    (let* ((myoutl (rstodo-get-outline-info loc))
+	   deleted-items
+	  )
+      (goto-char (car (cdr myoutl)))
+      (setq deleted-items (rstodo-collect-deleted-items loc))
+      (insert deleted-items))))
+
 (defun rstodo-move-item-up ()
   "Move the todo item under point one higher.
 Throws an error if point is not on a todo item, or if there's no place to move it."
@@ -774,7 +785,7 @@ Returns buffer; does not display it."
 ;;;	* Kill current todo item into project file.
 ;;;	* Insert link to project file in place.
 
-(define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-top)
+(define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-end)
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
