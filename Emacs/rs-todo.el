@@ -600,7 +600,7 @@ rstodo-move-todo-piece-to-mark."
   (set-marker rstodo-todo-mark loc buf)
   (message "Todo mark set."))
 
-(defconst rstodo-hotkey-regexp-1 "\\[\\([a-zA-Z0-9]\\)\\]"
+(defconst rstodo-hotkey-regexp-1 "\\[\\([a-zA-Z0-9!@#\\$%\\^&\\*()]\\)\\]"
   "Regular expression for finding hotkeys in outline topic headings.")
 
 (defun rstodo-hotkey-outline-info-list ()
@@ -671,7 +671,7 @@ A list member will look like '(tag beginning end header-string)."
 	(setq outline-list (append outline-list (list current-outline))))
       outline-list)))
 
-(defconst rstodo-hotkey-regexp "\\[[a-zA-Z0-9]\\(,[a-zA-Z0-9]\\)*\\]"
+(defconst rstodo-hotkey-regexp "\\[[a-zA-Z0-9!@#\\$]\\(,[a-zA-Z0-9!@#\\$]\\)*\\]"
   "Regular expression for finding hotkeys in outline topic headings.")
 
 (defun rstodo-collect-outline-hotkeys ()
