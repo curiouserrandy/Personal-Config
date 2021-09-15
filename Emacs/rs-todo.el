@@ -914,10 +914,6 @@ previously created)"
       (interactive)
       (rstodo-extract-piece (point))))
 
-(define-key rstodo-hotkey-mode-map [backspace]
-  #'(lambda ()
-      (interactive)
-      (rstodo-mark-piece-done (point))
-      (rstodo-next-todo-item 1)))
+(define-key rstodo-hotkey-mode-map [backspace] 'rstodo-item-to-completion-file)
 
 (provide 'rs-todo)
