@@ -796,13 +796,16 @@ Returns buffer; does not display it."
  (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
 (define-key rstodo-mode-map [M-f5]
  (lambda () (interactive) (rstodo-next-todo-item 1 t nil t)))
+(define-key rstodo-mode-map [C-f5] 'rstodo-move-item-down)
+
 (define-key rstodo-mode-map [f6]
  (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
 (define-key rstodo-mode-map [M-f6]
  (lambda () (interactive) (rstodo-next-todo-item -1 t nil t)))
+(define-key rstodo-mode-map [C-f6] 'rstodo-move-item-up)
 
-(define-key rstodo-mode-map [f7] 'rstodo-move-item-down)
-(define-key rstodo-mode-map [f8] 'rstodo-move-item-up)
+(define-key rstodo-mode-map [f7] 'rstodo-item-to-completion-file)
+
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
 
 ;;; Reset the buffer back to specified layout.
