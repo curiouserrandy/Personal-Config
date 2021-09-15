@@ -702,15 +702,18 @@ An outline topic is marked with a hotkey if it matches the regexp
 (defun rstodo-outline-hotkey-cheatsheet ()
   "Return a text listing of the mapping between hotkeys and sections."
   (let ((hotkey-list (rstodo-collect-outline-hotkeys)))
+    (concat "<backspace> --\tMark entry as done
+<del> --\tRemove entry
+"
     (mapconcat 'identity 
 	       (apply 'append
 		      (mapcar (lambda (elt)
 				(let ((line (nth 2 elt))
 				      (keys (nth 3 elt)))
 				  (mapcar (lambda (key)
-					    (concat (string key) " --\t" line))
+					    (concat (string key) " --\t\t" line))
 					  keys)))
-			      hotkey-list)) "\n")))
+			      hotkey-list)) "\n"))))
 
 ;;; Plan
 ;;;	* Create cheatsheet
