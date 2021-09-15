@@ -896,16 +896,6 @@ previously created)"
 ;;; The right solution here is to make hotkey mode a minor mode rather than 
 ;;; a major one, so the major mode doesn't change.
 
-(define-key rstodo-hotkey-mode-map "\C-c#"
-  #'(lambda ()
-      (interactive)
-      (let* ((csb (get-buffer "*cheatsheet*"))
-	     (csbw (and csb (get-buffer-window csb))))
-	(if csbw (delete-window csbw))
-	(if csb (kill-buffer csb)))
-      (rstodo-mode)
-      (show-entry)))
-
 (define-key rstodo-mode-map "\C-c\C-r"
   #'(lambda ()
       (interactive)
@@ -914,5 +904,15 @@ previously created)"
 	(other-window 1)
 	(rstodo-hotkey-mode)
 	(show-entry))))
+
+(define-key rstodo-hotkey-mode-map "\C-c\C-c"
+  #'(lambda ()
+      (interactive)
+      (let* ((csb (get-buffer "*cheatsheet*"))
+	     (csbw (and csb (get-buffer-window csb))))
+	(if csbw (delete-window csbw))
+	(if csb (kill-buffer csb)))
+      (rstodo-mode)
+      (show-entry)))
 
 (provide 'rs-todo)
