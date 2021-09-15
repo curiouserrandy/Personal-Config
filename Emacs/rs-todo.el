@@ -826,7 +826,7 @@ previously created)"
 	  (insert rstodo-completion-file-init))
       (goto-char (point-min))
       ;; Make sure it's got today's date at the end of it.
-      (if (not (search-forward (concat "* " current-date-string) (point-max) 1))
+      (if (not (search-forward current-date-string (point-max) 1))
 	  (insert current-date-string))
     file-buffer)))
 
