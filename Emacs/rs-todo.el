@@ -850,6 +850,46 @@ Returns buffer; does not display it."
       (rstodo-mark-piece-done (point))
       (rstodo-next-todo-item 1)))
 
+;;; Managing completion list by day
+
+(defconst rstodo-completion-file "TimeLog"
+  "File into which completed elements will be moved.  
+Directory is the same as the current file.")
+
+(defconst rstodo-completion-file-init
+  "## -*-mode: outline; fill-prefix: \"   \";-*-
+
+"
+  "Initial contents of completion file.")
+
+(defun rstodo-init-completion-file ()
+  "Return a buffer visiting the completion file, initialized appropriately
+(i.e. with initial contents if empty, with a line for todays date if not
+previously created)"
+  (let ((file-buffer (find-file-noselect rstodo-completion-file))
+	(current-date-string
+	 (concat "* " (shell-command-to-string "date +\"%a %y/%m/%d\"") "\n")))
+    (save-excursion
+      (set-buffer file-buffer)
+      ;; Make sure it's an outline file
+      (if (equal (point-min) (point-max))
+	  (insert rstodo-completion-file-init))
+      (goto-char (point-min))
+      ;; Make sure it's got today's date at the end of it. 
+      (if (not (search-forward (concat "* " current-date-string) (point-max) 1))
+	  (insert current-date-string))
+    file-buffer)))
+
+;;; TODO: Expand to work on items not indicated by cursor?
+(defun rstodo-item-to-completion-file ()
+  (interactive)
+  (let ((current-piece (rstodo-extract-piece (point))))
+    (save-excursion
+      (set-buffer (rstodo-init-completion-file))
+      (goto-char (point-max))
+      (insert current-piece)
+      (save-buffer))))
+
 ;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
 ;;; have a "show-entry" terminating them.  This is a hack to get around 
 ;;; the fact that I hide-body when entering outline mode (see rs-outline.el).  
