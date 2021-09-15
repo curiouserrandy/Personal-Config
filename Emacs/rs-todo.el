@@ -204,7 +204,7 @@ outline section), nil will be returned."
 (defun rstodo-get-outline-info (loc)
   "Return a three element list (START END ELE) for the outline element that
 includes location LOC in the file.  ELE will be the text of the outline 
-line, minus the outline characgters.  If LOC is before the first
+line, minus the outline characters.  If LOC is before the first
 outline element, ELE will be nil.
 Note that the location at the beginning of an outline line is within that 
 outline (same as pieces)."
