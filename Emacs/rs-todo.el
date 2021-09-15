@@ -771,13 +771,6 @@ Returns buffer; does not display it."
       (insert cheatsheet)
       cb)))
 
-(define-derived-mode rstodo-mode outline-mode "Todo"
-  "Major mode for todo lists in Randy style.
-\\{rstodo-mode-map}"
-  (setq outline-font-lock-faces
-    [outline-2 outline-1 outline-3 outline-4
-	       outline-5 outline-6 outline-7 outline-8]))
-
 ;;; Take current todo item and put it in a project file; insert link
 ;;; to project file at current location.
 ;;;	* Error checking around todo item.
@@ -787,35 +780,6 @@ Returns buffer; does not display it."
 ;;;	* Put Todo template into it.
 ;;;	* Kill current todo item into project file.
 ;;;	* Insert link to project file in place.
-
-(define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-end)
-(define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
-(define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
-
-(define-key rstodo-mode-map [f5]
- (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
-(define-key rstodo-mode-map [M-f5]
- (lambda () (interactive) (rstodo-next-todo-item 1 t nil t)))
-(define-key rstodo-mode-map [C-f5] 'rstodo-move-item-down)
-
-(define-key rstodo-mode-map [f6]
- (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
-(define-key rstodo-mode-map [M-f6]
- (lambda () (interactive) (rstodo-next-todo-item -1 t nil t)))
-(define-key rstodo-mode-map [C-f6] 'rstodo-move-item-up)
-
-(define-key rstodo-mode-map [f7] 'rstodo-item-to-completion-file)
-
-(define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
-
-;;; Reset the buffer back to specified layout.
-;;; With prefix argument, actually do a revert.
-(define-key rstodo-mode-map "\C-cr" (lambda (really-revert)
-				      (interactive "P")
-				      (if really-revert
-					  (revert-buffer t t)
-					(randy-explode-hook)
-					(randy-implode-hook))))
 
 (defun rstodo-extract-piece (loc)
   "Delete the piece at loc and return it from this function"
@@ -828,9 +792,6 @@ Returns buffer; does not display it."
     (goto-char (rstodo-piece-info-start (rstodo-get-piece-info loc)))
     (insert "X")))
 
-(define-derived-mode rstodo-hotkey-mode rstodo-mode "Todo *Hotkey*"
-  "Mode in which keys auto-move the current todo item to that heading.")
-
 (defun rstodo-move-item-to-self-section ()
   (interactive)
   (if (not (equal (length (this-command-keys)) 1))
@@ -838,20 +799,6 @@ Returns buffer; does not display it."
 		     this-command-keys)))
   (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
   (rstodo-setup-cheatsheet-buffer))
-
-(define-key rstodo-hotkey-mode-map [remap self-insert-command]
-  'rstodo-move-item-to-self-section)
-
-(define-key rstodo-hotkey-mode-map (kbd "<deletechar>")
-  #'(lambda ()
-      (interactive)
-      (rstodo-extract-piece (point))))
-
-(define-key rstodo-hotkey-mode-map [backspace]
-  #'(lambda ()
-      (interactive)
-      (rstodo-mark-piece-done (point))
-      (rstodo-next-todo-item 1)))
 
 ;;; Managing completion list by day
 
@@ -899,6 +846,43 @@ previously created)"
 ;;; The right solution here is to make hotkey mode a minor mode rather than
 ;;; a major one, so the major mode doesn't change.
 
+;;; *** rstodo-mode-map definition
+(define-derived-mode rstodo-mode outline-mode "Todo"
+  "Major mode for todo lists in Randy style.
+\\{rstodo-mode-map}"
+  (setq outline-font-lock-faces
+    [outline-2 outline-1 outline-3 outline-4
+	       outline-5 outline-6 outline-7 outline-8]))
+
+(define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-end)
+(define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
+(define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
+
+(define-key rstodo-mode-map [f5]
+ (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
+(define-key rstodo-mode-map [M-f5]
+ (lambda () (interactive) (rstodo-next-todo-item 1 t nil t)))
+(define-key rstodo-mode-map [C-f5] 'rstodo-move-item-down)
+
+(define-key rstodo-mode-map [f6]
+ (lambda () (interactive) (rstodo-next-todo-item -1 t nil)))
+(define-key rstodo-mode-map [M-f6]
+ (lambda () (interactive) (rstodo-next-todo-item -1 t nil t)))
+(define-key rstodo-mode-map [C-f6] 'rstodo-move-item-up)
+
+(define-key rstodo-mode-map [f7] 'rstodo-item-to-completion-file)
+
+(define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
+
+;;; Reset the buffer back to specified layout.
+;;; With prefix argument, actually do a revert.
+(define-key rstodo-mode-map "\C-cr" (lambda (really-revert)
+				      (interactive "P")
+				      (if really-revert
+					  (revert-buffer t t)
+					(randy-explode-hook)
+					(randy-implode-hook))))
+
 (define-key rstodo-mode-map "\C-c\C-r"
   #'(lambda ()
       (interactive)
@@ -907,6 +891,10 @@ previously created)"
 	(other-window 1)
 	(rstodo-hotkey-mode)
 	(show-entry))))
+
+;;; *** rstodo-hotkey-mode-map definition
+(define-derived-mode rstodo-hotkey-mode rstodo-mode "Todo *Hotkey*"
+  "Mode in which keys auto-move the current todo item to that heading.")
 
 (define-key rstodo-hotkey-mode-map "\C-c\C-c"
   #'(lambda ()
@@ -917,5 +905,19 @@ previously created)"
 	(if csb (kill-buffer csb)))
       (rstodo-mode)
       (show-entry)))
+
+(define-key rstodo-hotkey-mode-map [remap self-insert-command]
+  'rstodo-move-item-to-self-section)
+
+(define-key rstodo-hotkey-mode-map (kbd "<deletechar>")
+  #'(lambda ()
+      (interactive)
+      (rstodo-extract-piece (point))))
+
+(define-key rstodo-hotkey-mode-map [backspace]
+  #'(lambda ()
+      (interactive)
+      (rstodo-mark-piece-done (point))
+      (rstodo-next-todo-item 1)))
 
 (provide 'rs-todo)
