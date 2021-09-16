@@ -828,6 +828,7 @@ previously created)"
       ;; Make sure it's got today's date at the end of it.
       (if (not (search-forward current-date-string (point-max) 1))
 	  (insert current-date-string))
+      (auto-save-visited-mode t)
     file-buffer)))
 
 ;;; TODO: Expand to work on items not indicated by cursor?
@@ -837,8 +838,7 @@ previously created)"
     (save-excursion
       (set-buffer (rstodo-init-completion-file))
       (goto-char (point-max))
-      (insert current-piece)
-      (save-buffer))))
+      (insert current-piece))))
 
 ;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
 ;;; have a "show-entry" terminating them.  This is a hack to get around
