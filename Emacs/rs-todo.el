@@ -840,6 +840,19 @@ previously created)"
       (goto-char (point-max))
       (insert current-piece))))
 
+(defun rstodo-move-deleted-to-completion-file (loc)
+  "Move all completed (X--...) items in the outline area containing LOC 
+to the completion file."
+  (interactive "d")
+  (save-excursion
+    (let* ((myoutl (rstodo-get-outline-info loc))
+	   deleted-items
+	  )
+      (setq deleted-items (rstodo-collect-deleted-items loc))
+      (set-buffer (rstodo-init-completion-file))
+      (goto-char (point-max))
+      (insert deleted-items))))
+
 ;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
 ;;; have a "show-entry" terminating them.  This is a hack to get around
 ;;; the fact that I hide-body when entering outline mode (see rs-outline.el).
@@ -854,7 +867,8 @@ previously created)"
     [outline-2 outline-1 outline-3 outline-4
 	       outline-5 outline-6 outline-7 outline-8]))
 
-(define-key rstodo-mode-map [?\C-c ?\C-x] 'rstodo-move-deleted-to-end)
+(define-key rstodo-mode-map [?\C-c ?\C-x]
+  'rstodo-move-deleted-to-completion-file)
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
 
