@@ -800,6 +800,10 @@ Returns buffer; does not display it."
   (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
   (rstodo-setup-cheatsheet-buffer))
 
+(defun rstodo-move-item-to-section-prompting (section-character)
+  (interactive "cSection: ")
+  (rstodo-move-current-todo-item-to-hotkey section-character))
+
 ;;; Managing completion list by day
 
 (defconst rstodo-completion-file "TimeLog"
@@ -885,6 +889,8 @@ to the completion file."
 (define-key rstodo-mode-map [C-f6] 'rstodo-move-item-up)
 
 (define-key rstodo-mode-map [f7] 'rstodo-item-to-completion-file)
+
+(define-key rstodo-mode-map [f8] 'rstodo-move-item-to-section-prompting)
 
 (define-key rstodo-mode-map [f9] 'rstodo-move-todo-piece-to-mark)
 
