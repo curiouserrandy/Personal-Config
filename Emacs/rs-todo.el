@@ -881,8 +881,6 @@ to the completion file."
 "
   "Initial contents for new daily entry")
 
-;;; vvv **Untested** vvv
-
 ;;; TODO: Refactor rstodo-goto-outline-section-by-hotkey to break out
 ;;; finding the section by a given hotkey and use below.
 (defun rstodo-start-new-daily-entry ()
@@ -924,6 +922,7 @@ to the completion file."
   'rstodo-move-deleted-to-completion-file)
 (define-key rstodo-mode-map [?\C-c ?\C-\s] 'rstodo-set-todo-mark)
 (define-key rstodo-mode-map "\C-c\C-j" 'rstodo-goto-outline-section-by-hotkey)
+(define-key rstodo-mode-map "\C-cn" 'rstodo-start-new-daily-entry)
 
 (define-key rstodo-mode-map [f5]
  (lambda () (interactive) (rstodo-next-todo-item 1 t nil)))
