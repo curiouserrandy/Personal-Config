@@ -857,6 +857,55 @@ to the completion file."
       (goto-char (point-max))
       (insert deleted-items))))
 
+;;; Starting a new daily entry
+
+;;; TODO: Turn this template into a file.
+(defconst rstodo-new-entry 
+  "## Schedule:
+
+-- Create new planning chunk:   
+	* Create new planning chunk & fill in things that are top of mind.  
+	* Fill in schedule for planning chunk
+	* Choose 1-2 foci for the time; write them down
+	* Clean out email
+	* Sort out staging section.  (C-c C-r for hotkey mode.)
+	* Confirm obligations -> priorities; scan priorities.
+	* Previous planning chunks -> current, [i], elsewhere
+	* Pleasant productivity -> current as wanted
+	* Sort through new chunk
+
+*** Tier 1 [!]
+*** Tier 2 [@]
+*** Tier 3 [#]
+
+"
+  "Initial contents for new daily entry")
+
+;;; vvv **Untested** vvv
+
+;;; TODO: Refactor rstodo-goto-outline-section-by-hotkey to break out
+;;; finding the section by a given hotkey and use below.
+(defun rstodo-start-new-daily-entry ()
+  (interactive)
+  (let (target) 
+    (save-excursion ;; Will change point after if not error.
+      ;; Goto [D] section and remove [D]
+      (goto-char (point-min))
+      (if (re-search-forward "^\\*.*\\[D\\]" (point-max) t) ; Ok if no [D]
+	  (delete-char -3))
+
+      ;; Goto end of "Scheduled" section and insert heading.
+      (goto-char (point-min))
+      (re-search-forward "^\\* Scheduled[ 	]*$")
+      (outline-forward-same-level 1)
+      (insert (concat "** "
+		      (substring (shell-command-to-string "date +\"%a %m/%d\"")
+				 0 -1)
+		      " [D] +\n\n" rstodo-new-entry))
+      (setq target (point)))
+
+    (goto-char target)))
+
 ;;; TODO(rdsmith): Next two mappings (entry and exit into hotkey mode)
 ;;; have a "show-entry" terminating them.  This is a hack to get around
 ;;; the fact that I hide-body when entering outline mode (see rs-outline.el).
