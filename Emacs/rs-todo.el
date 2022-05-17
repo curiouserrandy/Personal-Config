@@ -816,6 +816,8 @@ Directory is the same as the current file.")
 "
   "Initial contents of completion file.")
 
+;;; TODO: Switch to use (decode-time) instead of shelling out to improve
+;;; performance. 
 (defun rstodo-init-completion-file ()
   "Return a buffer visiting the completion file, initialized appropriately
 (i.e. with initial contents if empty, with a line for todays date if not
@@ -874,9 +876,13 @@ to the completion file."
 	* Pleasant productivity -> current as wanted
 	* Sort through new chunk
 
-*** Tier 1 [!]
-*** Tier 2 [@]
-*** Tier 3 [#]
+*** Self-care [!] +
+
+*** Life maintenance [@] +
+
+*** Social [#] +
+
+*** Work [$] +
 
 "
   "Initial contents for new daily entry")
