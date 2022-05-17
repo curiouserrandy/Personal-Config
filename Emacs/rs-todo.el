@@ -868,13 +868,19 @@ to the completion file."
 -- Create new planning chunk:   
 	* Create new planning chunk & fill in things that are top of mind.  
 	* Fill in schedule for planning chunk
-	* Choose 1-2 foci for the time; write them down
+	* Go over top level categories and fill in what foci will be.
 	* Clean out email
 	* Sort out staging section.  (C-c C-r for hotkey mode.)
-	* Confirm obligations -> priorities; scan priorities.
 	* Previous planning chunks -> current, [i], elsewhere
-	* Pleasant productivity -> current as wanted
+	* Pull in stuff from subsections as appropriate for foci.
 	* Sort through new chunk
+
+## Foci:
+	* Purpose/protein:
+	* Life maintenance:
+	* Health/self-care:
+	* Social:
+	* Exercise:
 
 *** Self-care [!] +
 
