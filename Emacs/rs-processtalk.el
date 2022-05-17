@@ -23,7 +23,7 @@ Only valid in a shell window."
     (setq cddir default-directory)
     (other-window 1)
     (goto-char (point-max))
-    (insert cmd " " cddir)
+    (insert cmd " \"" cddir "\"")
     (comint-send-input)))
 
 (defun randy-telnet-quit ()
