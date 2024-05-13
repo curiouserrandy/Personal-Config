@@ -33,7 +33,7 @@ git_branch_for_prompt () {
     fi
     if [ X"$last_heads_ref" != X"" ]; then
         echo -n " [";
-	sed 's;ref:[ 	    ]*refs/heads/;;' $last_heads_ref | tr -d '\012'
+	sed 's;ref:[ 	    ]*refs/heads/;;' "$last_heads_ref" | tr -d '\012'
 	echo -n "] ";
     fi
 }
