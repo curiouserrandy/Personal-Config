@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/env python3
 
 from math import sqrt
 import sys
@@ -11,10 +11,19 @@ def factor(num):
             return (i,) + factor(num//i)
     return (num,)
         
+def collapse(factor_list):
+    result = []
+    for i in factor_list:
+        if not len(result) or result[-1][0] != i:
+            result += [[i,1],]
+        else:
+            result[-1][1] += 1
+    return result
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         for i in sys.argv[1:]:
-            print i, ": ", factor(int(i))
+            print(i, ": ", collapse(factor(int(i))))
     else:
         for i in iter(sys.stdin.readline, ""):
-            print factor(int(i))
+            print(collapse(factor(int(i))))
