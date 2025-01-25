@@ -1,3 +1,20 @@
+## Misc:
+	* Publish to web.  File -> Share -> Publish to the web.  Takes
+	  5m to update.
+
+## Function notes:
+	* Index(range, row, column): If either row or column is zero,
+	  the entire length of the range is returned.  
+	  The index origin for both row and column is 1;
+	  i.e. Index(range, 1, 1) returns the upper left element of
+	  the range.
+	* Match(item, range, type) is index origin 1 as well.
+	* Offset(cell, row offset, col offset, ...) is index origin 0,
+	  which makes sense when you think about it.
+
+## Random idioms:
+	* Index(A:A, n):
+
 ## Array formulas:
 	* If a formula returns an array at top (cell) level, and the
 	  formula isn't wrapped in an ARRAYFORMULA() only the first
@@ -15,12 +32,20 @@
 	  fashion.  The things below that only occur within the scope
 	  of an ArrayFormula() are marked [AF].
 	* Elements in an array: counta() (count() only counts numeric
-	  values). 
+	  values).  Note that counta ignores (doesn't count) empty cells.
 	* [AF] Auto-mapped Arithmetic between a vector and a matrix:
 	  {U2:V2} - {R2:S8}
+	  I suspect auto-mapping happens similarly to matrix
+	  multiplication, i.e. that if the #lhs_cols == #rhs_rows
+	  auto-mapping occurs.  But I haven't tested that (<??)
 	* [AF] Creating array values.  These are all range(n)
 		* =ROW(offset(A1,,,#n))
 		  The row of each elemnet in a #n length vertical vector
+	  	  offset(A1,,,#n) =>
+		     (0,0) offset from A1 with height #n and width default (1)
+		  Note that this is a column vector; I think
+		  =COLUMN(offset(A1,,,,#n)
+		  would do a row vector doing the same thing.
 		* =ROW(Index(A:A,1):Index(A:A,#n))
 		  Index is documented as returning the contents of a
 	  	  cell at a specific offset within a range, but it
@@ -28,12 +53,51 @@
 	  	  reference to the cell, which can then be used in a
 	  	  range expression.  I.e. the above is equivelent to
 	  	  Row(A1:An). 
-	* Array of zeros or ones
-	        =0*row(offset(A1,,,#n))
-		=1+0*row(offset(A1,,,#n))
+	* Note use of Index above--could be useful for creating
+	  certain kinds of ranges.	  
+	* Useful idioms:
+		# range(#n) row vector
+		row(offset(A1,,,#n))
+		# range(#n) column vector
+		col(offset(A1,,,,#n))
+	  To get a vector of 0/1s multily by 0 then optionally add 1. 
 	* Slicing.  Several sub-ideal options:
 		* ARRAYCONSTRAIN: restricts to upper left.
 		* Index(): value of 0 means "whole row" (or column)
 		* Filter: Need to construct the proper corresponding
 	  	  row/column set of boolean values, but that would do
-	  	  it.  Most flexible, but a bit annoying. 
+	  	  it.  Most flexible, but a bit annoying.
+		  Also filter only appears to work on vectors, not
+		  matrices??
+
+## Gotchas:
+	* COUNTA() ignores empty cells.  I believe you can get around
+	  this with COUNTA(arrayformula(<range>&"X")).
+
+## Formula notes:
+	* Index:
+		* The first element must be a range
+		* If the second element is the empty string, the
+		  entire column is selected.  Presumably true for the
+		  row too.
+		? Can I select with a vector in either of those places?
+	* OR/AND: Appare to combine across all passed rows; can't be
+	  used as array formulas
+	* Filter: Remember you can pass several constraints, which are
+	  anded together.  
+
+## Technique for going from a matrix of transforms (rows) vs. mats
+   (columns) to a list of just the mats for a subset of the
+   transforms:
+	* Create a "<>0 => 1/0" to get a matrix of which elements of
+   	  the transform matrix are set.
+	* Create a 1/0 vector of whether each row of the transform
+   	  matrix is relevant.
+	* Matrix multiply the two to get a vector of which column
+   	  elements are set in any of the rows we care about.
+	* Use filter to get that list from the header line.  
+
+## Publishing to the web: Has about a five minute latency.
+
+?? Does this apply to direct API based access with auth?
+
