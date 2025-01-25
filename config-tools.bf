@@ -7,7 +7,7 @@ function suffix_val_to_var ()
     if [ "$deref" = "" ]; then
 	eval "$2=$1";
     else
-        eval "$2="'$'"$2:$1";
+        eval "$2="'$'"$2:"'"'"$1"'"';
     fi
 }
 
@@ -25,7 +25,7 @@ function prefix_val_to_var ()
     if [ "$deref" = "" ]; then
 	eval "$2=$1";
     else
-        eval "$2=$1:"'$'"$2";
+        eval "$2="'$'"$2:"'"'"$1"'"';
     fi
 }
 
@@ -33,15 +33,15 @@ function prefix_val_to_var ()
 # Directory in $1, path variable name in $2
 function suffix_dir_to_path ()
 {
-    if [ -d $1 -a -x $1 ]; then
-        suffix_val_to_var $1 $2
+    if [ -d "$1" -a -x "$1" ]; then
+        suffix_val_to_var "$1" "$2"
     fi
 }
 
 function prefix_dir_to_path ()
 {
-    if [ -d $1 -a -x $1 ]; then
-        prefix_val_to_var $1 $2
+    if [ -d "$1" -a -x "$1" ]; then
+        prefix_val_to_var "$1" "$2"
     fi
 }
 
@@ -65,7 +65,7 @@ function suffix_path_with_dirlist ()
     dir=$1;
     while [ $# -gt 1 ] ; do
 	shift;
-        suffix_dir_to_path $1 $dir;
+        suffix_dir_to_path "$1" $dir;
     done
 }
 
@@ -114,6 +114,8 @@ read_if_exists ()
     fi
     return 0;
 }
+
+export emacs_init_list=""
 
 # Source $1/all.bf and put $1/Bin on the path.  No error if anything
 # ($1, $1/all.br, $1/Bin) doesn't exist, but if they exist they must be
