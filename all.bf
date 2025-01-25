@@ -6,3 +6,4 @@ init_from $config_files_directory/Tools/xcode
 init_from $config_files_directory/Tools/brew
 init_from $config_files_directory/Tools/ninja
 init_from $config_files_directory/Tools/vsc
+init_from $config_files_directory/Tools/port
