@@ -11,9 +11,16 @@ https://github.com/d3/d3-dsv/blob/master/README.md#dsv_parse
 
 -- d3.csvParseRows -> d3.dsvFormat(",").parseRows(string[, row])
 
-Creates an array of arrays.  [,row] can be used for conversions on in
+Creates an array of arrays.  [,row] can be used for conversions on 
 input.
 
--- d3.autoType: Option for <row> above, auto-infers types.
+-- d3.csvParseRows(
+     await fetch(google_sheets_csv).then(
+       response => response.text()),
+     d3.autoType):
+   Equivalent of
+   d3.csv() that returns an array or arrays rather than an array of
+   objects. 
 
+-- d3.autoType: Option for <row> above, auto-infers types.
 
