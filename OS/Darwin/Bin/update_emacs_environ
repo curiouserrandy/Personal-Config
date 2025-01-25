@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 ## Output a .emacs_env file in the top level directory that incorporates all
 ## the environmental variables you need.  
@@ -11,29 +11,29 @@ filename = os.environ['HOME'] + "/.emacs_env"
 itemTemplate = """(setenv "%s" "%s")\n"""
 
 goodEnvironVars = (
-	'BASH_ENV',
-	'EDITOR',
-	'ENV',
-	'LD_LIBRARY_PATH',
-	'LIBPATH',
-	'LOGNAME',
-	'MANPATH',
-	'PATH',
+        'BASH_ENV',
+        'EDITOR',
+        'ENV',
+        'LD_LIBRARY_PATH',
+        'LIBPATH',
+        'LOGNAME',
+        'MANPATH',
+        'PATH',
         'GOMA_OAUTH2_CONFIG_FILE',
-	'config_arch',
-	'config_domain',
-	'config_files_directory',
-	'config_host',
-	'config_os',
+        'config_arch',
+        'config_domain',
+        'config_files_directory',
+        'config_host',
+        'config_os',
         'emacs_init_list'
-	)
+        )
 
 ### Build the body: text containing the xml for all
 ### symbols in the environment.
 body = ""
 for key in os.environ.keys():
     if key in goodEnvironVars:
-	body += itemTemplate % ( key, os.environ[key] )
+        body += itemTemplate % ( key, os.environ[key] )
 
 ### Create new environment.plist file for all
 ### the environment symbols.
