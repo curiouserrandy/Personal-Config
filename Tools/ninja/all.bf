@@ -1,0 +1,1 @@
+export NINJA_STATUS="[%e: %r/%f/%t] "
