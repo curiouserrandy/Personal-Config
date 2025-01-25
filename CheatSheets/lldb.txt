@@ -2,6 +2,17 @@
 # load-cwd-lldbinit: Variable that allows reading of .lldbinit files
 # from cwd.
 
+## Useful command line args:
+	--source <file>		# + various variations.  
+
+## Commands I know I want to have easy access to.  Biasing away from
+   shorthand. 
+	set set prompt "(lldb) "
+	platform settings -w <new working directory>
+	target create <executable>
+	process launch [<options>] [--] <args>
+	set set stop-line-count-{after|before} #n
+
 # Interesting (only interesting subcommands are listed):
   breakpoint        
       clear -l <l#> -f <fn>
@@ -38,9 +49,21 @@
   memory            
   plugin            
   process           
+	attach
+	connect
+	launch  [-- <args>]
   platform          
+  set
+	list
+  	set
+  		prompt
+	show
   script            
-  settings          
+  settings
+  target
+  	create <executable>
+	dump
+	list
   thread            
   watchpoint        
 
