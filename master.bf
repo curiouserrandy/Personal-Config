@@ -63,7 +63,9 @@ config_arch=`uname -m | sed -e 's;/;_;' -e 's; ;_;' `
 # Do any overriding of the above configuration variables (e.g. for laptops
 # using DHCP; generally you want those to have a fixed environment no matter
 # where they're hooked up).
-. $config_files_directory/config-override.bf
+if [ -r $config_files_directory/config-override.bf ]; then
+    . $config_files_directory/config-override.bf
+fi    
 
 # Setup environment variables for other tools (e.g. emacs) that want to 
 # do setups like the above.
