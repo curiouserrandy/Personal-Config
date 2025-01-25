@@ -1,0 +1,128 @@
+https://bost.ocks.org/mike/join/
+
+## Selection concepts
+
+https://bost.ocks.org/mike/selection/
+
+Selections are a basic d3 concept.  A selection is composed of some
+set of DOM elements and some data.  Every selection has three
+sub-selections based on the relationship between the DOM elements and
+the data:
+	* enter(): All data without associated DOM elements.
+	* exit(): All DOM elements without associated data.
+	* update: All DOM elements with associated data.  (No
+	  function, this is what the select function returns.)
+
+A common idiom in d3 is to ele.select{All,}(eletype) for an element type
+that doesn't exist yet, and then associate data with it.  At that
+point, the enter() selection can be used to *create* those elements.
+E.g.:
+
+svg.selectAll("circle")
+  .data(data)
+  .enter().append("circle")
+    .attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; })
+    .attr("r", 2.5);
+
+The motivation for this is to make dynamic visualizations easy; as the
+data is updated, you can say what to do with new elements, modified
+elements, and old elements.  
+
+The association between DOM elements and data is normally 1-1
+(i.e. they're both arrays, and they're matched up until one runs out
+and the remainder of the other gets put into the enter/exit selection)
+but that can be modified by specifying a key function as a second
+argument to the data() function; it takes the data for a specific
+element and returns a key that can be used to match it.  Animation
+works better if you use key functions (or keep careful track of the
+order of the arrays, which seems harder).
+
+Note that it's important to have clear in your mind the element
+architecture and nesting you're planning for your diagram (or
+whatever).  Most of the work of select(), and indeed of d3, is
+matching an information architecture nesting to an element
+architecture, and making sure the information is appropriately split
+and propagated to subnodes.  
+
+
+## select vs. selectAll
+
+select:
+	* selects a single element (first if there are multiple)
+	* Propagates the current data to the selected element.  (?
+	  even if that element exists?)
+	* If the element doesn't exist, the propagated data goes into
+	  the enter() selection where it can be used for creation.
+
+selectAll:
+	* Selects multiple elements
+	* Allows specification of data.  If not a function, the data
+	  specified must be an array.  If a function, it is given the
+	  data of the parent node and must return an array.
+	* enter()/exit()/update() are setup based on the comparison
+	  between existing elements and the array specified above.  
+
+Note that if selectAll() is given a function that returns a
+single-element array based on the parent data element it behaves
+somewhat like select, but allows transformation of data between parent
+and child.  
+
+## Nested selections
+
+https://bost.ocks.org/mike/nest/
+
+IIUC, selections are two levels; can think of an array of arrays.
+Often the top level is singular, in which case you can just think of
+the selection as an array as above.  But sometimes (when you use
+"selectAll" on an already existing selection) you'll get nested
+groupings, which behave interestingly.
+
+I believe that selections are restricted to two levels of
+grouping; if you do a selectAll() on a selection that has two layers,
+the second layer is mashed into a single array and becomes the new
+grouping, and new arrays are formed under it.  
+
+Note that select() passes data down to the next selection (because it
+doesn't change the topology) but selectAll() does not, though it has
+arguments to specify how to pass the data down if that's wanted (often
+by breaking out an array at the layer becoming the grouping into
+individual items for the children).  Note that this means if you are
+selecting a single element that's a child of each element of the
+current selection and want to transform the data (different data
+between parent and child) you want to use selectAll(), and have the
+data function return a single element array.  
+
+?? There's more to understand here to use it faciley; when you need to
+   learn it, put that information here.
+
+
+## selection.join()
+
+There is an alterantive pattern to the above using selection.join();
+see https://observablehq.com/@d3/selection-join.
+
+?? There's more to understand here to use it faciley; when you need to
+   learn it, put that information here.
+
+## Creating Selections
+
+?? ...
+
+
+## Selection methods
+	* .call(func[ arguments...]): Equivalent to
+	  func(<selection>, [arguments...]) but returns the
+	  selection.  For method chaining.  
+	* d3.select(selector | dom element): Create a selection from
+	  applying the selector to the document, or referencing the
+	  specified dom element.  
+
+## Concatenating selections
+   This isn't something that was originally supported by the design
+   (selection.merge() doesn't do it, no matter how many AIs tell me it
+   does), but now selections are iterables in JS, so you can do:
+
+       concatenated_selection = [...sel1, ...sel2];
+
+   Mind you, I have only read about this, I haven't tried it.

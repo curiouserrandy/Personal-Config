@@ -1,0 +1,16 @@
+-- d3.zoom(): Creates a zoom behavior (which is a callable object).
+   When the behavior is created, it is then called on a selection
+   (usually by <selection>.call()) to implement the behavior.  Methods
+   to specify the zoom behavior:
+	* Base setup is
+	  <selection>.call(
+	    d3.zoom().on("zoom", (event) => {
+	      <selection>.attr("transform", event.transform);
+	    })
+	  );
+	  That enables scroll wheel zooming.
+	?? It's really unclear to me what the zoom point is.  It
+   	  doesn't appear to be where the mouse is.
+
+-- d3.drag(): Creates a drag behavior, directly parallel to the
+   above. 

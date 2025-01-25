@@ -1,0 +1,25 @@
+-- SD Card access: Try plugging one into my hub and see what happens.
+   After some guesses (mini-SD card plugs into adapter right side up,
+   they need to be reversed plugging into hub the way it's currently
+   setup) the drive just showed up on my desktop.  Copied gcode onto
+   it, hopefully correctly.  May want to recreate in lab just to make
+   sure I have it right.  On top mini card with adapter on the right.
+
+## Security issues: It's a lot safer than a USB stick, but it ain't
+   safe if someone's actively trying to compromise your file system
+   mount code.  Think about how you want to protect yourself
+   transferring data at AA.  Have asked for suggestions on Tesseral.
+   Note that this threat model involves someone putting a virus *on
+   the Prusa printers*, which is (much) less likely to me than putting
+   one on the lab windows machine; wouldn't be done by a script
+   kiddie.  Ok, I'd be willing to roll these dice, but I'd still
+   rather come up with a pathway that doesn't involve trusting the SD
+   card when it comes back from the printer.
+
+-- My mac -> Prusa pathway:
+	* uy an actual SD card for transferring your prints.
+	* Possibly also a stand-alone Mac->SD card interface.
+	* Figure out how to full format it from the mac, and
+	* Figure out how to make sure it doesn't auto-mount when
+   	  attached to the mac.  
+

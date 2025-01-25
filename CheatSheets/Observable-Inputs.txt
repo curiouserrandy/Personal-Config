@@ -1,0 +1,4 @@
+-- Inputs.form({ tag: <form>, ... },
+   	       { template: (inputs) => return html`
+	       		<html containing ${inputs....} in it>
+	       }

@@ -1,0 +1,17 @@
+## How to clone a repository from github
+   git clone https://github.com/<user?>/<repo>
+
+## Setting up an upstream repository   
+   In .git/config:
+	[remote "upstream"]
+		url = https://github.com/envoyproxy/envoy
+		fetch = +refs/heads/*:refs/remotes/upstream/*
+   Note that if you name an unknown (or presumably non-public)
+   repository, you'll get various prompts for authentication rather
+   than just "Repository does not exist".
+
+?? How to setup authentication tokens to allow pushing to private
+   repositories on github
+
+?? How to submit a pull request (to the extent it's identical for
+   multiple repositories).

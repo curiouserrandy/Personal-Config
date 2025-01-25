@@ -1,0 +1,28 @@
+## Mozilla reference: https://developer.mozilla.org/en-US/docs/Web/SVG
+
+## Random notes.  <> are elements, unbracketed at attributes that
+   apply to multiple elements.  
+
+## <defs>.  Creates graphical elements that will be used somewhere
+   else in the render (e.g. via <use>).
+   
+## <path>.  Most flexible element for defining a shape.  Shape defined
+   by the "d" attribute, which is a string with a series of path
+   commands
+   (https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d#path_commands).
+   All commands are single letters followed by coordinates.  
+   Most important such commands are moveto, lineto, cubic bezier,
+   quadratic bezier, elliptical arc, close path.
+
+## stroke.  Defines the color (including gradient or pattern; svg has
+   "paint servers" for that purpose) of the stroke of the element in
+   question.
+
+## <svg>
+	# Attributes	  
+	* viewbox="x,y,width,height".  This is a box in the
+	  0,0,width,height of the SVG element that is what is taken and
+	  mapped to the space available in the page.
+	# Styles
+	* overflow
+		* "visible": Not clipped

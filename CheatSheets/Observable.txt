@@ -1,0 +1,262 @@
+## Ongoing exploration: ~/Personal/Projects/Observable/Notes.txt
+
+## Links:
+	* https://observablehq.com/@observablehq/documentation	  
+	* https://observablehq.com/@observablehq/observables-not-javascript 
+	* https://observablehq.com/@observablehq/user-manual
+	* https://observablehq.com/@observablehq/stdlib?collection=@observablehq/libraries
+	* https://observablehq.com/@observablehq/keyboard-shortcuts?collection=@observablehq/notebook-fundamentals	  
+	* Forum: https://talk.observablehq.com/
+	* Help forum: https://talk.observablehq.com/c/help/6
+
+## Basic summary:
+	* Each cell has a source, which is then displayed.  Source can
+	  be markdown (md`...`), sorta-JS (default), or other stuff.
+	* Cells can be given a name via "name =" at the beginning of
+	  the cell.  Those names can be used from other cells.
+	* 'viewof <var> = ' instead is effectively creating two
+	  cells.  The current cell is unnamed and will simply display
+	  the result.  However, the <value of that result>.value will
+	  be assigned to <var>
+	* Cells are executed in dataflow order based on between cell
+	  variable references.  When a cell is changed, all cells
+	  dependent on it are re-executed.
+
+## Notebook surfaces to track:
+	# Upper right hand icons.	  
+	* Minimap: Shows one level up-and-down dependencies and allows
+	  navigation. 
+	* Search: Allows searching for a particular string 
+
+## Keystrokes I want to track:
+	# https://observablehq.com/documentation/misc/keyboard-shortcuts
+	* Shift-Enter: Execute current cell.  I think this can be used
+	  to force recalculation?  Figure that out. 
+	* Cmd-Enter: Create a new cell below this one (and execute
+	  this one, I believe)
+	* Option-tab: Focus (and expand) next cell.
+	* Clover-J: When at a reference to a cell, jump to
+	  definition.
+	* Shift-Clover-J: Jump to previously focussed cell.  
+	* C-S-<down/up arrow>: Move cell in that direction.  Can also
+	  drag with mouse.  
+
+## Debugging:
+	* !!!: If you're getting a random error nested in some set of
+	  called functions, go into Chrome developer tools -> Sources,
+	  click the pause button (tooltip "pause on exceptions") and
+	  then also check the checkbox "Pause on caught exceptions".
+	  If the libraries aren't being too funky, that should give
+	  you a stack trace with the ability to inspect variables up
+	  and down the stack.
+	* Dataflow for a notebook:
+	  https://observablehq.com/@observablehq/notebook-visualizer?collection=@observablehq/visualizing-debugging-notebooks
+
+## Observable import mechanism notes:   
+	# https://observablehq.com/@observablehq/import   
+	# Makes a function (general name?) from another notebook part
+   	  of the current notebooks namespace.
+	# Can remap name to newname in your notebook.
+	# Can substitute dependent cells in notebook with new cells
+   	  locally.  (Ok, that's a total_graph.)
+	# Can import multiple names.  Note that doesn't create a cell
+   	  for the name; you have that control separately   
+
+## Mutable:
+	* Cells that can be updated (written) by other cells
+	* Defined via "mutable" keyword.
+	* Can be read reactively (as normal) or non-reactively (use
+	  mutable keyword).
+	* Discouraged from being used because it makes understanding
+	  the notebook harder.  Cases that they're documented as
+	  possibly being good for: Updating sometimes not all the time
+	  (performance), reading a value without being reactive (if
+	  the cell is looping anyway, or you want it to run
+	  independentally of the update but pick it up when
+	  apprirpaite for it).
+	* They refer in passing to the case I'm most interested in,
+	  which is when you want to setup what's effectively a loop in
+	  the dataflow dependency.  Example: Interacting with a graph
+	  changes the underlying data which updates the graph.  This
+	  can all be in the same cell, but that doesn't allow multiple
+	  views of the data.
+	* Noted that views are mutable.
+	* Noted also that observable supports synchronized inputs,
+	  which I think is actually exactly what I want.  
+
+## Spec for an Observable input (as I currently understand it):
+	* Displayable HTML object
+	* Raises an "input" event when the user interacts with it.
+	* Exposes a "value" property which may be read or set.
+	* When the "value" property is set, the display changes.  
+
+## Interwoven concepts:
+	* (JS) Iterator protocol.  Object satisfies if:
+		* Implements a next([arg1]) method
+			* Arg to next() is ignored by language
+ 	  	  	  features that rely on iterator.  Is used as
+ 	  	  	  return value from "yield x" for generators.
+			* Returns an IteratorResult interface
+				* done (optional)
+				* value (optional if done is true)
+		* May implement return() and throw() to indicate that
+ 		  the calling code is done with the interator.
+			* return(value): Generally returns an
+ 		  	  IteratorResult with done:true, and
+ 		  	  value:value; performs any needed cleanup.
+			* throw(exeption)
+		* Making something *iterable* also requires it to have
+ 		  an [@@iterator]() method that returns this.  (??)
+	* (JS) Generator functions.
+		* Syntax: function* <name>(params) { ... }	  
+		* Can be exitted and re-entered with context saved between.  
+		* Call to function results in generator object (gen)
+		* gen.next() executes the function to the next yield statement.
+		  Return value is an object with:
+		  	.value: Returned value
+			.done: Boolean indicates whether last value
+	  		       has been yielded.  Set by return or
+	  	  	       throwing an error.
+		* gen.next(arg) calls the "yield ..." that resulted in
+	  	  the previous result to return arg inside the
+	  	  function.  
+		* Call to yield* delegates to another function.  If
+ 		  the result is an iterable it appears to be returned
+ 		  one at a time (?).
+		? Relationship between generators and iterables?  TTT,
+ 		  this question is probably answered from my reading
+ 		  through Structure&Interpretation.
+	* (JS) Promise
+		* Attach (via .then method) callbacks to be called
+ 		  when underlying operation.
+		* Can chain; .then() returns a promise that
+ 		  encapsulates the completion on of the callbacks
+ 		  (including if the callbacks return promised).
+		* .then(<success callback>, <failure callback>).  Both
+ 		  optional and can be left out with a null arg.
+ 		  Effect if left out isn't precisely clear (??), but
+ 		  appears to be delegating to the next .then/.catch
+ 		  statement.
+		* .catch(failure_callback) ==> .then(null,
+ 		  failure_callback).
+		* If a failure isn't handled, events are sent to the
+ 		  global scope.
+		* await <promise>: Waits for the promise to complete,
+ 		  and if it completes successfully, returns the value.
+ 		   Otherwise throws.  
+	* (Obs) Promise
+		* Observable implicitly awaits promises across cell
+ 		  boundaries.
+ 		* Promises.delay(time, value): A promise that returns
+ 		  a given value after a given duration (in ms)
+		* Promises.tick(ticktime, value): A promise that
+ 		  returns the given value at the next tick boundary
+ 		  (from the unix epoch).  
+		* Promises.when(date, value): A promise that returns
+ 		  the given value at date date (uses setTimeout() so
+ 		  the specified date must be < 24.9 days from now).
+	* Observable cells
+ 		* Cells are "funciton body like" (except for straight
+ 		  assignments).  
+		* They re-run whenever any referenced value changes.
+ 		  (I suspect this is done via some form of promise and
+ 		  await.)
+		* They automatically await promises across cell
+ 		  boundaries.
+	* (Obs) Generator
+		* Cells may be generator function bodies (defined by
+ 		  the existence of yield in the body).  They are then
+ 		  run continually (no more than 60 times/s).
+		* Note that they may await or return promises; in the
+ 		  latter case they aren't continued until the promise
+ 		  resolves.
+		* In the promise return case, other cells continue to
+ 		  use the previously resolved value until the new
+ 		  value resolves.  (?? I suspect this is true in the
+ 		  await case as well.) 		  
+		* Return value from a generator cell is ignore. 
+		? What happens if a referenced value in a generator
+ 		  cell changes?  I suspect the entire cell is re-run,
+ 		  but I don't know.
+		* Observable terminates generators when a cell is
+ 	  	  invalidated/re-run.  To dispose of resources that
+ 	  	  should be released in such a situation, use a
+ 	  	  try/finally block.   	  	  
+	* (Obs, JS Proposed) Generators.observe(init)
+		* Turns callback based asynchrony to promise based
+ 		  asynchrony. 
+		* Passed an initialized function that is called once.
+ 		  The initialize function is passed a function to call
+ 		  to pass back values and may return a function to
+ 		  call when the generator is disposed.
+		* Yields promises that resolve when the argument to
+ 		  the initialize function is called.
+		* Usual pattern: Bind an event handler to the value
+ 		  passback function, return a function that unbinds
+ 		  that.  May (should?) call the passback function with
+ 		  the first value.  
+	* (Obs) Generators.input(input_element): Return a generator
+ 	  that yiels promises that resolve (to input_element.value,
+ 	  for generic elements; see doc) when the input element raises
+ 	  an event.
+	* (Obs) viewof.  Defining a cell with "viewof x = y" is syntactic
+ 	  sugar for defining two cells:
+	  	* One with value y that may be referred to via "viewof x".
+		* One with value Generators.input(viewof x), i.e. a
+ 	  	  promise that resolves to y.value when an input event
+ 	  	  is raised on y (depending on the type of y; see
+ 	  	  documentation for Generators.input()).
+		* Dependencies on "viewof x" will generally only be
+   	  	  run when the sheet is reloaded.
+	* (Obs) Inputs (including synchronized):
+		* Similar to native HTML inputs: expose a value and
+ 		  emit an input event when that value is changed.
+		* Can be set programmatically by setting
+ 		  <input>.value.  I believe, based on the pattern of
+ 		  input binding and the custom input example, that
+ 		  this setting should update the visual aspects of the
+ 		  input as well.
+ 		  representation of the input?  I'm guessing yes,
+ 		  otherwise input binding wouldn't work.  
+		* For that programmatic change to be propagated
+ 		  normally, an event needs to be dispatched on the
+ 		  input.
+		* Can bind two inputs, target->source.  If this is
+ 		  done, raising an event on one will set the value of
+ 		  the other to the value of the first.  However, an
+ 		  event will only be raised on the other if the other
+ 		  is the source (prevents infinite loops).
+		* Specific details on target <= Inputs.bind(target, source):
+			* Updating either input will automatically update the
+			  other one.  More specifically, when the input event
+			  of one is emitted, the other hears that and updates
+			  its value.
+			* Assymetry: The value update on the source will
+			  trigger an input event, the value update on the
+			  target will *not*.  Breaking that out in detail:
+				* Modifying the source control -> source input
+				  event -> target control update.
+				* Modifying the target control -> target input
+				  event -> source control update -> source
+				  input event (-> target control update,
+				  pretty sure).
+			* The actual bind() call will result in the value on
+			  the target being set based on the value on the
+			  source.  The calling code needs to be prepared for a
+			  value set to occur inside the bind() call.
+
+?? If a cell runs, does that always trigger downstream cells in the
+   dataflow to run, or does the value need to be changed?
+	* I'm pretty sure I saw somewhere that the value does not need
+   	  to be changed, which fits with an infrastructure promise
+   	  resolving when the cell runs.  Though this is tricky; the
+   	  way cells are setup, the value returned is always "assigned"
+   	  to.  I think I need to wait until I have a specific concern
+   	  in this space to test it.
+	* I suspect for mutable cells there's a hook on the value
+   	  property that resolves the promise, and if you don't
+   	  actually set the value property (but instead modify inside
+   	  the object) the promise won't resolve.  I'm basically
+   	  willing to assume that.  
+   Note that while I'm having problem finds docs on this, it would be
+   trivial to test these questions.

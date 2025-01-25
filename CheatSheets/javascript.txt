@@ -1,0 +1,93 @@
+-- Using objects as associative arrays:
+     var myObj = {};
+     'a' in myObj;    // Returns false
+     myObj['a'] = 1;  // Same as myObj.a = 1
+     'a' in myObj;    // Will now return true
+     Object.keys(myObj); // Array of enumerable properties.
+     for (const prop in myObj) {  // Alternative way to enumerate.
+     delete myObj['a'];
+     Object.keys(myObj).length == 0 // test for null object.
+     Object.entries(myObj).forEach((k,v)=> {...});
+
+-- Array methods:
+	for (const i in <array>)   // Treats array as object, so i is
+	    	     		   // indices possibly plus other things.
+				   // Don't do this; use forEach instead.
+	.length	  
+	.push(item)/pop() unshift(item)/shift()
+	.concat()		// Shallow copy
+	.sort
+	.slice(start=0, end = array.length)	// Interval is [), IO 0
+		      				// Negative #s from end
+						// -1 excises an element.
+						// No args shallow copies
+	.forEach(func)
+		// func(element, index, array)
+		// returns undefined
+	.map(func)		// Like forEach, but returns array of results
+	.filter(func)
+		// func(element, index, array) => T/F 
+		// Returns array of elements that func returned T
+
+-- Looping: break, continue
+
+
+-- Function syntax:
+	function f(a,b,c) {
+	  ...
+	}
+   or
+   	(a, b, c) => {
+	  ...
+	}
+   Note the second option doesn't have a "this" object created.
+
+-- Syntactic sugar:
+	...<arr>: Expand array in place into a function call list.
+		  Also expands object in place in a literal object
+		  initialization (only)
+	?:	  What you'd expect
+	`...${expr}...`: Evaluate expr in the surrounding expression
+			 context and substitute it into the string at
+			 the point of the ${...}.  Note that this
+			 reuqires backquotes around the string. 
+	{const/var/} {a, b} = { a: 10, b:20, c:30 };
+		Assign variables, declared or not to the corresponding
+ 		members of the object on the RHS.  Can do the same
+ 		with arrays.  
+
+
+-- Destructuring assignment
+	[n1, n2, ...] = <array>;
+   Pulls elements out of the array.  
+   	* Array can be shorter (extra values undefined) or longer
+	  (discarded) than the variables named inside the brackets.
+	* Swapping works.
+	* Can leave a variable blank [n1, , n3] to drop that value.
+	* ...var will assign the remainder of the array to that var.
+	* Each property to be assigned to can have a default value, to
+	  be used when the property isn't present or has the value
+	  undefined.  E.g
+	  	const { c = 2 } = { c: undefined };  // c is 2
+	  	const { c = 2 } = { c: 4 };  // c is 4
+
+-- Performance analysis:
+	* performance.now() returns a time.  Converts to ms with
+	  .ToFixed(1). 
+
+-- Template literals.  This is JavaScript functionality, documented @
+   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
+	* String is defined with backquotes (`string`)
+	* Inside the string ${expression} is a JS expression that will
+   	  be executed and its results will be inserted into the
+   	  string. 
+	* Can be used in JS where a string would be used, and I
+   	  think also in HTML & etc.
+
+-- Argument shortcuts:
+	* function f(a, b = 1): Defaults b to 1 if b isn't specified.
+	* The default is evaluated at call time.
+	* Early parameters are available to default computation.
+	* Can use destructuring assignment, often with the
+	  destructuring default, to specify default values of
+	  properties if not assigned

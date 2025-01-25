@@ -1,0 +1,8 @@
+apt update	# Downloads package info from all configured sources
+apt upgrade	# Upgrade all packages currently installed on system
+apt install <pkg-regexp>
+apt remove <pkg-regexp>
+apt autoremove	# Remove packages that were only installed as
+    		# dependencies of now-removed packages.
+apt search <pkg-regexp>
+apt list --installed	# Show me what's installed.  Can take an opt regexp

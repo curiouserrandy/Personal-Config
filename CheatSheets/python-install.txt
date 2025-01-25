@@ -1,0 +1,20 @@
+## Notes on python isntalls from Nathan:
+	* https://xkcd.com/1987 :-J (but has some real info)
+	* Don't use python 2.7
+	* pyenv and pyenv-virtualenv from homebrew
+	* "in our default dotfiles repo, there's a bunch of tooling in
+	  everyone's bashrc/zshrc that uses pyenv to set up a default
+	  virtualenv and put a .pyversion in everyone's homedir to
+	  make sure that if you run pip install whatever you're always
+	  installing that into your personal virutalenv rather than
+	  anywhere in the system dirs"
+	* "in each git repo that uses python, there is a makefile with
+	  a setup target, or a setup.sh script that creates a
+	  virtualenv just for that project and uses poetry to control
+	  the installed dependencies"
+	* "getting pyenv and poetry to play nicely together was
+	  absolutely the hardest part of all of this; it looks like
+	  this:" (Not copying what it looks like--this seems like what
+	  one needs if doing this at a installed base shop.)
+   This link is also useful:
+   https://stackoverflow.com/questions/3487664/getting-python-under-control-on-mac-os-x-setting-up-environment-and-libraries

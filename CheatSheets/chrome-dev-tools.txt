@@ -1,0 +1,9 @@
+## Events:
+	* Whatever element is currently being inspected can be
+	  referred to as $0 in the console. 
+	* monitorEvents($0, <event type as sring) will output events
+	  to the console of that type that hit that element (or any
+	  child) until you unmonitorEvents().	  
+
+## Breakpoints:
+	* A breakpoint can be coded directly via the statement "debugger;"

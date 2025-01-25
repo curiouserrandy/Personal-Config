@@ -1,0 +1,6 @@
+-- Selections: Bare name is element type (e.g. "p").  Element id is
+   specified by prefixing a # (e.g. "#key_paragraph").  Class is
+   specified by prefixing a . (e.g. ".definitions").  Concatenating
+   creates an AND operation.
+
+

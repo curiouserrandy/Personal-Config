@@ -1,0 +1,38 @@
+## Estimated power draw of RPi: 2.5 - 5 W, $1/month.   
+
+## https://www.raspberrypi.com/products/raspberry-pi-4-model-b/specifications/
+## RPi 4b: Micro-HDMI, USB-C power, USB3 & USB2 connectors, Gigabit ethernet
+## Case: https://www.thingiverse.com/thing:3793664
+   Config: No mounts, standard, standard.
+   Config axes of STL files:
+	# BOTTOM-
+   	* {,-8820,_100MM_VESA,_75MM_VESA}
+	* {,_BLANK}
+   
+	# GRILL_
+	* {_25MM,_30MM,_40MM}
+	   
+	# ?TOP
+	* {,SLIM-,FULL-}
+
+	# TOP?
+	* {,_25MM,_30MM,_40MM}
+	* {,_SLOTTED}
+	* {,_BLANK}
+   
+## The image on the uSD card is a file system, but not a standard unix
+   one; I'm guessing there's another layer of container (there are
+   various img files, for instance).  However, cmdline.txt has the
+   "quiet" flag mentioned above.  
+
+
+
+## Notes on network booting:   
+	* /var/log is no longer the hotness; instead you have to go
+   	  through systemd using journalctl (see 'man journalctl').   
+	* Raspberry Pi NetworkManager boot log in
+   	  RPiInvestigation/NetworkManager-booting.log.
+
+
+## Useful web pages for the booting/HDMI/VGA problem:   	  
+	* https://elinux.org/R-Pi_Troubleshooting#No_HDMI_output_at_all   

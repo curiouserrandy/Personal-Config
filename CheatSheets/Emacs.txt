@@ -1,0 +1,3 @@
+I know Emacs pretty well, so this is random factoids that may be of use
+
+-- Alt-Tab seems to do a spelling thing.
