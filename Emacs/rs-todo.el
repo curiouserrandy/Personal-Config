@@ -21,8 +21,8 @@
 
 ;; This starts todo items.  They end at this regexp (next todo item),
 ;; outline-regexp, or the end of the file.
-(defconst rstodo-todo-type-list '("--" "==" "??")
-  "List of the types that a todo item may have (should do, can do, and question).")
+(defconst rstodo-todo-type-list '("--" "==" "??" "~~")
+  "List of the types that a todo item may have (should do, can do, question, and non-authoritative).")
 
 (defconst rstodo-todo-type-regexp-nomark
   (concat "\\(?:"
@@ -53,7 +53,8 @@ a marker.  Note that this isn't anchored to the beginning of the line.")
 
 (defconst rstodo-mark-name-association
   '(("--" . "todo") ("==" . "copy") ("##" . "note") ("$$" . "end")
-    (">>" . "startr") ("<<" . "endr") ("??" . "question"))
+    (">>" . "startr") ("<<" . "endr") ("??" . "question")
+    ("~~" . "nonauthoritative"))
   "Association between non-outline piece beginnings and names for them.")
 
 (defun rstodo-beginning-of-piece ()
@@ -389,7 +390,7 @@ of the outline unit around point will be used insted."
   (let* ((myoutl (rstodo-get-outline-info (point)))
 	 (nextitem
 	  (rstodo-get-related-item-beginning
-	   (point) rel (append '("todo" "copy" "question")
+	   (point) rel (append '("todo" "copy" "question" "nonauthoritative")
 			       (if skip-note '() '("note")))
 	   (if skip-done nil '(t nil))
 	   (if skip-wait nil '(t nil)))))
@@ -816,15 +817,13 @@ Directory is the same as the current file.")
 "
   "Initial contents of completion file.")
 
-;;; TODO: Switch to use (decode-time) instead of shelling out to improve
-;;; performance. 
 (defun rstodo-init-completion-file ()
   "Return a buffer visiting the completion file, initialized appropriately
 (i.e. with initial contents if empty, with a line for todays date if not
 previously created)"
   (let ((file-buffer (find-file-noselect rstodo-completion-file))
 	(current-date-string
-	 (concat "* " (shell-command-to-string "date +\"%a %y/%m/%d\"") "\n")))
+	 (concat "* " (format-time-string "%a %y/%m/%d") "\n")))
     (save-excursion
       (set-buffer file-buffer)
       ;; Make sure it's an outline file
@@ -875,10 +874,21 @@ to the completion file."
 	* Pull in stuff from subsections as appropriate for foci.
 	* Sort through new chunk
 
+-- New planning chunk, alterantive path:
+	* Filter ->i all items in [D] that aren't important to keep TOM.
+	* Add in stuff to [D] that you want top of mind.   
+	* Fill in schedule for planning chunk
+	* Clean out email
+	* Go over Foci and think about chunk in terms of it.
+	* Sort out staging section.
+	* Sort through new chunk
+
+
 ## Foci:
-	* Purpose/protein:
-	* Life maintenance:
-	* Health/self-care:
+	* Purpose/protein: 
+	* Big projects driving: 
+	* Small Life maintenance: 
+	* Health/self-care: 
 	* Social:
 	* Exercise:
 
@@ -886,7 +896,7 @@ to the completion file."
 
 *** Life maintenance [@] +
 
-*** Social [#] +
+*** Fun (including social) [#] +
 
 *** Work [$] +
 
