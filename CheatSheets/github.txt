@@ -10,8 +10,18 @@
    repository, you'll get various prompts for authentication rather
    than just "Repository does not exist".
 
-?? How to setup authentication tokens to allow pushing to private
-   repositories on github
+## SSH keys can be found by profile navigation after login; direct URL
+   is https://github.com/settings/keys.
+   Can add new keys.
+
+## Can test to see if your key is working properly by doing
+   ssh -T git@github.com.  Success won't give you a shell, but it will
+   tell you you've successfully authenticated.
+
+## I *think* for repositories to use this, they have to have the
+   remote specified via an ssh url.  For example, the URL that appears
+   to work for my config repository is:
+   git@github.com:curiouserrandy/Personal-Config.git. 
 
 ?? How to submit a pull request (to the extent it's identical for
    multiple repositories).
