@@ -421,7 +421,7 @@ returning them as a concatenated string."
     (while (setq next-item
 		 (rstodo-get-related-piece-info
 		  scanpoint 1
-		  '("todo" "copy" "question") t '(t nil)
+		  '("todo" "copy" "question" "nonauthoritative") t '(t nil)
 		  (rstodo-outline-info-start myoutl)
 		  (rstodo-outline-info-end myoutl)))
       (setq deleted-item-list (cons (rstodo-piece-info-bounds next-item)
@@ -459,7 +459,8 @@ The beginning of the item counts as within."
     (while
 	(setq tmp
 	      (rstodo-get-related-item-beginning
-	       outline-beginning 1 ("todo" "copy" "question") t '(t nil)))
+	       outline-beginning 1
+	       ("todo" "copy" "question" "nonauthoritative") t '(t nil)))
       (setq output-string (concat output-string (rstodo-remove-todo-item tmp))))
     output-string))
 
@@ -543,7 +544,7 @@ Throws an error if point is not on a todo item, or if there is no place to move 
   (interactive "d")
   (let ((this-piece (rstodo-get-piece-info loc)))
     (if (not (member (rstodo-piece-info-type this-piece)
-		     '("todo" "copy" "note" "question")))
+		     '("todo" "copy" "note" "question" "nonauthoritative")))
 	(error "Invalid piece type for kill: "
 	       (rstodo-piece-info-type this-piece)))
     (apply 'kill-region (rstodo-piece-info-bounds this-piece))))
@@ -565,7 +566,7 @@ Prefix arg indicates to copy (and mark as copy)."
     (let ((this-piece (rstodo-get-piece-info loc))
 	  insertion-string)
       (if (not (member (rstodo-piece-info-type this-piece)
-		       '("todo" "copy" "note" "question")))
+		       '("todo" "copy" "note" "question" "nonauthoritative")))
 	  (error "Invalid piece type for kill: "
 		 (rstodo-piece-info-type this-piece)))
       (if (and copy (not (equal  (rstodo-piece-info-type this-piece) "todo")))
