@@ -260,3 +260,11 @@
    	  willing to assume that.  
    Note that while I'm having problem finds docs on this, it would be
    trivial to test these questions.
+
+## Debugging in Chrome tools:
+	* Current notebook will be in top -> worker-* ->
+	  curiouserrandy.static.observableusercontent.com -> next in a
+	  series of pages(?) one per cell in the notebook.
+	* Imported notebooks will be in api.observablehq.com, either
+	  in @curiouserrandy -> notebook name or in d, not sure what
+	  makes the difference.
