@@ -77,7 +77,7 @@
 ## Formula notes:
 	* Index:
 		* The first element must be a range
-		* If the second element is the empty string, the
+		* If the second element is zero, the
 		  entire column is selected.  Presumably true for the
 		  row too.
 		? Can I select with a vector in either of those places?
