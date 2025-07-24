@@ -1,0 +1,4 @@
+#!/bin/bash
+
+xmodmap -e "keycode 0x42 = Meta_L" -e "keycode 0x45 = Meta_R"
+ssh -fY raspberrypi emacs
