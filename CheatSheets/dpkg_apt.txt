@@ -1,0 +1,39 @@
+Linux package management programs
+---------------------------------
+
+-- Top level summary:
+	* dpkg: Only deals with packages on system; has no knowledge
+	  of off-system repositories and cannot resolve dependencies
+	  (though it's aware of them not being satisfied)
+	* apt-get: CLI, handles dependency resolution and downloads.
+	  Stable and has predictable output.
+	* apt-cache: Exploration of the package cache.  No state
+	  changes, but does know about the outside world (as of the
+	  last apt-get update).  
+	* apt: Combines apt-get and apt-cache, includes progress bars
+	  and colored text.
+	* aptitude: Has both a CLI and a curses based UI.  Can suggest
+	  multiple ways to resolve a conflict.  Has the "aptitude why"
+	  command, which explains why a package is installed on the
+	  system.  
+
+
+-- Useful commands:
+	* apt-cache search <regex>: Search package names and
+	  descriptions for the regex.  --names-only will just output
+	  package names.  If multiple search patterns are provided
+	  they are ANDed.
+	* apt-cache depends <pkg>: Shows a listing of each dependency
+	  a package has an all the possible other packages that can
+	  fulfill that dependency.
+	* apt-cache rdepends <pkg>: Above, for reverse dependencies.
+	* apt-cache dotty <pkg>: Produces dot output to illustrate the
+	  dependencies.
+	* apt-get install <pkg>
+	* dpkg-query -W: List installed packages
+	* apg-get update: Downloads package info from all configured sources.
+	* apt-get upgrade: Upgrade all packages currently installed on system.
+	* apt-get install <pkg>
+	* apt-get remove <pkg>
+	* apt-get autoremove: Remove all packages only installed as
+	  dependencies. 
