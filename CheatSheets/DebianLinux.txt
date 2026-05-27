@@ -1,0 +1,11 @@
+-- Clicking the eject symbol in the Files GUI interface does more than
+   unmount USB drives; it also renders their contents inaccessible.  If
+   you want to get direct access to the bits on USB drives, you should
+   use 'umount' (if it's been auto-mounted).  
+   There's apparently an 'eject' command to use for this portion of
+   the process (untried).
+
+## Useful probes:
+	cat /etc/debian_version
+	cat /etc/os-release
+

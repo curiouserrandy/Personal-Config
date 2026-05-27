@@ -1,0 +1,13 @@
+-- Primary config file: /etc/default/grub
+
+-- Specification for default boot in that file: GRUB_DEFAULT.  (I've
+   flipped this back and forth between 0 (Linux) and 2 (Windows)).
+
+-- Actual grub config is compiled from /etc/default/grub.d/*.cfg
+   files.  
+
+-- Compilation after changing /etc/default/grub (or any of the grub.d
+   files) is "update-grub.  
+
+-- From linux, to reboot directly into Windows use "grub-reboot 2".
+

@@ -1,0 +1,79 @@
+rclone is a system for interacting with network and cloud file
+systems.  (The primary example for me is Google Drive, but it can
+handle a lot of different ones.)  Primary website is
+https://rclone.org/; notes on Google Drive are
+https://rclone.org/drive/.
+
+It provides the obvious individual file file system functionality
+(directory listing, deleting or catting files, moving them, presumably
+uploading a new one?) as well as providing an interface to mount the
+filesystem on a Linux system, or mirroring data.
+
+There is a low performance option that doesn't require an API key, but
+they recommend creating your own, with details at
+https://rclone.org/drive/#making-your-own-client-id.  Complicated
+process I shouldn't need to do again; not documenting here.  
+Project Name: "Rclone Google Drive".
+Note that AFA Google is concerned I've created an insecure app that
+they need to verify before anyone uses it.  However, the test users
+can use it, I'll just get a scary message when I connect via browser
+to get my authentication which I can probably ignore.  
+
+The various credentials for this are currently in
+~/.config/rclone/rclone.conf.
+
+?? Not clear how often the authentication needs to be refreshed.  
+
+== Mounting
+
+Mounting is described @
+https://rclone.org/commands/rclone_mount/.  Setting it up in the Linux
+system is described @
+https://rclone.org/commands/rclone_mount/#rclone-as-unix-mount-helper.
+
+I believe the right way to do this on Debian is via entries in
+/etc/fstab.  (-- Requires 'ln -s /usr/bin/rclone /sbin/mount.rclone')
+They suggest the following options: 
+	rw
+	noauto		# --Nope, want auto
+	nofail		# Do not report errors for this device if !exist
+	_netdev		# Holds off auto-mounts until network is up.
+	x-systemd.automount	# ??
+	args2env	# Pass arguments through the environ to avoid
+			# revealing secrets to ps.  ?? Can't you get the
+			# environ via ps?
+	vfs_cache_mode=writes	# Type of cache (see "VFS File
+				# Caching" in "man rclone").  May want
+				# full; no reason not to use disk space.
+	config=/etc/rclone.conf	# Location of config file; currently in HOME
+	cache_dir=/var/cache/rclone	# Location of cache, currently none 
+
+ETA: I've decided that I know better than to try and layer something
+that looks like a local filesystem on network operations; that was a
+fair amount of my career, and getting beyond 90% of the way there
+takes serious time and expertise.  And usually stuff under Linux is
+only 90% of the way there anyway.
+
+== Mirroring
+
+The basic command for this is
+
+	rclone bisync gDrive:<subdir> /home/randy/<subdir> --check-access --fast-list --track-renames --log-file <log file>
+
+Currently I'm mirroring subdirs Personal and Projects, and using the
+log file /home/randy/Logs/drive-personal.log.  
+
+Occasionally the error "Local file system at <>: Ignoring
+--track-renames as it doesn't work with copy or move, only sync".  I
+believe this can be ignored; specifically I think bisync does copy one
+way and sync the other, and that message is from the copy.
+
+According to Gemini (:-)) rclone bisync has a lock file that prevents
+multiple rclone bisync's from running on the same directory at the
+same time.  
+
+You can get into a wedged state where --rsync won't work.  In such
+cases you need to use the "force-like" command --resync.  This is
+equivalent to using --resync-mode <first path listed>, which in the
+above will mean that if there's conflicts the one that's currently in
+Google drive will be preferred.  Which is usually what I want.

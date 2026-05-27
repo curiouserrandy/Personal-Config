@@ -1,0 +1,27 @@
+== Global
+
+== Per-user
+
+Configuration files are in ~/.config/systemd/user/.
+
+All commands must have --user as an argument, otherwise they'll try to
+play around with the system files and hopefully throw a permissions
+error.
+
+Important commands:
+	* systemctl --user daemon-reload
+	  Get systemd to notice file edits.
+	* systemctl --user enable --now <name>.service:
+	  Enable a service
+	* systemctl --user status <name>.service
+	* journalctl --user -u <name>.service
+	* systemctl --user show <name>.service
+	* systemctl --user list-units
+	* systemctl --user list-timers
+	* systemctl --user stop <name>.timer
+	  Only stops until next login.
+	* systemctl --user disable <name>.timer
+	  Disables restart on login. 
+
+You can create timers to make things run on a regular basis.
+
