@@ -1,0 +1,27 @@
+-- virsh
+	* Flag options: -c URI, -d [0-4], -h
+	# subcommands
+	help <command or group>
+	quit, exit
+
+	# Hypervisor probes
+	uri		
+	hostname	
+	sysinfo		
+	capabilities
+
+	# Domain probes
+	list
+
+	# Domain commands
+	autostart <domain>
+	console <domain>		# Connect to guest console
+	cpu-stats <domain>
+	create <xml-file>
+	define <xml-file>
+	desc <domain>
+	destroy <domain>
+	backup-begin <domain> [<backup xml file>]
+	guestinfo <domain>    	       # From POV of guest agent
+
+?? virt-install
