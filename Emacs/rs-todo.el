@@ -802,7 +802,15 @@ Returns buffer; does not display it."
   (rstodo-move-current-todo-item-to-hotkey (elt (this-command-keys) 0))
   (rstodo-setup-cheatsheet-buffer))
 
-(defun rstodo-move-item-to-section-prompting (section-character)
+(defun rstodo-move-item-to-section-prompting ()
+  (interactive)
+  (save-window-excursion
+    (let ((cb (rstodo-setup-cheatsheet-buffer)))
+      (switch-to-buffer-other-window cb t)
+      (other-window 1)
+      (call-interactively 'rstodo-move-item-to-section-prompting-1))))
+      
+(defun rstodo-move-item-to-section-prompting-1 (section-character)
   (interactive "cSection: ")
   (rstodo-move-current-todo-item-to-hotkey section-character))
 
