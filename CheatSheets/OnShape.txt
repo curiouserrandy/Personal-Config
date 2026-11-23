@@ -1,0 +1,29 @@
+-- Keyboard shortcuts
+	# Top level	  
+	* N: Make view normal to plane selected or sketch being worked
+	  on.
+	* Shift-S: Start a sketch; you'll be prompted for a plane or
+	  face.
+	* P: Hide or show all planes at once
+	
+	# In sketch
+	* L: Create a line.
+	* Q: Define the current behavior as "construction".
+	* <shift>: Turns off automatic inferencing while held.
+	* <shift>: While constraints are shown, holding shift keeps
+	  them visible as you move the mouse.
+	* i: Coincident constraint
+	* Shift-o: Concentric constraint
+	* b: Parallel constraint
+	* t: Tangent constraint
+	* h/v: Horizontal/vertical constraint.
+	* Shift-l: Perpendicular constraint
+	* e: Equal constraint
+	* Shift-m: Midpoint constraint
+	* Shift-k: Normal constraint
+	* Shift-g: Pierce (attach point/curve with an edge
+	  intersecting sketch plane)
+	* Shift-q: Symmetric constraint
+	* Shift-j: Fix (make immovable) a particular entity.
+	* Shift-u: Same curvature
+	* O: Offset
