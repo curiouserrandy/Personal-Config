@@ -1,0 +1,68 @@
+
+Typescript is mostly a compiled language with javascript (and type
+error messages) the output.  The typescript compiler (tsc) either
+auto-deduces types (e.g. from initializers or control flow) or takes
+types from following the variable, parameter, or function definition
+with ": <type>".
+
+There can be integration with IDEs that use type information to (e.g.)
+prompt possible member functions.
+
+Type specifications:
+	* <type>[] and Array< <type> >
+	* any
+	* { <prop> : <type>, ... }. <prop> may be followed by ? to
+	  mark it as optional. 
+	* <type> | <type>: A union type.
+ 	* never
+	* (a: <type>) => <type>
+	* { <prop>: <type>; ... (a:<type>): <return type>; ...}
+	  (Function with properties)
+
+type <name> = <type>; 	   // Type alias
+
+interface <name> <object type>
+
+?? I don't really get the difference between types and interfaces.
+   Interfaces can be extended (like classes in C++), but so can types
+   (with &).  You can add fields to an exiting interface (seems like a
+   bad idea) which you can't do for a type.  Understand this.  Maybe
+   read the reference?
+
+You can add "as <type>" to a value and typescript will assume it's
+that type.  This is equivalent to "casting" < <type> > <value>.
+
+const values are given a type which contains only the value they were
+initialized with (called a literal type).  With unions, this allows
+you to express a set of values.  "as const" suffixed to an object
+gives all the properties of that object a literal type.
+
+?? There are enums in TS, but I'm not sure in what ways they are and
+   aren't different from union of literal types.  
+
+TS does type narrowing by control and data flow analysis.  You can
+hook into this with type predicates, which is specifying the return
+type of a function as <param> is <type>.  That allows TS to use how
+that function is used in the control flow for type narrowing.
+
+If operating on a union of object types where the same property has a
+differently literal type in each branch, typescript can correctly
+analyze control flow testing the literal type.
+
+?? There seems like there's something underlying the "function with
+   properties" concept, as well as the "new func()" concept.  Is there
+   an overlap between function with properties and object?  What is
+   the definition of calling a function via "new func()"?
+
+?? <name> is used both for casting (I thought) and for templating/type
+   arguments.  Is there some way of avoiding confusion, or are they
+   the same thing on some deep level?
+
+Type variables can be constrained by the "<typevar> extends <type>"
+structure; it says that typevar must have all the properties of
+type. 
+
+?? There's a suggestion that one can access, or arrange to access,
+   properties in an object via indexing.  Typescript has ways to
+   define the types of these objects, but the underlying structure
+   sounds like JS.  What's going on?
