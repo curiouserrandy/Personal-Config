@@ -13,15 +13,32 @@
 	# Domain probes
 	list
 
+	# Network
+	net-list
+	net-dhcp-leases <network>
+
 	# Domain commands
+	start <domain>
+	shutdown <domain>	# Graceful, coordinates with guest OS.
+
+
+	define <xml-file>
+	dumpxml <domain>	# Produces xml that can be editted and
+				# fed back into define
+	edit <domain>		# Combines the above
+				# (dumpxml --inactive --security-info)
 	autostart <domain>
 	console <domain>		# Connect to guest console
 	cpu-stats <domain>
 	create <xml-file>
-	define <xml-file>
 	desc <domain>
 	destroy <domain>
 	backup-begin <domain> [<backup xml file>]
 	guestinfo <domain>    	       # From POV of guest agent
+
+	nwfilter-define <filter XML file>
+				# Can be attached to a VM by editing
+				  the VM .xml defining file.  
+	nwfilter-undefine <filter name)				  
 
 ?? virt-install
