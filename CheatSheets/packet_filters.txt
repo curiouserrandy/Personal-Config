@@ -1,0 +1,4 @@
+# iptables layer is legacy, nftables is current
+# All commands root
+
+nft list ruleset
