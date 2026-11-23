@@ -1,0 +1,40 @@
+I am (imminently going to be) using an OpenWRT One as my main router.
+This file contains general notes on OpenWRT and specific notes on my
+router; hopefully clear from context which is which.
+
+-- Console login (from Mac):
+	* USB C<->C cable connected
+	* Tell mac to enable
+	* ls /dev/tty.usb* /dev/ttyUSB*
+
+	* "screen /dev/ttyXXX 115200"
+	OR
+	* M-x serial-term <cr> /dev/ttyXXX <cr> 115200 <cr>.
+	  C-c C-j (to switch into line mode and get emacs keystrokes back)
+
+	* No password required
+
+-- SSH login:
+	* Must be from secure wireless or one of the wired networks.
+	* Password required
+
+-- LUCI access: ?? (I think I need to port forward with SSH: figure
+   this out when you need it).
+
+-- CLI Config dump commands:
+	uci show network
+	uci show dhcp
+	uci show wireless
+	uci show firewall
+
+## My router Config:
+	* Currently can log into console without authentication.  My
+   	  notes say I've set a root password.  AI overview says that
+   	  logging in on the console doesn't require a password even if
+   	  one has been set.  Confirmed by inspection of /etc/shadow.
+	* ssh daemon is running.  
+	* Separate bridge devices for private and public networks.
+   	  br-lan and br-lan-public.  br-lan bridges wired and wireless
+   	  security network.  br-lan-public is only guest networks.  
+	* Two radios, 2g and 5g.  4 APs: 68 Crosby 5, 68 Crosby 5
+   	  Open, 68 Crosby, 68 Crosby Open.  
