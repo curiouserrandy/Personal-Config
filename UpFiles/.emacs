@@ -1,7 +1,10 @@
 ;;; Allow setting of environ variables for contexts in which emacs
 ;;; isn't being started from a shell that's run the users .bashrc.
+;;; Don't do this if there are already breadcrumbs that a shell has run
+;;; and set emacs config variables.
 (let ((envfile (concat (getenv "HOME") "/.emacs_env")))
-  (if (file-exists-p envfile)
+  (if (and (not (getenv "config_files_directory"))
+	   (file-exists-p envfile))
       (load envfile)))
 
 ;;; Redirect to root of configuration tree
