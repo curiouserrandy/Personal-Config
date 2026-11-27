@@ -104,3 +104,25 @@
 
 ;; Unilaterally track to first error in compilation buffer
 (setq compilation-scroll-output 'first-error)
+
+;; Setting custom variables (created by emacs in .emacs, which won't
+;; work, so putting here, which will break the next time I set custom
+;; variables from inside emacs, oy.
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ns-alternate-modifier 'meta)
+ '(package-selected-packages '(realgud-lldb realgud))
+ '(safe-local-variable-values
+   '((outline-explode . ".*day")
+     (outline-explode . "\\(Todo, active\\|Todo\\) *$")
+     (outline-explode . "\\(Todo, active\\|Todo\\|Todo, Categorized\\) *$")
+     (backup-by-copying . t))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
